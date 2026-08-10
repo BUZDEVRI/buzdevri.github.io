@@ -221,8 +221,9 @@
             <p>4 Kişilik Çok Oyunculu Sesli Oyna</p>
         </div>
 
-        <button id="oyna-btn">Oyuna Başla</button>
-    <div id="durum-mesaji"></div> <!-- Durum mesajlarını buraya yazacağız -->
+         <button id="oyna-btn">Oyuna Başla</button>
+          <div id="durum-mesaji"></div>
+
          <!-- Mağaza Butonu -->
     <button type="button" onclick="magazayiAc()" style="background: linear-gradient(135deg, #9b59b6, #8e44ad) !important; color: white !important; border: none !important; padding: 12px 20px !important; font-weight: bold !important; border-radius: 90px !important; cursor: pointer !important; font-size: 20px !important; box-shadow: 0 4px 19px rgba(142, 68, 173, 0.4) !important; width: 100% !important;">
         🛒 Mağaza
@@ -1164,48 +1165,35 @@ async function gercekOdemeBaslat(event) {
         alert("Sunucu bağlantısı kurulamadı. Lütfen daha sonra tekrar deneyin.");
     }
 }
-// Örnek bir eşleşme arama fonksiyonu (Bunu kendi "Oyna" butonunun click olayına bağlayabilirsin)
-function rakipAramaBaslat() {
-    console.log("Rakip aranıyor...");
-    socket.emit('rakipAra');
-}
+// Sunucuya bağlan
+const socket = io();
 
-// Sunucudan "bekle" mesajı gelirse
-socket.on('bekle', (mesaj) => {
-    console.log(mesaj);
-    // İstersen burada ekranda "Rakip aranıyor, lütfen bekleyin..." yazısını gösterebilirsin
-});
-
-// Eşleşme sağlandığında oyun başladığında çalışacak kısım
-socket.on('oyunBasliyor', (veri) => {
-    console.log("Rakip bulundu! Oyun başlıyor. Rakip ID:", veri.rakip);
-    // İstersen burada eşleştirme ekranını kapatıp oyun tahtasını açabilirsin
-});
 const oynaButonu = document.getElementById('oyna-btn');
 const durumMesaji = document.getElementById('durum-mesaji');
 
-if (oynaButonu) {
-    oynaButonu.addEventListener('click', () => {
-        if (durumMesaji) durumMesaji.innerText = "Rakip aranıyor, lütfen bekleyin...";
-        oynaButonu.disabled = true; // Üst üste basılmasını önle
-        
-        // 👉 Sunucuya "rakip ara" sinyali gönderen fonksiyonu tetikle
-        if (typeof rakipAramaBaslat === 'function') {
-            rakipAramaBaslat();
-        } else {
-            console.log("rakipAramaBaslat fonksiyonu bulunamadı!");
-        }
-    });
-}
+// Butona basıldığında çalışacak tek parça kod
+oynaButonu.addEventListener('click', () => {
+    console.log("Oyuna Başla butonuna tıklandı!");
+    durumMesaji.innerText = "Rakip aranıyor...";
+    oynaButonu.disabled = true;
 
-// Sunucudan rakip bulunduğunda çalışacak kısım
-socket.on('oyunBasliyor', (veri) => {
-    if (durumMesaji) durumMesaji.innerText = "Rakip bulundu! Oyun başlıyor...";
-    console.log("Rakip eşleşti:", veri.rakip);
-    
-    // Eşleşme sağlandıktan sonra yukarıdaki yerel tahtayı veya gerçek oyunu başlatabilirsin:
-    // eslestirmeBaslat('orta'); 
+    // Sunucuya rakip arama sinyali gönder
+    socket.emit('rakipAra');
 });
+
+// Sunucudan "bekle" cevabı gelirse
+socket.on('bekle', (mesaj) => {
+    durumMesaji.innerText = mesaj;
+});
+
+// Sunucudan "oyun başlıyor" cevabı gelirse
+socket.on('oyunBasliyor', (veri) => {
+    durumMesaji.innerText = "Rakip bulundu! Oyun başlıyor...";
+    console.log("Eşleşme başarılı! Rakip ID:", veri.rakip);
+    
+    // Buraya oyunun açılma kodunu ekleyebiliriz
+});
+
 
     </script>
 </body>
