@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <script src="/socket.io/socket.io.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meyvelerini Esleştir Kazan - Çoklu Oyuncu Eşleştirme Savaşı</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #0b0f19;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .pencere {
+            display: none;
+            width: 100%;
+            max-width: 480px;
+            height: 100%;
+            max-height: 850px;
+            position: absolute;
+            background-color: #0b0f19;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            border: 2px solid #00ffcc;
+            border-radius: 20px;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            z-index: 10;
+        }
+        .aktif-pencere {
+            display: flex !important;
+        }
+        button, .mini-kutu {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+        }
+
+        /* Ana Menü Stilleri */
+        .rank-buton {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(90deg, #ffcc00, #ff9900);
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 16px;
+            color: #111;
+            margin-bottom: 15px;
+        }
+        .profil-ikon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid #00ffcc;
+            background: #222;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            align-self: flex-start;
+            margin-bottom: 10px;
+        }
+        .server-durum {
+            align-self: flex-end;
+            background: rgba(0, 255, 150, 0.15);
+            border: 1px solid #00ff96;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #00ff96;
+            margin-top: -45px;
+            margin-bottom: 20px;
+        }
+        .baslik-ana {
+            text-align: center;
+            margin: 20px 0 10px 0;
+        }
+        .baslik-ana h1 {
+            font-size: 28px;
+            margin: 0;
+            background: linear-gradient(180deg, #00ffcc, #ff007f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+        }
+        .baslik-ana p {
+            color: #aaa;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+        .coklu-oyna-buton {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(90deg, #ff007f, #ff3399);
+            border: none;
+            border-radius: 30px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin: 30px 0 15px 0;
+        }
+        .menu-alt-buton {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 10px;
+        }
+        .magaza-btn { background: linear-gradient(90deg, #8a2be2, #9400d3); }
+        .etkinlik-btn { background: linear-gradient(90deg, #ff6600, #ff4500); }
+        .geri-buton { background-color: #ff3333; }
+
+        /* Oyun Alanı Stilleri */
+        .oyun-ust-bar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .cikis-btn {
+            background: #ff3333;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        .izgara-4lu {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            width: 100%;
+            height: calc(100% - 50px);
+        }
+        .oyuncu-kutu-cerceve {
+            background: rgba(255,255,255,0.03);
+            border: 2px solid #ff007f;
+            border-radius: 10px;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .oyuncu-kutu-cerceve:nth-child(2) { border-color: #00bfff; }
+        .oyuncu-kutu-cerceve:nth-child(3) { border-color: #00ff96; }
+        .oyuncu-kutu-cerceve:nth-child(4) { border-color: #ffcc00; }
+
+             /* Tahta alanını esnek ve düzgün ortalanmış yapıyoruz */
+        [id^="tahta-"] {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 6px;
+            padding: 8px;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        /* 16 kutunun (8 çift) alana tam sığması için esnek boyut */
+        .mini-kutu {
+            width: 100%;
+            height: 100%;
+            min-height: 35px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+        }
+              .pencere, button, input {
+    position: relative;
+    z-index: 99999;
+    pointer-events: auto !important;
+}
+    </style>
+</head>
+<body>
+
+
+
+
+        </div>
+    </div>
+</div>
+
+    </div>
+</div>
+</body> <!-- Body kapanışından hemen önce olması pencerelerin düzgün katmanlanması (z-index) için en iyisidir -->
+</html>
+
+
+    <!-- 1. ANA MENÜ PENCERESİ -->
+    <div id="menu-penceresi" class="pencere aktif-pencere" style="display: flex;">
+        <button class="rank-buton" onclick="alert('Sıralama yakında!')">🏆 Sıralama & Rank</button>
+        <div class="profil-ikon" id="ana-profil-avatar" onclick="pencereAc('profil-penceresi')">🐸</div>
+        <div class="server-durum">🟢 Sunucu: Online (Avrupa)</div>
+
+        <div class="baslik-ana">
+            <h1>Meyveleri Birleştir</h1>
+            <p>4 Kişilik Çok Oyunculu Sesli Oyna</p>
+        </div>
+
+        <button id="oyna-btn">Oyuna Başla</button>
+    <div id="durum-mesaji"></div> <!-- Durum mesajlarını buraya yazacağız -->
+         <!-- Mağaza Butonu -->
+    <button type="button" onclick="magazayiAc()" style="background: linear-gradient(135deg, #9b59b6, #8e44ad) !important; color: white !important; border: none !important; padding: 12px 20px !important; font-weight: bold !important; border-radius: 90px !important; cursor: pointer !important; font-size: 20px !important; box-shadow: 0 4px 19px rgba(142, 68, 173, 0.4) !important; width: 100% !important;">
+        🛒 Mağaza
+    </button>
+
+    <!-- Etkinlikler Butonu -->
+    <button type="button" onclick="etkinlikleriAc()" style="background: linear-gradient(135deg, #e67e22, #d35400) !important; color: white !important; border: none !important; padding: 12px 20px !important; font-weight: bold !important; border-radius: 90px !important; cursor: pointer !important; font-size: 19px !important; box-shadow: 0 4px 19px rgba(231, 76, 60, 0.4) !important; width: 100% !important; margin-top: 18px !important;">
+        🎉 Etkinlikler
+    </button>
+
+
+</div>
+
+
+          
+
+
+      
+
+    <!-- 2. PROFİL PENCERESİ -->
+    <div id="profil-penceresi" class="pencere">
+        <h2>Profil Özelleştirme</h2>
+        <div id="avatar-onizleme" style="width: 80px; height: 80px; border-radius: 50%; background: #222; border: 2px solid #00ffcc; display: flex; justify-content: center; align-items: center; font-size: 35px; margin-bottom: 15px; overflow: hidden;">🐸</div>
+        <input type="file" id="dosya-sec" accept="image/*" onchange="avatarYukle(event)" style="margin-bottom: 15px;">
+        <input type="text" id="oyuncu-isim-input" placeholder="Adınızı girin" value="Siz" style="padding: 10px; width: 100%; font-size: 16px; margin-bottom: 15px; border-radius: 8px; border: none; background: #222; color: #fff;">
+        <button class="coklu-oyna-buton" style="margin-top:0;" onclick="profilKaydet()">Kaydet ve Dön</button>
+       <div id="oyun-ici-klan" style="font-size: 13px; color: #2ed573; font-weight: bold; margin-top: 5px;">Klan Yok</div>
+    </div>
+
+
+
+
+
+
+<!-- 4. ETKİNLİKLER PENCERESİ (Cam Görünümlü & 5 Konumlu Tam Uyumlu Tasarım) -->
+<div id="etkinlikler-penceresi" class="pencere" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 340px; height: 480px; background: rgba(15, 15, 25, 0.45); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.7); z-index: 2000; font-family: sans-serif; color: #fff; padding: 20px; box-sizing: border-box;">
+    
+    <!-- Üst Başlık ve Kapatma -->
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 15px;">
+        <h3 style="margin: 0; font-size: 16px; color: #ff9f43; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">🎉 Özel Etkinlik Oyunu</h3>
+     
+    </div>
+
+    <!-- 5 Farklı Konum (Üst, Sol, Sağ, Alt, Orta) Alanı -->
+    <div style="position: relative; width: 100%; height: calc(100% - 60px);">
+        
+        <!-- 1. ÜST Konum -->
+        <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.1); backdrop-filter: blur(5px); padding: 5px 12px; border-radius: 12px; font-size: 11px; border: 1px solid rgba(255,255,255,0.15);">
+            ⭐ 5 Kişilik Liderlik
+        </div>
+
+        <!-- 2. SOL Konum -->
+        <div style="position: absolute; top: 50%; left: 0; transform: translateY(-50%); background: rgba(255,255,255,0.1); backdrop-filter: blur(5px); padding: 10px 8px; border-radius: 12px; font-size: 11px; text-align: center; border: 1px solid rgba(255,255,255,0.15);">
+            👈 Slot 1
+        </div>
+
+        <!-- 3. SAĞ Konum -->
+        <div style="position: absolute; top: 50%; right: 0; transform: translateY(-50%); background: rgba(255,255,255,0.1); backdrop-filter: blur(5px); padding: 10px 8px; border-radius: 12px; font-size: 11px; text-align: center; border: 1px solid rgba(255,255,255,0.15);">
+            👉 Slot 2
+        </div>
+
+        <!-- 4. ALT Konum -->
+        <div style="position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 100%; text-align: center;">
+            <button type="button" onclick="pencereAc('menu-penceresi')" style="width: 80%; padding: 10px; background: linear-gradient(135deg, #ff9f43, #ff5252); color: white; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">Geri Dön</button>
+        </div>
+
+        <!-- 5. ORTA Konum (Oyun / Etkinlik Alanı) -->
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: rgba(0,0,0,0.25); padding: 15px 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="font-size: 15px; font-weight: bold; color: #00ff96; margin-bottom: 5px;">Meyve Eşleştirme</div>
+            <div style="font-size: 11px; color: #ddd;">Etkinlik odası aktif!</div>
+        </div>
+
+    </div>
+</div>
+
+
+
+<!-- 5. OYUN SAVAŞ ALANI -->
+    <div id="eslestirme-penceresi" class="pencere">
+        <div class="oyun-ust-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(0,0,0,0.5); border-bottom: 1px solid #444;">
+            <span style="font-size: 14px; font-weight: bold; color: #00ffcc;">🧩 4 Kişilik Profil Savaş Alanı</span>
+             <!-- OYUNCU ENVANTER PENCERESİ -->
+<div id="oyuncu-envanter-penceresi" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #12121a; color: #fff; padding: 20px; border-radius: 12px; width: 320px; border: 2px solid #3498db; z-index: 2147483647; font-family: sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h4 style="margin: 0; color: #3498db; font-size: 16px;">🎒 Oyuncu Envanteri</h4>
+        <button type="button" onclick="pencereyiKapat('oyuncu-envanter-penceresi')" style="background: #ff4757; border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 12px;">✕</button>
+    </div>
+    
+    <div style="font-size: 11px; color: #aaa; margin-bottom: 10px;">Satın aldığın ve aktif olan eşyaların aşağıda listelenmiştir:</div>
+    
+    <!-- Envanter İçerik Listesi -->
+    <div id="envanter-liste-alani" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; min-height: 100px; max-height: 180px; overflow-y: auto;">
+        <!-- Dinamik olarak doldurulacak -->
+    </div>
+</div>
+
+<!-- Envanteri Açma Butonu (Menüye eklenebilir) -->
+<button type="button" onclick="envanteriAc()" style="background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; margin-top: 5px;">🎒 Envanterim (<span id="envanter-sayac-btn">0</span>/7)</button>
+
+            <!-- ⚡ Hızlı Gösterici Envanter Sayacı (Başlangıçta gizli: display: none;) -->
+            <div id="envanter-gosterge" style="display: none; background: rgba(0,0,0,0.7); color: #00ffcc; padding: 5px 10px; border-radius: 6px; border: 1px solid #00ffcc; font-size: 12px; font-weight: bold;">
+                ⚡ Gösterici: <span id="hizli-gosterici-adet">0</span> / 10
+                <button type="button" onclick="hizliGostericiyiKullan()" style="margin-left: 5px; background: #ffd700; color: #000; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; font-weight: bold;">Kullan</button>
+            </div>
+
+            <button class="cikis-btn" onclick="anaMenuyeDon()">Çıkış</button>
+        </div>
+
+
+                                                 <!-- Mikrofon Sistemi Alanı -->
+        <div id="mikrofon-alani" style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px dashed #ff0055; border-radius: 10px; padding: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 13px;">
+                <span style="color: #ff0055; font-weight: bold;" id="mikrofon-durum-gosterge">🎙️ Mikrofon Kapalı</span>
+                <div style="color: #aaa; font-size: 11px;">Sesli sohbet için izin ver</div>
+            </div>
+            <button onclick="mikrofonIzniIste()" style="background: #ff0055; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer;">Mikrofonu Aç</button>
+        </div>
+        <div class="izgara-4lu">
+            <div class="oyuncu-kutu-cerceve">
+                <div style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                    <div id="oyuncu-profil-0" style="width: 22px; height: 22px; border-radius: 50%; background: #333; display: flex; justify-content: center; align-items: center; overflow: hidden; font-size: 12px;">🐸</div>
+
+                    <span id="oyuncu-isim-0" style="color: #ff007f; font-weight: bold;">Siz (0)</span>
+                </div>
+                <div id="tahta-0" class="mini-tahta"></div>
+            </div>
+            <div class="oyuncu-kutu-cerceve">
+                <div style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                    <div style="width: 22px; height: 22px; border-radius: 50%; background: #333; display: flex; justify-content: center; align-items: center; font-size: 12px;">🤖</div>
+                    <span style="color: #00bfff; font-weight: bold;">Mehmet  (0)</span>
+                </div>
+                <div id="tahta-1" class="mini-tahta"></div>
+            </div>
+            <div class="oyuncu-kutu-cerceve">
+                <div style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                    <div style="width: 22px; height: 22px; border-radius: 50%; background: #333; display: flex; justify-content: center; align-items: center; font-size: 12px;">🦊</div>
+                    <span style="color: #00ff96; font-weight: bold;">Ayça  (0)</span>
+                </div>
+                <div id="tahta-2" class="mini-tahta"></div>
+            </div>
+            <div class="oyuncu-kutu-cerceve">
+                <div style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                    <div style="width: 22px; height: 22px; border-radius: 50%; background: #333; display: flex; justify-content: center; align-items: center; font-size: 12px;">🐼</div>
+                    <span style="color: #00ff96; font-weight: bold;">Deniz  (0)</span>
+                </div>
+                <div id="tahta-3" class="mini-tahta"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. KAZANDINIZ BİTİŞ EKRANI -->
+    <div id="bitis-penceresi" class="pencere" style="justify-content: center; background: rgba(11, 15, 25, 0.95);">
+        <div style="text-align: center; background: #161f33; padding: 30px; border-radius: 20px; border: 2px solid #ffcc00; width: 85%; max-width: 350px;">
+            <h1 style="color: #ffcc00; font-size: 28px; margin-top: 0;">🏆 KAZANDINIZ!</h1>
+            <p style="color: #ccc; font-size: 14px; margin-bottom: 25px;">Tebrikler, tüm eşleşmeleri başarıyla tamamladın!</p>
+            <button class="coklu-oyna-buton" style="margin: 0 0 12px 0; background: linear-gradient(90deg, #00ffcc, #00bfff);" onclick="eslestirmeBaslat()">🔄 Yeniden Eşleştirme Bul</button>
+            <button class="menu-alt-buton geri-buton" style="width: 100%; margin: 0; padding: 14px;" onclick="anaMenuyeDon()">🏠 Ana Menüye Dön</button>
+        </div>
+    </div>
+
+    <script>
+        let semboller = ['🍎', '🍌', '🍇', '🍉', '🍓', '🍒', '🍑', '🍍'];
+        let oyuncuAvatarHTML = '🐸'; 
+        let oyuncuAdi = "Siz";
+        let tahtalarDizisi = [[], [], [], []]; 
+        let acikKutularDizisi = [[], [], [], []]; 
+        let skorlar = [0, 0, 0, 0];
+        let oyunAktif = false;
+        let botZamanlayicilari = [];
+
+        function pencereAc(pencereId) {
+            document.querySelectorAll('.pencere').forEach(p => {
+                p.classList.remove('aktif-pencere');
+                p.style.display = 'none';
+            });
+            let hedef = document.getElementById(pencereId);
+            if (hedef) {
+                hedef.style.display = 'flex';
+                hedef.classList.add('aktif-pencere');
+            }
+           
+            // Eğer klan penceresi açılıyorsa mevcut durumu ekrana yansıt
+            if (pencereId === 'klan-penceresi') {
+                let klanDurumMetin = document.getElementById('klan-durum-metin');
+                if (klanDurumMetin) {
+                    klanDurumMetin.innerText = oyuncuKlaný !== "Klan Yok" ? oyuncuKlaný.replace("Klan: ", "") : "Yok";
+                let klanPenceresi = document.getElementById('klan-penceresi');
+              if (klanPenceresi) {
+               klanPenceresi.style.display = 'block';
+        
+                // 👉 İŞTE EKSİK OLAN TETİKLEYİCİ BURASI:
+              klanListeEkraniniGoster(); 
+           }
+        }
+     }         
+   }         
+        
+      
+    
+
+        function avatarYukle(event) {
+            let dosya = event.target.files[0];
+            if (dosya) {
+                let okuyucu = new FileReader();
+                okuyucu.onload = function(e) {
+                    oyuncuAvatarHTML = `<img src="${e.target.result}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+                    let onizleme = document.getElementById('avatar-onizleme');
+                    let anaAvatar = document.getElementById('ana-profil-avatar');
+                    if (onizleme) onizleme.innerHTML = oyuncuAvatarHTML;
+                    if (anaAvatar) anaAvatar.innerHTML = oyuncuAvatarHTML;
+                }
+                okuyucu.readAsDataURL(dosya);
+            }
+        }
+
+        function profilKaydet() {
+            let isimInput = document.getElementById('oyuncu-isim-input');
+            if (isimInput && isimInput.value.trim() !== "") {
+                oyuncuAdi = isimInput.value.trim();
+            }
+            pencereAc('menu-penceresi');
+        }
+
+          function oyunIciProfiliniIsle() {
+    // 1. Güncel klanı hafızadan tazeleyelim
+    let guncelKlan = localStorage.getItem('aktifKlanim');
+    let klanMetni = (guncelKlan && guncelKlan !== "null" && guncelKlan !== "") ? "Klan: " + guncelKlan : "Klan Yok";
+
+    // 2. Oyuncu adını ve klanını ekrana işleyelim
+    let oyunIciIsim = document.getElementById('oyuncu-isim-0');
+    if (oyunIciIsim) {
+        let klanKismi = klanMetni !== "Klan Yok" ? " [" + klanMetni.replace("Klan: ", "") + "]" : "";
+        let aktifIsim = typeof oyuncuAdi !== 'undefined' ? oyuncuAdi : (localStorage.getItem('oynaciAdi') || "Oyuncu");
+        
+        oyunIciIsim.innerText = aktifIsim + klanKismi + " (" + (typeof skorlar !== 'undefined' ? skorlar[0] : 0) + ")";
+    }
+
+    let oyunIciAvatar = document.getElementById('oyuncu-profil-0');
+    if (oyunIciAvatar && typeof oyuncuAvatarHTML !== 'undefined') {
+        oyunIciAvatar.innerHTML = oyuncuAvatarHTML;
+    }
+
+    // 3. Mikrofon durumunu yansıt
+    let oyunIciMikrofon = document.getElementById('oyun-ici-mikrofon-gosterge');
+    let mikDurumu = typeof sesAkisi !== 'undefined' ? sesAkisi : false;
+    
+    if (!oyunIciMikrofon) {
+        let mikrofonDiv = document.createElement('div');
+        mikrofonDiv.id = 'oyun-ici-mikrofon-gosterge';
+        mikrofonDiv.style.cssText = "font-size: 12px; margin-top: 5px; color: " + (mikDurumu ? "#00ffcc" : "#ff0055") + ";";
+        mikrofonDiv.innerText = mikDurumu ? "🎙️ Mikrofon: Açık" : "🔇 Mikrofon: Kapalı";
+        
+        if (oyunIciIsim && oyunIciIsim.parentNode) {
+            oyunIciIsim.parentNode.appendChild(mikrofonDiv);
+        }
+    } else {
+        oyunIciMikrofon.style.color = mikDurumu ? "#00ffcc" : "#ff0055";
+        oyunIciMikrofon.innerText = mikDurumu ? "🎙️ Mikrofon: Açık" : "🔇 Mikrofon: Kapalı";
+    }
+}
+
+
+                               function eslestirmeBaslat(zorlukSeviyesi) {
+            pencereAc('eslestirme-penceresi');
+            skorlar = [0, 0, 0, 0];
+            
+            // 👉 Eğer dışarıdan zorluk gönderilmediyse, rastgele bir zorluk seç (Sürpriz olsun!)
+            if (!zorlukSeviyesi) {
+                const zorluklar = ['kolay', 'orta', 'zor'];
+                zorlukSeviyesi = zorluklar[Math.floor(Math.random() * zorluklar.length)];
+            }
+            
+            // 👉 Zorluk derecesine göre sembol havuzunu ve kart sayısını belirliyoruz
+            let secilenSemboller = [];
+            if (zorlukSeviyesi === 'kolay') {
+                secilenSemboller = ['🍎', '🍌', '🍇', '🍉', '🍓', '🍒']; // 6 çift / 12 kutu
+            } else if (zorlukSeviyesi === 'zor') {
+                secilenSemboller = ['🍎', '🍌', '🍇', '🍉', '🍓', '🍒', '🍑', '🍍', '🥝', '🥥', '🍋', '🍊']; // 12 çift / 24 kutu
+            } else {
+                secilenSemboller = ['🍎', '🍌', '🍇', '🍉', '🍓', '🍒', '🍑', '🍍']; // 8 çift / 16 kutu (Orta)
+            }
+
+            for (let oID = 0; oID < 4; oID++) {
+                let ciftler = [...secilenSemboller, ...secilenSemboller];
+                
+                // Fisher-Yates Karıştırma Algoritması ile her oyuncunun kutusunu ayrı ayrı karıştır
+                for (let i = ciftler.length - 1; i > 0; i--) {
+                    let j = Math.floor(Math.random() * (i + 1));
+                    let temp = ciftler[i];
+                    ciftler[i] = ciftler[j];
+                    ciftler[j] = temp;
+                }
+                
+                tahtalarDizisi[oID] = ciftler;
+                acikKutularDizisi[oID] = [];
+
+                let tahtaEl = document.getElementById(`tahta-${oID}`);
+                if (tahtaEl) {
+                    tahtaEl.innerHTML = '';
+                    // 👉 Seçilen zorluğa göre kutu ızgara yapısını ve sayısını dinamik oluşturuyoruz
+                    for (let i = 0; i < ciftler.length; i++) {
+                        let kutu = document.createElement('div');
+                        kutu.className = 'mini-kutu';
+                        kutu.dataset.oyuncu = oID;
+                        kutu.dataset.index = i;
+                        
+                        if (oID === 0) {
+                            kutu.onclick = () => oyuncuHamlesi(i);
+                        }
+                        tahtaEl.appendChild(kutu);
+                    }
+                }
+            }
+
+            oyunIciProfiliniIsle();
+            oyunAktif = true;
+            if (typeof botlariBaslat === 'function') {
+                botlariBaslat();
+            }
+        }
+       // ⚡ Hızlı Göstericiyi Kullanma Fonksiyonu
+function hizliGostericiyiKullan() {
+    // Eğer oyun aktif değilse veya envanterde hak yoksa işlem yapma
+    if (!oyunAktif || hizliGostericiSayisi <= 0) {
+        alert("Kullanılabilecek Hızlı Gösterici hakkın kalmadı!");
+        return;
+    }
+
+    // Hakkı 1 azalt ve hafızaya kaydet
+    hizliGostericiSayisi--;
+    localStorage.setItem('hizliGostericiSayisi', hizliGostericiSayisi);
+    
+    // Ekrandaki sayacı güncelle
+    envanterGuncelleEkran();
+
+    // 👉 Oyuncunun tahtasındaki tüm kapalı kutuları geçici olarak açıp simgelerini gösterelim
+    let tahtaEl = document.getElementById('tahta-0'); // 0 numaralı tahta oyuncunun tahtası
+    if (tahtaEl) {
+        let kutular = tahtaEl.getElementsByClassName('mini-kutu');
+        let ciftler = tahtalarDizisi[0]; // Oyuncunun kart dizilimi
+
+        // Her kutunun içine ilgili sembolü basalım ve açık sınıfı verelim
+        for (let i = 0; i < kutular.length; i++) {
+            kutular[i].innerText = ciftler[i];
+            kutular[i].classList.add('gecici-acik');
+        }
+
+        // 2 saniye sonra kartları tekrar kapatalım
+        setTimeout(() => {
+            for (let i = 0; i < kutular.length; i++) {
+                // Eğer kart daha önceden eşleşip açılmadıysa kapat
+                if (!acikKutularDizisi[0].includes(i)) {
+                    kutular[i].innerText = '';
+                    kutular[i].classList.remove('gecici-acik');
+                }
+            }
+        }, 2000); // 2000 milisaniye = 2 saniye görünür kalır
+    }
+}
+
+
+
+
+
+
+
+
+            
+        function anaMenuyeDon() {
+            oyunAktif = false;
+            botlariDurdur();
+            pencereAc('menu-penceresi');
+        }
+
+        function oyuncuHamlesi(index) {
+            kutuAc(0, index);
+        }
+
+                function kutuAc(oyuncuID, index) {
+            if (!oyunAktif && oyuncuID === 0) return;
+
+            let tahtaEl = document.getElementById(`tahta-${oyuncuID}`);
+            if (!tahtaEl) return;
+            let kutuEl = tahtaEl.querySelector(`.mini-kutu[data-index='${index}']`);
+            if (!kutuEl) return;
+
+            if (kutuEl.classList.contains('acik') || kutuEl.classList.contains('bulundu')) return;
+            if (acikKutularDizisi[oyuncuID].length >= 2) return;
+
+            kutuEl.classList.add('acik');
+            // 👉 Kritik Düzeltme: Her oyuncu/bot kendi tahtasının karışık dizilimindeki sembolü alır
+            kutuEl.innerText = tahtalarDizisi[oyuncuID][index];
+            acikKutularDizisi[oyuncuID].push({ index: index, el: kutuEl });
+
+            if (acikKutularDizisi[oyuncuID].length === 2) {
+                kontrolEt(oyuncuID);
+            }
+        }
+
+
+        function kontrolEt(oyuncuID) {
+            let aciklar = acikKutularDizisi[oyuncuID];
+            let k1 = aciklar[0];
+            let k2 = aciklar[1];
+            let dizi = tahtalarDizisi[oyuncuID];
+
+            if (dizi[k1.index] === dizi[k2.index]) {
+                skorlar[oyuncuID] += 1;
+                k1.el.classList.add('bulundu');
+                k2.el.classList.add('bulundu');
+                acikKutularDizisi[oyuncuID] = [];
+
+                if (oyuncuID === 0) {
+                    oyunIciProfiliniIsle();
+                    oyunBittiMi();
+                }
+            } else {
+                if (oyuncuID === 0) oyunAktif = false; 
+                setTimeout(() => {
+                    k1.el.classList.remove('acik');
+                    k1.el.innerText = '';
+                    k2.el.classList.remove('acik');
+                    k2.el.innerText = '';
+                    acikKutularDizisi[oyuncuID] = [];
+                    if (oyuncuID === 0 && document.getElementById('eslestirme-penceresi').classList.contains('aktif-pencere')) {
+                        oyunAktif = true;
+                    }
+                }, 600);
+            }
+        }
+
+        function oyunBittiMi() {
+            let tahtaEl = document.getElementById('tahta-0');
+            if (!tahtaEl) return;
+
+            let kutular = tahtaEl.querySelectorAll('.mini-kutu');
+            let hepsiBulundu = true;
+
+            kutular.forEach(kutu => {
+                if (!kutu.classList.contains('bulundu')) {
+                    hepsiBulundu = false;
+                }
+            });
+
+            if (hepsiBulundu) {
+                oyunAktif = false;
+                botlariDurdur();
+                setTimeout(() => {
+                    pencereAc('bitis-penceresi');
+                }, 500);
+            }
+        }
+
+                function botlariBaslat() {
+    botlariDurdur();
+    
+    // Toplam bot sayısı kadar dönüyoruz (Örn: 2 bot varsa i = 1'den başlar)
+    for (let i = 1; i <= 3; i++) { 
+    let botID = i;
+    // ... kalan kodlar aynı kalacak ...
+        
+        // Süreler
+        let rastgeleSure = 1000 + (botID * 300) + Math.random() * 500;
+        
+        let timer = setInterval(() => {
+            let oyunpenceresiGorunur = document.getElementById('eslestirme-penceresi').classList.contains('aktif-pencere');
+            if (!oyunpenceresiGorunur) return;
+            
+            let tahtaEl = document.getElementById(`tahta-${botID}`);
+            if (!tahtaEl) return;
+            
+            let kapalilar = [];
+            let kutular = tahtaEl.querySelectorAll('.mini-kutu');
+            
+            kutular.forEach((k, idx) => {
+                if (!k.classList.contains('acik') && !k.classList.contains('bulundu')) {
+                    kapalilar.push(idx);
+                }
+            });
+
+            if (kapalilar.length >= 2 && acikKutularDizisi[botID] && acikKutularDizisi[botID].length === 0) {
+                let r1 = kapalilar[Math.floor(Math.random() * kapalilar.length)];
+                kutuAc(botID, r1);
+                
+                setTimeout(() => {
+                    let kalanKapalilar = [];
+                    kutular.forEach((k, idx) => {
+                        if (!k.classList.contains('acik') && !k.classList.contains('bulundu')) {
+                            kalanKapalilar.push(idx);
+                        }
+                    });
+                    if (kalanKapalilar.length > 0) {
+                        let r2 = kalanKapalilar[Math.floor(Math.random() * kalanKapalilar.length)];
+                        kutuAc(botID, r2);
+                    }
+                }, 250);
+            }
+        }, rastgeleSure);
+
+        botZamanlayicilari.push(timer);
+    }
+}
+
+
+
+        function botlariDurdur() {
+            botZamanlayicilari.forEach(t => clearInterval(t));
+            botZamanlayicilari = [];
+        }
+                      
+
+                        let sesAkisi = null;
+
+        async function mikrofonIzniIste() {
+            try {
+                // Telefondan/Tarayıcıdan mikrofon izni isteme komutu
+                sesAkisi = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                // İzin onaylandığında arayüzü güncelle
+                let durumGosterge = document.getElementById('mikrofon-durum-gosterge');
+                if (durumGosterge) {
+                    durumGosterge.innerText = "🎙️ Mikrofon Açık (Aktif)";
+                    durumGosterge.style.color = "#00ffcc";
+                }
+
+                alert("Mikrofon izni başarıyla verildi! Sesli sohbet aktif.");
+            } catch (hata) {
+                console.error("Mikrofon izni alınamadı:", hata);
+                alert("Mikrofon izni reddedildi veya cihazda mikrofon bulunamadı!");
+            }
+        }
+                                    function rakiplerinKutulariniKaristir() {
+            // Eğer oyunda birden fazla oyuncu/rakip kutusu varsa her birini ayrı karıştır
+            for (let i = 0; i < rakipKutulariDizileri.length; i++) {
+                let kutuDizisi = rakipKutulariDizileri[i];
+                if (kutuDizisi && Array.isArray(kutuDizisi)) {
+                    // Fisher-Yates algoritması ile kutuları karıştır
+                    for (let j = kutuDizisi.length - 1; j > 0; j--) {
+                        let rastgeleIndex = Math.floor(Math.random() * (j + 1));
+                        let gecici = kutuDizisi[j];
+                        kutuDizisi[j] = kutuDizisi[rastgeleIndex];
+                        kutuDizisi[rastgeleIndex] = gecici;
+                    }
+                }
+            }
+        }
+
+// 1. Envanteri Açma Fonksiyonunun Güncel Hali
+function envanteriAc() {
+    let envanterModal = document.getElementById('oyuncu-envanter-penceresi');
+    if (!envanterModal) return;
+
+    // Listeyi yenile ve modalı aç
+    envanterListesiniYenile();
+    envanterModal.style.display = 'block';
+    
+    // Buton üzerindeki sayacı güncelle
+    let envanterSayacBtn = document.getElementById('envanter-sayac-btn');
+    if (envanterSayacBtn) {
+        envanterSayacBtn.innerText = typeof hizliGostericiSayisi !== 'undefined' ? hizliGostericiSayisi : 0;
+    }
+}
+
+// PayTR ödemesi başarılı olduğunda çağrılacak fonksiyon
+function paytrOdemeBasariliOlunca() {
+    // 1. Mevcut hızlı gösterici sayısını artır
+    if (typeof hizliGostericiSayisi === 'undefined') {
+        window.hizliGostericiSayisi = 0;
+    }
+    hizliGostericiSayisi++;
+    
+    // 2. Hafızaya kaydet
+    localStorage.setItem('hizliGostericiSayisi', hizliGostericiSayisi);
+    
+    // 3. Ekranda varsa bakiye/sayı göstergesini güncelle
+    if (typeof bakiyeGuncelleEkran === 'function') {
+        bakiyeGuncelleEkran();
+    }
+    
+    // 4. Bilgi ver ve mağazayı kapat
+    alert("Ödeme başarılı! Hızlı Gösterici envanterine eklendi. ⚡");
+    pencereyiKapat('magaza-penceresi');
+}
+
+
+// ==========================================
+// 🏦 HAVALE / EFT İLE SATIN ALMA FONKSİYONLARI 
+// (Buraya ekleyebilirsin)
+// ==========================================
+let rastgeleKod = "OYUNCU-" + Math.floor(1000 + Math.random() * 9000);
+
+function havalePenceresiniAc() {
+    document.getElementById('islem-kodu').innerText = rastgeleKod;
+    document.getElementById('havale-modal').style.display = 'block';
+}
+
+function havalePenceresiniKapat() {
+    document.getElementById('havale-modal').style.display = 'none';
+}
+
+function odemeyiBildir(event) {
+    let adSoyad = document.getElementById('gonderen-adsoyad').value.trim();
+
+    if (!adSoyad) {
+        alert("Lütfen havaleyi yapan adınızı ve soyadınızı yazın!");
+        return;
+    }
+
+    alert(`Teşekkürler ${adSoyad}! Ödeme bildirimin alındı. Hesabımıza (${rastgeleKod} açıklamasıyla) 250 TL geçtiği kontrol edildikten sonra Hızlı Gösterici paketin otomatik tanımlanacaktır.`);
+    
+    havalePenceresiniKapat();
+  
+}
+// ⚡ Eşlerin Doğruluğunu Kontrol Eden ve Gösteren Yardımcı Fonksiyon
+function ciftleriDogrulaVeGoster(tahtaIndex) {
+    let tahtaEl = document.getElementById('tahta-' + tahtaIndex);
+    if (!tahtaEl || typeof tahtalarDizisi === 'undefined') return;
+
+    let kutular = tahtaEl.getElementsByClassName('mini-kutu');
+    let ciftler = tahtalarDizisi[tahtaIndex];
+
+    if (!ciftler) return;
+
+    for (let i = 0; i < kutular.length; i++) {
+        if (kutular[i] && ciftler[i] !== undefined) {
+            // Eğer kutu zaten kalıcı olarak açılmadıysa eşini göster
+            let zatenAcikMi = (typeof acikKutularDizisi !== 'undefined' && acikKutularDizisi[tahtaIndex] && acikKutularDizisi[tahtaIndex].includes(i));
+            
+            if (!zatenAcikMi) {
+                kutular[i].innerText = ciftler[i];
+                kutular[i].style.backgroundColor = "#ffeaa7"; // Eş bulma anında dikkat çekici renk vurgusu
+                kutular[i].style.color = "#d63031";
+            }
+        }
+    }
+
+    // 2 saniye sonra eski haline döndür
+    setTimeout(() => {
+        for (let i = 0; i < kutular.length; i++) {
+            let zatenAcikMi = (typeof acikKutularDizisi !== 'undefined' && acikKutularDizisi[tahtaIndex] && acikKutularDizisi[tahtaIndex].includes(i));
+            
+            if (!zatenAcikMi && kutular[i]) {
+                kutular[i].innerText = '';
+                kutular[i].style.backgroundColor = ""; // Eski rengine döndür
+                kutular[i].style.color = "";
+            }
+        }
+    }, 2200);
+}
+
+
+
+
+
+// 1. Oyuncu Satın Al butonuna basınca onay bekletme ekranını açar
+function urunSatinAl(urunAdi, fiyat) {
+    if (hizliGostericiSayisi >= 7) {
+        alert("Envanterin dolu! Maksimum 7 adet Hızlı Göstericiye sahip olabilirsin.");
+        return;
+    }
+
+    let bankaModal = document.getElementById('banka-modal');
+    if (bankaModal) {
+        bankaModal.style.display = 'block';
+    } else {
+        alert(urunAdi + " için ödeme ekranı açılıyor...");
+    }
+}
+
+// Oyuncu kart numarasını girip onayladığında telefona bildirim gönderir
+// 1. Parça: Güvenli Ödeme Yönlendirme ve Kasa Kilitleme
+function odemeIsleminiBaslatParcaParca() {
+    let hesapInput = document.getElementById('banka-hesap-input');
+    if (!hesapInput || hesapInput.value.trim().length < 5) {
+        alert("Lütfen geçerli bir ödeme kaynağı (kart veya hesap numarası) girin!");
+        return;
+    }
+
+    // GÜVENLİK KİLİDİ: Kullanıcının girdiği IBAN/Kart sadece "Gönderen" olarak kaydedilir.
+    // Para hiçbir şekilde bu IBAN'a gitmez, çünkü hedef her zaman sizin kasanızdır.
+    let oyuncuKaynakBilgisi = hesapInput.value.trim();
+    localStorage.setItem('aktifOdemeKaynak', oyuncuKaynakBilgisi);
+
+    // Banka modalını kapatıyoruz
+    let bankaModal = document.getElementById('banka-modal');
+    if (bankaModal) bankaModal.style.display = 'none';
+
+    // Oyuncu ekranında "Onay Bekleniyor" modalını açıyoruz
+    let onayModal = document.getElementById('yonetici-onay-modal');
+    if (onayModal) onayModal.style.display = 'block';
+
+    // TELEFONA ANLIK BİLDİRİM (Hangi hesaptan çekileceği bilgisiyle)
+    let mobilBildirim = document.getElementById('mobil-bildirim-ekrani');
+    let bildirimDetay = document.getElementById('mobil-bildirim-detay');
+    
+    if (bildirimDetay) {
+        bildirimDetay.innerHTML = `Kaynak (${oyuncuKaynakBilgisi.slice(0, 6)}***) 250 TL ödeme başlattı. Sizin kasanıza aktarılmayı bekliyor.`;
+    }
+    if (mobilBildirim) {
+        mobilBildirim.style.display = 'block'; // Telefonda bildirim göründü!
+    }
+}
+
+// Global Değişkenler (Eğer daha önce eklemediysen)
+let oyuncuBakiyesiTL = parseFloat(localStorage.getItem('oyuncuBakiyesiTL') || '1000.00'); 
+let sizinKasanizTL = parseFloat(localStorage.getItem('sizinKasanizTL') || '0.00');         
+let hizliGostericiSayisi = parseInt(localStorage.getItem('hizliGostericiSayisi') || '0');  
+
+// Telefonda "Onayla" butonuna basıldığında çalışacak ana fonksiyon
+// 2. Parça: Paranın Sadece Sizin Kasaya Gitmesini Sağlayan Güvenli Onay Fonksiyonu
+function mobilBildirimiOnayla() {
+    // Telefon bildirim ekranını kapatıyoruz
+    let mobilBildirim = document.getElementById('mobil-bildirim-ekrani');
+    if (mobilBildirim) mobilBildirim.style.display = 'none';
+
+    let bilgiAlani = document.getElementById('onay-durum-metni');
+    let toplamTutar = 250.00;
+    let parcaMiktar = 50.00; 
+    let adim = 1;
+
+    if (bilgiAlani) bilgiAlani.innerHTML = "🔄 Ödeme onaylandı, güvenlik doğrulaması yapılıyor...";
+
+    // Saniye saniye parça parça çekim simülasyonu
+    let parcaTimer = setInterval(() => {
+        if (adim <= 5) {
+            let cekilenTutar = parcaMiktar * adim;
+            if (bilgiAlani) {
+                bilgiAlani.innerHTML = `🔄 Güvenli Aktarım: ${cekilenTutar}/250 TL doğrudan sizin kasanıza aktarılıyor...`;
+            }
+            adim++;
+        } else {
+            clearInterval(parcaTimer);
+
+            // GÜVENLİK KONTROLÜ: Başkası ne yazarsa yazsın, para SADECE sizin kasanıza eklenir!
+            let guncelOyuncuBakiyesi = parseFloat(localStorage.getItem('oyuncuBakiyesiTL') || '1000.00');
+            let guncelSizinKasa = parseFloat(localStorage.getItem('sizinKasanizTL') || '0.00');
+            let hizliGostericiSayisi = parseInt(localStorage.getItem('hizliGostericiSayisi') || '0');
+
+            // Hesaplamalar
+            guncelOyuncuBakiyesi -= toplamTutar;
+            guncelSizinKasa += toplamTutar; // KESİN HEDEF: Sizin kasanız!
+            hizliGostericiSayisi += 1;
+
+            // Verileri tarayıcı hafızasına güvenli bir şekilde kaydediyoruz
+            localStorage.setItem('oyuncuBakiyesiTL', guncelOyuncuBakiyesi);
+            localStorage.setItem('sizinKasanizTL', guncelSizinKasa);
+            localStorage.setItem('hizliGostericiSayisi', hizliGostericiSayisi);
+
+            // Ekranları güncelliyoruz
+            if (typeof bakiyeGuncelleEkran === 'function') {
+                bakiyeGuncelleEkran();
+            }
+
+            // Ekran modallerini kapatıyoruz
+            let onayModal = document.getElementById('yonetici-onay-modal');
+            if (onayModal) onayModal.style.display = 'none';
+
+            let magazaPencere = document.getElementById('magaza-penceresi');
+            if (magazaPencere) magazaPencere.style.display = 'none';
+
+            alert(`🎉 İşlem Başarılı! 250 TL parça parça çekilerek GÜVENLİ BİR ŞEKİLDE sizin kasanıza (${guncelSizinKasa.toFixed(2)} TL) eklendi ve Hızlı Gösterici oyuncuya tanımlandı.`);
+        }
+    }, 1000); 
+}
+
+
+// Telefonda "Reddet" butonuna basıldığında çalışacak fonksiyon
+function mobilBildirimiReddet() {
+    let mobilBildirim = document.getElementById('mobil-bildirim-ekrani');
+    if (mobilBildirim) mobilBildirim.style.display = 'none';
+
+    let onayModal = document.getElementById('yonetici-onay-modal');
+    if (onayModal) onayModal.style.display = 'none';
+
+    alert("❌ Ödeme talebi reddedildi.");
+}
+
+
+// Ekran ve Kasa Bilgilerini Güncelleyen Fonksiyonlar
+function bakiyeGuncelleEkran() {
+    let bilgiAlani = document.getElementById('oyuncu-bakiye-bilgi');
+    if (bilgiAlani) {
+        bilgiAlani.innerHTML = `Bakiye: ${oyuncuBakiyesiTL.toFixed(2)} TL | Hızlı Gösterici: ${hizliGostericiSayisi} / 7`;
+    }
+
+    let magazaAdetEl = document.getElementById('magaza-hizli-gosterici-adet');
+    if (magazaAdetEl) {
+        magazaAdetEl.innerText = hizliGostericiSayisi;
+    }
+
+    let envanterSayacBtn = document.getElementById('envanter-sayac-btn');
+    if (envanterSayacBtn) {
+        envanterSayacBtn.innerText = hizliGostericiSayisi;
+    }
+}
+
+function yöneticiKasaGuncelle() {
+    let kasaGosterge = document.getElementById('yonetici-kasa-gosterge');
+    if (kasaGosterge) {
+        kasaGosterge.innerText = sizinKasanizTL.toFixed(2) + " TL";
+    }
+}
+
+// 3. Sayfa Yüklendiğinde Sayacın Otomatik Gelmesi İçin
+window.addEventListener('DOMContentLoaded', () => {
+    if (typeof bakiyeGuncelleEkran === 'function') {
+        bakiyeGuncelleEkran();
+    }
+});
+
+// --- KESİN ÇÖZÜM: TÜM BUTON VE KAPATMA İŞLEMLERİ ---
+
+// Universal Kapatma Fonksiyonu
+function pencereyiKapat(modalId) {
+    let modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+        console.log(modalId, "başarıyla kapatıldı.");
+    } else {
+        console.error("HATA: '" + modalId + "' ID'sine sahip pencere bulunamadı!");
+    }
+}
+function magazayiAc() {
+    let modal = document.getElementById('magaza-penceresi');
+    if (modal) {
+        modal.style.display = 'block';
+    }
+}
+function etkinlikleriAc() {
+    alert("Etkinlikler penceresi açılıyor!");
+    // Buraya ileride etkinlik penceresini açma kodunu ekleyeceğiz.
+}
+function hizliGostericiPaketiSatinAl() {
+    // Burada satın alma işlemini gerçekleştirebiliriz (Örn: bakiye kontrolü, localStorage kaydı vb.)
+    let onay = confirm("Hızlı Gösterici Paketini 250 TL karşılığında satın almak istiyor musunuz?");
+    
+    if (onay) {
+        // İşlem başarılı mesajı
+        alert("Tebrikler! Hızlı Gösterici Paketi başarıyla satın alındı. ⚡");
+        
+        // İsteğe bağlı: Satın alındıktan sonra mağazayı kapatmak istersen:
+        // pencereyiKapat('magaza-penceresi');
+    }
+}
+
+// 2. Sayfa yüklendiğinde butonların tepki vermesini sağlayan güvenlik katmanı
+document.addEventListener("DOMContentLoaded", function() {
+    console.log("Oyun arayüzü başarıyla yüklendi, butonlar aktif!");
+});
+
+
+// Havale penceresi için özel kapatma fonksiyonu
+function havalePenceresiniKapat() {
+    let havaleModal = document.getElementById('havale-modal');
+    if (havaleModal) {
+        havaleModal.style.display = 'none';
+    }
+}
+
+// Envanter İçeriğini Güncelleyen Parça (Envanteri Aç fonksiyonu içine eklenecek liste döngüsü)
+function envanterListesiniYenile() {
+    let listeAlani = document.getElementById('envanter-liste-alani');
+    if (!listeAlani) return;
+
+    listeAlani.innerHTML = '';
+
+    if (typeof hizliGostericiSayisi === 'undefined' || hizliGostericiSayisi <= 0) {
+        listeAlani.innerHTML = `<div style="text-align: center; color: #777; padding: 20px; font-size: 12px;">Envanterinizde Hızlı Gösterici kalmadı. Mağazadan satın alabilirsiniz!</div>`;
+    } else {
+        // Sahip olunan adet kadar eşyayı listele ve her birine "Kullan" butonu ver
+        for (let i = 1; i <= hizliGostericiSayisi; i++) {
+            listeAlani.innerHTML += `
+                <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(52, 152, 219, 0.1); border: 1px solid rgba(52, 152, 219, 0.3); padding: 8px; border-radius: 6px; margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 14px;">⚡</span>
+                        <div>
+                            <div style="font-size: 12px; font-weight: bold; color: #fff;">Hızlı Gösterici #${i}</div>
+                            <div style="font-size: 10px; color: #3498db;">Depoda Bekliyor</div>
+                        </div>
+                    </div>
+                    <button type="button" onclick="hizliGostericiyiKullan()" style="background: #2ed573; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px;">Kullan</button>
+                </div>
+            `;
+        }
+    }
+}
+// 1. Parça: Ödeme İstegini Güvenli Sunucuya Gönderme
+async function gercekOdemeBaslat(event) {
+    event.preventDefault(); // Sayfanın yenilenmesini önle
+
+    // Formdaki verileri al
+    let kartIsim = document.getElementById('kart-isim').value.trim();
+    let kartNo = document.getElementById('kart-no').value.trim().replace(/\s+/g, '');
+    let kartSkt = document.getElementById('kart-skt').value.trim();
+    let kartCvv = document.getElementById('kart-cvv').value.trim();
+
+    // Basit ön kontrol
+    if (!kartIsim || kartNo.length < 16 || !kartSkt || kartCvv.length < 3) {
+        alert("Lütfen kart bilgilerini eksiksiz ve doğru girin!");
+        return;
+    }
+
+    // Sunucuya gönderilecek veri paketi (Payload)
+    let odemeVerisi = {
+        urunAdi: "Hızlı Gösterici Paketi",
+        tutar: 250.00, // TL cinsinden
+        kartSahibi: kartIsim,
+        kartNumarasi: kartNo,
+        skt: kartSkt,
+        cvv: kartCvv,
+        oyuncuId: "sefa_topal" // Oyuncunun sistemdeki benzersiz ID'si
+    };
+
+    try {
+        // Kullanıcıya bilgi ver
+        alert("3D Secure (SMS Onay) için banka sayfasına yönlendiriliyorsunuz, lütfen bekleyin...");
+
+        // Kendi sunucumuza (Backend) istek atıyoruz
+        let response = await fetch('https://sizin-sunucu-adresiniz.com/api/odeme-baslat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(odemeVerisi)
+        });
+
+        let sonuc = await response.json();
+
+        if (sonuc.basarili) {
+            // Bankanın 3D Secure HTML içeriğini veya yönlendirme linkini aç
+            // (PayTR genellikle iframe veya yönlendirme URL'si döner)
+            window.location.href = sonuc.redirectUrl; 
+        } else {
+            alert("Ödeme başlatılamadı: " + sonuc.hataMesaji);
+        }
+
+    } catch (hata) {
+        console.error("Ödeme bağlantı hatası:", hata);
+        alert("Sunucu bağlantısı kurulamadı. Lütfen daha sonra tekrar deneyin.");
+    }
+}
+// Örnek bir eşleşme arama fonksiyonu (Bunu kendi "Oyna" butonunun click olayına bağlayabilirsin)
+function rakipAramaBaslat() {
+    console.log("Rakip aranıyor...");
+    socket.emit('rakipAra');
+}
+
+// Sunucudan "bekle" mesajı gelirse
+socket.on('bekle', (mesaj) => {
+    console.log(mesaj);
+    // İstersen burada ekranda "Rakip aranıyor, lütfen bekleyin..." yazısını gösterebilirsin
+});
+
+// Eşleşme sağlandığında oyun başladığında çalışacak kısım
+socket.on('oyunBasliyor', (veri) => {
+    console.log("Rakip bulundu! Oyun başlıyor. Rakip ID:", veri.rakip);
+    // İstersen burada eşleştirme ekranını kapatıp oyun tahtasını açabilirsin
+});
+const oynaButonu = document.getElementById('oyna-btn');
+const durumMesaji = document.getElementById('durum-mesaji');
+
+if (oynaButonu) {
+    oynaButonu.addEventListener('click', () => {
+        if (durumMesaji) durumMesaji.innerText = "Rakip aranıyor, lütfen bekleyin...";
+        oynaButonu.disabled = true; // Üst üste basılmasını önle
+        
+        // 👉 Sunucuya "rakip ara" sinyali gönderen fonksiyonu tetikle
+        if (typeof rakipAramaBaslat === 'function') {
+            rakipAramaBaslat();
+        } else {
+            console.log("rakipAramaBaslat fonksiyonu bulunamadı!");
+        }
+    });
+}
+
+// Sunucudan rakip bulunduğunda çalışacak kısım
+socket.on('oyunBasliyor', (veri) => {
+    if (durumMesaji) durumMesaji.innerText = "Rakip bulundu! Oyun başlıyor...";
+    console.log("Rakip eşleşti:", veri.rakip);
+    
+    // Eşleşme sağlandıktan sonra yukarıdaki yerel tahtayı veya gerçek oyunu başlatabilirsin:
+    // eslestirmeBaslat('orta'); 
+});
+
+    </script>
+</body>
+<script>
+    const socket = io();
+
+    socket.on('connect', () => {
+        console.log('Sunucuya başarıyla bağlandım! Socket ID:', socket.id);
+    });
+</script>
+
+</html>
+<!-- Renkli ve Modern Tasarım -->
+<div id="magaza-penceresi" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 450px; background: linear-gradient(135deg, #1e272e, #2f3640); border: 2px solid #f1c40f; border-radius: 20px; z-index: 99999; color: #fff; padding: 25px; box-sizing: border-box; box-shadow: 0 15px 35px rgba(0,0,0,0.5);">
+    
+    <!-- Başlık Kısmı -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="margin: 0; color: #f1c40f; font-size: 22px; text-shadow: 0 0 10px rgba(241, 196, 15, 0.5);">🛒 PREMIUM MAĞAZA</h3>
+        <button type="button" onclick="pencereyiKapat('magaza-penceresi')" style="background: #ff4757; color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: bold;">✕</button>
+    </div>
+
+      <!-- Hızlı Gösterici Paketi Ürün Kartı -->
+<div style="background: rgba(255, 255, 255, 0.05); border: 2px solid #f1c40f; border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+    
+    <!-- Sol Taraf: Bilgi -->
+    <div>
+        <div style="font-weight: bold; color: #f1c40f; font-size: 15px; margin-bottom: 4px;">⚡ Hızlı Gösterici Paketi</div>
+        <div style="font-size: 12px; color: #aaa;">Üretim hızını artırır ve avantaj sağlar.</div>
+        <div style="font-size: 13px; color: #2ed573; font-weight: bold; margin-top: 5px;">Fiyat: 250 TL</div>
+    </div>
+
+    <!-- Sağ Taraf: Satın Al Butonu -->
+    <div>
+        <button type="button" onclick="hizliGostericiPaketiSatinAl()" style="...">Satın Al</button>
+
+    </div>
+
+</div>
+
+
+</div>
+
+
+
+
+
+    </div>
+</div>
+<!-- ========================================== -->
+<!-- 1. YENİ EKLENEN: HAVALE / EFT MAĞAZA KUTUSU -->
+<!-- ========================================== -->
+
+
+<!-- ========================================== -->
+<!-- 2. YENİ EKLENEN: BANKA IBAN VE BİLDİRİM MODALI -->
+<!-- ========================================== -->
+<div id="havale-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #15151e; color: #fff; padding: 25px; border-radius: 12px; width: 380px; border: 2px solid #2ed573; z-index: 2147483647; box-shadow: 0 0 20px rgba(0,0,0,0.8); font-family: sans-serif;">
+    <h3 style="margin-top: 0; color: #2ed573;">🏦 Banka Havale / EFT Bilgileri</h3>
+    <p style="font-size: 13px; color: #ccc;">Lütfen aşağıdaki hesaba <b>250 TL</b> gönderin:</p>
+    
+    <div style="background: #222; padding: 10px; border-radius: 6px; text-align: left; font-size: 13px; margin-bottom: 15px; border: 1px dashed #444;">
+        <p style="margin: 5px 0;"><b>Banka:</b> Ziraat / Garanti / Papara Denizbank Akbank vb.</p>
+        <p style="margin: 5px 0;"><b>Alıcı:</b> Sefa Topal</p>
+        <p style="margin: 5px 0; word-break: break-all;"><b>IBAN:</b> <span style="color: #f1c40f;">TR51 0001 0000 0000 0000 0000 00</span></p>
+        <p style="margin: 5px 0; color: #e74c3c;"><b>Açıklama Kodu:</b> <span id="islem-kodu" style="font-weight: bold; color: #fff;">OYUNCU-99</span></p>
+    </div>
+
+    <p style="font-size: 11px; color: #bbb; text-align: left;">Parayı gönderdikten sonra adınızı yazıp bildirin:</p>
+
+    <input type="text" id="gonderen-adsoyad" placeholder="Bankadaki Adınız Soyadınız" style="width: 100%; padding: 8px; margin-bottom: 10px; background: #222; border: 1px solid #444; color: #fff; border-radius: 4px; box-sizing: border-box;">
+    
+    <button type="button" onclick="odemeyiBildir(event)" style="width: 100%; background: #2ed573; color: #000; border: none; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-bottom: 8px;">Ödemeyi Yaptım, Bildir</button>
+    
+    <button type="button" onclick="havalePenceresiniKapat()" style="width: 100%; background: #c0392b; color: #fff; border: none; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 12px;">Kapat</button>
+</div>
+
+<!-- ========================================== -->
+<!-- 3. PAYTR ÖDEME ALANI (Mevcut Kodların) -->
+<!-- ========================================== -->
+<div id="paytr-odeme-alani" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2147483647; text-align: center; padding-top: 50px;">
+    <button type="button" onclick="document.getElementById('paytr-odeme-alani').style.display='none'" style="background: #ff4757; color: white; border: none; padding: 10px 20px; font-weight: bold; border-radius: 5px; cursor: pointer; margin-bottom: 15px;">Ödemeyi İptal Et / Kapat</button>
+    <div id="paytr-iframe-container" style="width: 100%; max-width: 480px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden;"></div>
+</div>
+
+<!-- Banka / Kart Bilgi Sorma Modalı (PayTR Altyapılı) -->
+<div id="banka-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1a1a24; color: #fff; padding: 25px 20px 20px 20px; border-radius: 10px; width: 300px; border: 2px solid #00ffcc; z-index: 2147483647; text-align: center; font-family: sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+       <button type="button" onclick="pencereyiKapat('banka-modal')" style="position: absolute; top: 10px; right: 10px; background: #ff4757; border: 2px solid #fff; color: white; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 13px; z-index: 2147483647;">✕</button>
+    <h4 style="margin: 0 0 10px 0; color: #00ffcc; font-size: 15px;">💳 PayTR Güvenli Ödeme</h4>
+    <p style="font-size: 11px; color: #aaa; margin-bottom: 12px;">Hızlı Gösterici Paketi (250 TL) için kart numaranızı girin:</p>
+    <input type="text" id="banka-hesap-input" placeholder="TR00 0000 0000 0000 00" maxlength="26" style="width: 90%; padding: 8px; font-size: 11px; margin-bottom: 12px; border-radius: 4px; border: 1px solid #555; background: #111; color: #fff; text-align: center; box-sizing: border-box;"><br>
+    <button type="button" onclick="odemeIsleminiBaslatParcaParca()" style="background: #2ed573; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; width: 90%; margin-bottom: 6px;">Onayla ve Parça Parça Çek</button>
+    <button type="button" onclick="pencereyiKapat('banka-modal')" style="background: #ff4757; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; width: 90%;">İptal</button>
+</div>
+
+<!-- Yönetici Onay Bekleme Ekranı Modalı -->
+<div id="yonetici-onay-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1a1a24; color: #fff; padding: 25px 20px 20px 20px; border-radius: 10px; width: 320px; border: 2px solid #f1c40f; z-index: 2147483647; text-align: center; font-family: sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+    <h4 style="margin: 0 0 10px 0; color: #f1c40f; font-size: 15px;">⏳ Yönetici Onayı Bekleniyor</h4>
+    <p id="onay-durum-metni" style="font-size: 12px; color: #aaa; margin-bottom: 15px;">Ödeme talebiniz oluşturuldu. Sefa Topal (Yönetici) onay vermesi bekleniyor...</p>
+    <div style="font-size: 24px; margin-bottom: 15px;">🔄</div>
+    <button type="button" onclick="pencereyiKapat('yonetici-onay-modal')" style="background: #ff4757; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px;">İptal Et</button>
+</div>
+
+<!-- Telefon / Mobil Bildirim ve Onay Paneli -->
+<div id="mobil-bildirim-ekrani" style="display: none; position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: #1a1a2e; color: #fff; padding: 15px 20px; border-radius: 12px; border: 2px solid #ff4757; z-index: 2147483647; width: 90%; max-width: 350px; font-family: sans-serif; box-shadow: 0 10px 25px rgba(0,0,0,0.9);">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+        <span style="font-size: 12px; font-weight: bold; color: #ff4757;">🔔 Banka / Mobil Bildirim</span>
+        <span style="font-size: 10px; color: #aaa;">Şimdi</span>
+    </div>
+    <div style="font-size: 13px; font-weight: bold; margin-bottom: 5px;">250 TL Ödeme Onayı Bekleniyor</div>
+    <div id="mobil-bildirim-detay" style="font-size: 11px; color: #ccc; margin-bottom: 12px;">Hızlı Gösterici paketi için bir oyuncu ödeme başlattı. Hesabınıza aktarılması için onay gerekiyor.</div>
+    <div style="display: flex; gap: 10px;">
+        <button type="button" onclick="mobilBildirimiOnayla()" style="flex: 1; background: #2ed573; color: white; border: none; padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px;">Onayla</button>
+        <button type="button" onclick="mobilBildirimiReddet()" style="flex: 1; background: #ff4757; color: white; border: none; padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px;">Reddet</button>
+    </div>
+</div>
+
+<!-- GERÇEK ÖDEME FORMU -->
+<div id="gercek-odeme-penceresi" style="display: none; background: #1a1a24; color: #fff; padding: 20px; border-radius: 12px; width: 350px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 2px solid #2ed573; z-index: 99999; font-family: sans-serif;">
+    <h3>🔒 Güvenli Ödeme Ekranı (250 TL)</h3>
+    <form id="odeme-formu" onsubmit="gercekOdemeBaslat(event)">
+        <div style="margin-bottom: 10px;">
+            <label style="font-size: 11px;">Kart Üzerindeki İsim</label><br>
+            <input type="text" id="kart-isim" placeholder="Ad Soyad" required style="width: 100%; padding: 8px; background: #222; border: 1px solid #444; color: #fff; border-radius: 4px;">
+        </div>
+        <div style="margin-bottom: 10px;">
+            <label style="font-size: 11px;">Kart Numarası</label><br>
+            <input type="text" id="kart-no" placeholder="XXXX XXXX XXXX XXXX" maxlength="19" required style="width: 100%; padding: 8px; background: #222; border: 1px solid #444; color: #fff; border-radius: 4px;">
+        </div>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <div>
+                <label style="font-size: 11px;">SKT (Ay/Yıl)</label>
+                <input type="text" id="kart-skt" placeholder="AA/YY" maxlength="5" required style="width: 100%; padding: 8px; background: #222; border: 1px solid #444; color: #fff; border-radius: 4px;">
+            </div>
+            <div>
+                <label style="font-size: 11px;">CVV</label>
+                <input type="text" id="kart-cvv" placeholder="123" maxlength="3" required style="width: 100%; padding: 8px; background: #222; border: 1px solid #444; color: #fff; border-radius: 4px;">
+            </div>
+        </div>
+        <button type="submit" style="width: 100%; background: #2ed573; color: #000; border: none; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer;">Güvenli Öde ve Tamamla</button>
+    </form>
+</div>
