@@ -1,0 +1,64 @@
+// Paramanya Temel Mantık Simülasyonu
+
+// 1. Harita Kareleri (Basit bir harita)
+const harita = [
+    { isim: "Başlangıç", fiyat: 0 },
+    { isim: "İstanbul", fiyat: 200 },
+    { isim: "Ankara", fiyat: 180 },
+    { isim: "İzmir", fiyat: 150 },
+    { isim: "Hapis", fiyat: 0 },
+    { isim: "Antalya", fiyat: 120 },
+    { isim: "Bursa", fiyat: 100 }
+];
+
+// 2. Oyuncu Tanımlamaları
+let oyuncular = [
+    { id: 1, isim: "Atesyolcusu", para: 1000, konum: 0 },
+    { id: 2, isim: "Rakip", para: 1000, konum: 0 }
+];
+
+let aktifOyuncuIndeksi = 0;
+
+// 3. Zar Atma Fonksiyonu
+function zarAt() {
+    return Math.floor(Math.random() * 6) + 1;
+}
+
+// 4. Tur Döndürme Fonksiyonu
+function turOyna() {
+    let oyuncu = oyuncular[aktifOyuncuIndeksi];
+    console.log(`\n--- Sıra ${oyuncu.isim} oyuncusunda ---`);
+    console.log(`Mevcut Para: ${oyuncu.para} TL`);
+
+    // Zarları at
+    let zar1 = zarAt();
+    let zar2 = zarAt();
+    let toplamZar = zar1 + zar2;
+    console.log(`Zarlar atıldı: ${zar1} + ${zar2} = ${toplamZar} ilerleniyor.`);
+
+    // Konumu güncelle (Harita sınırını aşınca başa dönsün)
+    oyuncu.konum = (oyuncu.konum + toplamZar) % harita.length;
+    let basilanKare = harita[oyuncu.konum];
+    console.log(`Bastığı Kare: ${basilanKare.isim}`);
+
+    // Kare mantığı işlemleri
+    if (basilanKare.fiyat > 0) {
+        if (oyuncu.para >= basilanKare.fiyat) {
+            oyuncu.para -= basilanKare.fiyat;
+            console.log(`[SATIN ALMA] ${basilanKare.isim} ${basilanKare.fiyat} TL'ye satın alındı! Kalan para: ${oyuncu.para} TL`);
+        } else {
+            console.log(`[YETERSİZ BAKİYE] ${basilanKare.isim} alınamadı, para yetersiz.`);
+        }
+    } else if (basilanKare.isim === "Başlangıç") {
+        oyuncu.para += 200;
+        console.log(`[BAŞLANGIÇ] Başlangıçtan geçildi, +200 TL alındı!`);
+    }
+
+    // Sırayı diğer oyuncuya geçir
+    aktifOyuncuIndeksi = (aktifOyuncuIndeksi + 1) % oyuncular.length;
+}
+
+// Oyunu 5 tur boyunca simüle edelim
+for (let i = 0; i < 5; i++) {
+    turOyna();
+}
