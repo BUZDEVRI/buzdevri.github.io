@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oyun İndir</title>
+    <style>
+        .indir-container {
+            text-align: center;
+            margin-top: 50px;
+            font-family: sans-serif;
+        }
+        .apk-btn {
+            display: inline-block;
+            background-color: #27ae60;
+            color: white;
+            padding: 16px 32px;
+            font-size: 18px;
+            font-weight: bold;
+            text-decoration: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+        .apk-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+<div class="indir-container">
+    <h2>🎮 Kart Eşleştirme Oyunu</h2>
+    <p>Android cihazınıza kurup arkadaşlarınızla oynayabilirsiniz.</p>
+    
+    <!-- DOĞRUDAN APK İNDİRME LINKI -->
+    <a href="oyun.apk" download="SekerOyunu.apk" class="apk-btn">
+        📲 DOĞRUDAN APK İNDİR (v1.0.0)
+    </a>
+</div>
+
+</body>
+</html>
