@@ -491,23 +491,19 @@
     <div class="savas-alani"></div>
 </div>
     <script>
-      // OYUNUN UYGULAMA İÇİNDEKİ SÜRÜMÜ
+     // OYUNUN UYGULAMA İÇİNDEKİ SÜRÜMÜ
 const MEVCUT_VERSIYON = "1.0.0";
 const VERSION_KONTROL_URL = "https://siteniz.com/version.json"; 
 
 async function apkGuncellemeKontrol() {
     try {
-        // Önbelleğe (cache) takılmaması için zaman damgası t eklenir
         const res = await fetch(VERSION_KONTROL_URL + "?t=" + Date.now());
         if (!res.ok) return;
         
         const data = await res.json();
-
-        // Eğer sitedeki versiyon daha yüksekse
         if (data.version && data.version !== MEVCUT_VERSIYON) {
             const onay = confirm(`🎉 Yeni Güncelleme Bulundu (v${data.version})!\n\n${data.notes || ''}\n\nYeni APK'yı indirmek ister misiniz?`);
             if (onay) {
-                // Tıklandığı an tarayıcı üzerinden doğrudan APK indirmesi başlar
                 window.location.href = data.downloadUrl;
             }
         }
@@ -516,437 +512,321 @@ async function apkGuncellemeKontrol() {
     }
 }
 
-// Oyun açılır açılmaz kontrol et
 window.addEventListener('DOMContentLoaded', apkGuncellemeKontrol);
-    // GENEL OYUN DEĞİŞKENLERİ
-    let peer = null;
-    let myPeerId = null;
-    let connectedPeers = [];
-    let isHost = false;
-    let myPlayerIndex = 0;
-    let myPlayerName = "Oyuncu";
-    let localAudioStream = null;
-    let mikrofonAcik = false;
-    let audioCtx = null;
 
-    // YENİ PAKET VE KART TEMALARI
-    window.PAKETLER = {
-        meyveler: { icerik: ['🍎', '🍌', '🍇', '🍓', '🍒', '🍍', '🥝', '🍉'] },
-        tatlilar: { icerik: ['🧁', '🍩', '🎂', '🍫', '🍦', '🍪', '🍰', '🍭'] },
-        hayvanlar: { icerik: ['🦁', '🦊', '🐼', '🐨', '🐸', '🐰', '🐯', '🐵'] }
-    };
-   // Mağaza Alt Kategori Açma
+// GENEL OYUN DEĞİŞKENLERİ
+let peer = null;
+let myPeerId = null;
+let connectedPeers = [];
+let isHost = false;
+let myPlayerIndex = 0;
+let myPlayerName = "Oyuncu";
+let localAudioStream = null;
+let mikrofonAcik = false;
+let audioCtx = null;
+
+// PAKET VE KART TEMALARI
+window.PAKETLER = {
+    meyveler: { icerik: ['🍎', '🍌', '🍇', '🍓', '🍒', '🍍', '🥝', '🍉'] },
+    tatlilar: { icerik: ['🧁', '🍩', '🎂', '🍫', '🍦', '🍪', '🍰', '🍭'] },
+    hayvanlar: { icerik: ['🦁', '🦊', '🐼', '🐨', '🐸', '🐰', '🐯', '🐵'] }
+};
+
+// OYUNCU VERİSİ
+window.oyuncuVerisi = {
+    isim: "Oyuncu",
+    bakiye: 0,
+    resim: "",
+    aktifSkin: "meyveler",
+    sahipOlunanlar: ["meyveler"]
+};
+
+// VERİLERİ KAYDET / YÜKLE
+window.verileriKaydet = function() {
+    localStorage.setItem('seker_oyuncu_verisi', JSON.stringify(window.oyuncuVerisi));
+    const bakiyeEl = document.getElementById('kullanici-bakiye');
+    if (bakiyeEl) bakiyeEl.innerText = window.oyuncuVerisi.bakiye;
+};
+        function profilYukle() {
+    const kayitliVeri = localStorage.getItem('seker_oyuncu_verisi');
+    if (kayitliVeri) {
+        window.oyuncuVerisi = JSON.parse(kayitliVeri);
+        myPlayerName = window.oyuncuVerisi.isim || "Oyuncu";
+    }
+    
+    const kayitliResim = localStorage.getItem('seker_oyuncu_resim') || window.oyuncuVerisi.resim;
+    const kayitliIsim = localStorage.getItem('seker_oyuncu_isim') || window.oyuncuVerisi.isim;
+
+    if (kayitliResim) {
+        window.oyuncuVerisi.resim = kayitliResim;
+        const el = document.getElementById('profil-resim-onizleme');
+        if (el) el.src = kayitliResim;
+    }
+    if (kayitliIsim) {
+        window.oyuncuVerisi.isim = kayitliIsim;
+        myPlayerName = kayitliIsim;
+        const inputEl = document.getElementById('profil-isim-input');
+        if (inputEl) inputEl.value = kayitliIsim;
+    }
+
+    window.verileriKaydet();
+}
+
+// SES EFEKTLERİ (WEB AUDIO API)
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+}
+
+window.SESLER = {
+    eslesmeHata: function() {
+        initAudio();
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.25);
+    },
+    zafer: function() {
+        initAudio();
+        if (!audioCtx) return;
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.12);
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime + idx * 0.12);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + idx * 0.12 + 0.3);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(audioCtx.currentTime + idx * 0.12);
+            osc.stop(audioCtx.currentTime + idx * 0.12 + 0.3);
+        });
+    }
+};
+    // EKRAN VE SEKMELERİ YÖNETME
+window.ekranGoster = function(ekranId) {
+    const paneller = [
+        'ana-lobi', 'oyunlarim-ekrani', 'magaza-ekrani', 
+        'etkinlikler-ekrani', 'download-ekrani', 'partner-ekrani', 
+        'iletisim-ekrani', 'arkadaslar-ekrani', 'oda-ici-ekran', 
+        'misafir-bekleme-ekrani', 'game-screen'
+    ];
+    paneller.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = (id === ekranId) ? (id === 'game-screen' ? 'flex' : 'block') : 'none';
+    });
+};
+
+window.sekmeDegistir = function(ekranId, btnEl) {
+    window.ekranGoster(ekranId);
+    if (btnEl) {
+        const btns = document.querySelectorAll('.nav-btn');
+        btns.forEach(b => b.classList.remove('active'));
+        btnEl.classList.add('active');
+    }
+};
+
 window.magazaKategoriAc = function(kategoriId) {
     document.getElementById('guc-kategori').style.display = (kategoriId === 'guc-kategori') ? 'flex' : 'none';
     document.getElementById('tema-kategori').style.display = (kategoriId === 'tema-kategori') ? 'flex' : 'none';
 };
-    // OYUNCU VERİSİ
-    window.oyuncuVerisi = {
-        isim: "Oyuncu",
-        bakiye: 0,
-        resim: "",
-        aktifSkin: "meyveler",
-        sahipOlunanlar: ["meyveler"]
-    };
 
-    // VERİLERİ KAYDET/YÜKLE
-    window.verileriKaydet = function() {
-        localStorage.setItem('seker_oyuncu_verisi', JSON.stringify(window.oyuncuVerisi));
-        const bakiyeEl = document.getElementById('kullanici-bakiye');
-        if (bakiyeEl) bakiyeEl.innerText = window.oyuncuVerisi.bakiye;
-    };
+// OYUNU BAŞLATMA VE KART DAĞITIM FONKSİYONU
+window.oyunuBaslatMeyveleriDagit = function(toplamOyuncu = 4) {
+    window.ekranGoster('game-screen');
+    const savasAlani = document.querySelector('.savas-alani') || document.getElementById('game-screen');
+    if (!savasAlani) return;
 
-    function profilYukle() {
-        const kayitliVeri = localStorage.getItem('seker_oyuncu_verisi');
-        if (kayitliVeri) {
-            window.oyuncuVerisi = JSON.parse(kayitliVeri);
-            myPlayerName = window.oyuncuVerisi.isim || "Oyuncu";
-        }
+    savasAlani.innerHTML = ''; // Temizle
+
+    const aktifSkin = window.oyuncuVerisi.aktifSkin || 'meyveler';
+    const aktifPaket = window.PAKETLER[aktifSkin] || window.PAKETLER['meyveler'];
+
+    for (let i = 0; i < toplamOyuncu; i++) {
+        const oyuncuKutusu = document.createElement('div');
+        oyuncuKutusu.className = 'oyuncu-kutusu';
         
-        const kayitliResim = localStorage.getItem('seker_oyuncu_resim') || window.oyuncuVerisi.resim;
-        const kayitliIsim = localStorage.getItem('seker_oyuncu_isim') || window.oyuncuVerisi.isim;
+        const isMe = (i === myPlayerIndex);
+        const oyuncuResmi = isMe ? (window.oyuncuVerisi.resim || 'https://via.placeholder.com/40') : 'https://via.placeholder.com/40';
 
-        if (kayitliResim) {
-            window.oyuncuVerisi.resim = kayitliResim;
-            const el = document.getElementById('profil-resim-onizleme');
-            if (el) el.src = kayitliResim;
-        }
-        if (kayitliIsim) {
-            window.oyuncuVerisi.isim = kayitliIsim;
-            myPlayerName = kayitliIsim;
-            const inputEl = document.getElementById('profil-isim-input');
-            if (inputEl) inputEl.value = kayitliIsim;
-        }
-
-        window.verileriKaydet();
-    }
-      // SES EFEKTLERİ (WEB AUDIO API)
-    function initAudio() {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-    }
-
-    window.SESLER = {
-        eslesmeHata: function() {
-            initAudio();
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(220, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.25);
-        },
-        zafer: function() {
-            initAudio();
-            if (!audioCtx) return;
-            [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.12);
-                gain.gain.setValueAtTime(0.15, audioCtx.currentTime + idx * 0.12);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + idx * 0.12 + 0.3);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start(audioCtx.currentTime + idx * 0.12);
-                osc.stop(audioCtx.currentTime + idx * 0.12 + 0.3);
-            });
-        }
-    };
-
-    // EKRAN VE SEKMELERİ YÖNETME
-    window.ekranGoster = function(ekranId) {
-        const paneller = [
-            'ana-lobi', 'oyunlarim-ekrani', 'magaza-ekrani', 
-            'etkinlikler-ekrani', 'download-ekrani', 'partner-ekrani', 
-            'iletisim-ekrani', 'arkadaslar-ekrani', 'oda-ici-ekran', 
-            'misafir-bekleme-ekrani', 'game-screen'
-        ];
-        paneller.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = (id === ekranId) ? (id === 'game-screen' ? 'flex' : 'block') : 'none';
-        });
-    };
-
-    window.sekmeDegistir = function(ekranId, btnEl) {
-        window.ekranGoster(ekranId);
-        if (btnEl) {
-            const btns = document.querySelectorAll('.nav-btn');
-            btns.forEach(b => b.classList.remove('active'));
-            btnEl.classList.add('active');
-        }
-    };
-
-    // OYUNU BAŞLATMA VE KART DAĞITIM FONKSİYONU
-    window.oyunuBaslatMeyveleriDagit = function(toplamOyuncu = 4) {
-        window.ekranGoster('game-screen');
-        const savasAlani = document.getElementById('savas-alani') || document.getElementById('game-screen');
-        if (!savasAlani) return;
-
-        savasAlani.innerHTML = ''; // Temizle
-
-        const aktifSkin = window.oyuncuVerisi.aktifSkin || 'meyveler';
-const aktifPaket = window.PAKETLER[aktifSkin] || window.PAKETLER['meyveler'];
-let kartSimgeleri = [...aktifPaket.icerik, ...aktifPaket.icerik];
-kartSimgeleri.sort(() => Math.random() - 0.5);
-      
-            
-
-        for (let i = 0; i < toplamOyuncu; i++) {
-            const oyuncuKutusu = document.createElement('div');
-            oyuncuKutusu.className = 'oyuncu-kutusu';
-            
-            const isMe = (i === myPlayerIndex);
-            const oyuncuResmi = isMe ? (window.oyuncuVerisi.resim || 'https://via.placeholder.com/40') : 'https://via.placeholder.com/40';
-
-            oyuncuKutusu.style.cssText = `border: 3px solid ${isMe ? '#ff4757' : '#54a0ff'}; border-radius: 18px; background: rgba(30, 10, 25, 0.75); padding: 8px; margin: 5px; text-align: center;`;
-            
-            let kartHTML = '';
-            let kartSimgeleri = [...aktifPaket.icerik, ...aktifPaket.icerik];
-            kartSimgeleri.sort(() => Math.random() - 0.5);
-
-            kartSimgeleri.forEach((simg, idx) => {
-                kartHTML += `<button onclick="window.kartTikla(${i}, ${idx}, '${simg}')" class="kart-item" style="width: 40px; height: 50px; margin: 2px; font-size: 18px; cursor: pointer;">❓</button>`;
-            });
-
-            oyuncuKutusu.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px;">
-                    <img src="${oyuncuResmi}" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid ${isMe ? '#ff6b81' : '#74b9ff'}; object-fit: cover;">
-                    <span style="color: ${isMe ? '#ff6b81' : '#74b9ff'}; font-weight: 900; font-size: 13px;">
-                        ${isMe ? '👑 ' + window.oyuncuVerisi.isim : '🎮 Oyuncu ' + (i + 1)}
-                    </span>
-                </div>
-                <div class="grid-oyun" id="grid-p-${i}" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;">
-                    ${kartHTML}
-                </div>
-            `;
-            savasAlani.appendChild(oyuncuKutusu);
-        }
-    };
-      window.odaOyunuBaslat = function() {
-        if (!isHost) return;
-        const toplamOyuncu = connectedPeers.length + 1;
+        oyuncuKutusu.style.cssText = `border: 3px solid ${isMe ? '#ff4757' : '#54a0ff'}; border-radius: 18px; background: rgba(30, 10, 25, 0.75); padding: 8px; margin: 5px; text-align: center;`;
         
-        // Diğer bağlanan oyunculara oyunu başlat sinyali gönder
-        tumOyuncularaGonder({
-            type: "OYUNU_BASLAT",
-            toplamOyuncu: toplamOyuncu
+        let kartHTML = '';
+        let kartSimgeleri = [...aktifPaket.icerik, ...aktifPaket.icerik];
+        kartSimgeleri.sort(() => Math.random() - 0.5);
+
+        kartSimgeleri.forEach((simg, idx) => {
+            kartHTML += `<button onclick="window.kartTikla(${i}, ${idx}, '${simg}')" class="kart-item" style="width: 40px; height: 50px; margin: 2px; font-size: 18px; cursor: pointer;">❓</button>`;
         });
 
-        // Kendi ekranında başlat
-        window.oyunuBaslatMeyveleriDagit(toplamOyuncu);
-    };
-
-    window.kartTikla = function(pIndex, index, meyve) {
-        if (pIndex !== myPlayerIndex) return; // Sadece kendi masandaki kartlara tıklayabilirsin
-        
-        tumOyuncularaGonder({
-            type: "KART_AC",
-            pIndex: pIndex,
-            index: index,
-            meyve: meyve
-        });
-    };
-
-    // NETWORK & PEERJS (ODA İŞLEMLERİ)
-    function tumOyuncularaGonder(data) {
-        connectedPeers.forEach(conn => {
-            if (conn && conn.open) conn.send(data);
-        });
+        oyuncuKutusu.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px;">
+                <img src="${oyuncuResmi}" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid ${isMe ? '#ff6b81' : '#74b9ff'}; object-fit: cover;">
+                <span style="color: ${isMe ? '#ff6b81' : '#74b9ff'}; font-weight: 900; font-size: 13px;">
+                    ${isMe ? '👑 ' + window.oyuncuVerisi.isim : '🎮 Oyuncu ' + (i + 1)}
+                </span>
+            </div>
+            <div class="grid-oyun" id="grid-p-${i}" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;">
+                ${kartHTML}
+            </div>
+        `;
+        savasAlani.appendChild(oyuncuKutusu);
     }
-
-      // Oda Oluşturma Fonksiyonu
-window.odaOlustur = function() {
-    // Oda içi ekranını görünür yap
-    const odaEkrani = document.getElementById('oda-ici-ekran');
-    if (odaEkrani) {
-        odaEkrani.style.display = 'block';
-        
-        // Ekrana otomatik kaydır
-        odaEkrani.scrollIntoView({ behavior: 'smooth' });
-    }
+};
+    window.odaOyunuBaslat = function() {
+    if (!isHost) return;
+    const toplamOyuncu = connectedPeers.length + 1;
     
-    // Örnek Oda Kodu Üret
-    const odaKodu = Math.floor(100000 + Math.random() * 900000);
-    const odaKoduDisplay = document.getElementById('oda-kodu-display');
-    if (odaKoduDisplay) odaKoduDisplay.innerText = odaKodu;
-};
-
-// Oyunu Başlat Buton Fonksiyonu
-window.oyunuBaslatButonunaBas = function() {
-    alert("Oyun başlatılıyor!");
-    // Oyun başlatma kodların buraya gelecek
-};
-
-// Odadan Çık Fonksiyonu
-window.odadanCik = function() {
-    const odaEkrani = document.getElementById('oda-ici-ekran');
-    const misafirEkrani = document.getElementById('misafir-bekleme-ekrani');
-    
-    if (odaEkrani) odaEkrani.style.display = 'none';
-    if (misafirEkrani) misafirEkrani.style.display = 'none';
-};
-        
-      window.odayaBaglanTikla = function() {
-        const inputEl = document.getElementById('oda-kodu-input');
-        const kod = inputEl ? inputEl.value.trim() : '';
-        if (!kod) return alert("Lütfen geçerli bir oda kodu girin!");
-
-        isHost = false;
-        peer = new Peer();
-
-        peer.on('open', (id) => {
-            myPeerId = id;
-            let conn = peer.connect(kod);
-            conn.on('open', () => {
-                connectedPeers = [conn];
-                conn.send({ type: "PROFILE_INFO", name: window.oyuncuVerisi.isim });
-                window.ekranGoster('misafir-bekleme-ekrani');
-            });
-            conn.on('data', (data) => window.sinyalIsle(data, conn));
-        });
-
-        peer.on('call', (call) => {
-            call.answer(localAudioStream || null);
-            sesAkisiniDinle(call);
-        });
-    };
-
-    window.odadanAyril = function() {
-        if (peer) peer.destroy();
-        connectedPeers = [];
-        alert("Odadan ayrıldınız! 🚪");
-        window.ekranGoster('ana-lobi');
-    };
-
-    // SİNYAL İŞLEYİCİ
-    window.sinyalIsle = function(data, senderConn) {
-        if (!data) return;
-
-        if (data.type === "CHAT_MESAJ") {
-            window.chatEkranaEkle(data.gonderen, data.mesaj, false);
-            if (isHost) {
-                connectedPeers.forEach(c => {
-                    if (c !== senderConn && c.open) c.send(data);
-                });
-            }
-        } else if (data.type === "ASSIGN_INDEX") {
-            myPlayerIndex = data.index;
-        } else if (data.type === "OYUNU_BASLAT") {
-            window.oyunuBaslatMeyveleriDagit(data.toplamOyuncu || 4);
-        } else if (data.type === "KART_AC") {
-            const hedefGrid = document.getElementById(`grid-p-${data.pIndex}`);
-            if (hedefGrid && hedefGrid.children[data.index]) {
-                const kart = hedefGrid.children[data.index];
-                kart.classList.add('acik');
-                kart.innerText = data.meyve || '🍎';
-            }
-            if (isHost) {
-                connectedPeers.forEach(c => {
-                    if (c !== senderConn && c.open) c.send(data);
-                });
-            }
-        }
-    };
-   // CANLI CHAT & MİKROFON
-    window.chatEkranaEkle = function(gonderen, mesaj, isMe = false) {
-        const konteyner = document.getElementById('chat-mesajlar');
-        if (!konteyner) return;
-
-        const msgEl = document.createElement('div');
-        msgEl.style.cssText = `color: ${isMe ? '#ff75c3' : '#74b9ff'}; font-weight: bold;`;
-        msgEl.innerHTML = `<span style="opacity: 0.8;">${gonderen}:</span> <span style="color: #fff; font-weight: normal;">${mesaj}</span>`;
-        
-        konteyner.appendChild(msgEl);
-        konteyner.scrollTop = konteyner.scrollHeight;
-    };
-
-    async function mikrofonuBaslat() {
-        try {
-            localAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-            mikrofonAcik = true;
-            const btn = document.getElementById('btn-mikrofon');
-            if (btn) {
-                btn.innerText = "🎙️ Mikrofon Kapalı (Sustur)";
-                btn.style.background = "linear-gradient(180deg, #ff4757, #ff6b81)";
-            }
-            
-            connectedPeers.forEach(conn => {
-                if (peer) {
-                    const call = peer.call(conn.peer, localAudioStream);
-                    sesAkisiniDinle(call);
-                }
-            });
-        } catch (err) {
-            console.error("Mikrofon izni alınamadı:", err);
-            alert("⚠️ Mikrofon izni verilemedi veya cihaz bulunamadı!");
-        }
-    }
-
-    window.mikrofonDurumDegistir = function() {
-        if (!localAudioStream) {
-            mikrofonuBaslat();
-            return;
-        }
-
-        mikrofonAcik = !mikrofonAcik;
-        localAudioStream.getAudioTracks()[0].enabled = mikrofonAcik;
-
-        const btn = document.getElementById('btn-mikrofon');
-        if (btn) {
-            btn.innerText = mikrofonAcik ? "🎙️ Mikrofon Kapalı (Sustur)" : "🎙️ Mikrofonu Aç";
-            btn.style.background = mikrofonAcik ? "linear-gradient(180deg, #ff4757, #ff6b81)" : "linear-gradient(180deg, #2ed573, #26af5f)";
-        }
-    };
-
-    function sesAkisiniDinle(call) {
-        call.on('stream', (remoteStream) => {
-            let audioEl = document.getElementById(`audio-${call.peer}`);
-            if (!audioEl) {
-                audioEl = document.createElement('audio');
-                audioEl.id = `audio-${call.peer}`;
-                audioEl.autoplay = true;
-                let container = document.getElementById('audio-container') || document.body;
-                container.appendChild(audioEl);
-            }
-            audioEl.srcObject = remoteStream;
-        });
-    }
-// PROFİL İŞLEMLERİ
-    window.profilFotografiSec = function(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        if (file.size > 2 * 1024 * 1024) {
-            alert("⚠️ Lütfen 2MB'tan küçük bir fotoğraf seçin!");
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const base64Resim = e.target.result;
-            window.oyuncuVerisi.resim = base64Resim;
-            const onizleme = document.getElementById('profil-resim-onizleme');
-            if (onizleme) onizleme.src = base64Resim;
-            localStorage.setItem('seker_oyuncu_resim', base64Resim);
-        };
-        reader.readAsDataURL(file);
-    };
-
-    window.profilIsimKaydet = function() {
-        const inputEl = document.getElementById('profil-isim-input');
-        const yeniIsim = inputEl ? inputEl.value.trim() : '';
-        if (yeniIsim) {
-            window.oyuncuVerisi.isim = yeniIsim;
-            myPlayerName = yeniIsim;
-            localStorage.setItem('seker_oyuncu_isim', yeniIsim);
-            window.verileriKaydet();
-            alert("✅ Profil başarıyla güncellendi!");
-        }
-    };
-
-    // ODA İÇİNDEKİ BAŞLAT BUTONUNU DİNLE
-    window.addEventListener('DOMContentLoaded', () => {
-        profilYukle();
-        
-        // HTML içerisindeki Oyunu Başlat butonuna otomatik onclick bağla
-        const oyunuBaslatBtn = document.querySelector('#oda-ici-ekran button');
-        if (oyunuBaslatBtn) {
-            oyunuBaslatBtn.setAttribute('onclick', 'window.odaOyunuBaslat()');
-        }
-    });
-  // DOSYA İNDİRME SİMÜLASYONU
-window.dosyaIndir = function(dosyaAdi) {
-    alert(`⏳ ${dosyaAdi} indirmesi başlatılıyor...`);
-};
-
-// CHAT MESAJI GÖNDERME
-window.chatMesajGonder = function() {
-    const input = document.getElementById('chat-input');
-    const mesaj = input.value.trim();
-    if (!mesaj) return;
-
-    const gonderen = window.oyuncuVerisi.isim || "Oyuncu";
-    
-    // Kendi ekranına mesajı bas
-    window.chatEkranaEkle(gonderen, mesaj, true);
-
-    // Odadaki diğer kişilere sinyal gönder
     tumOyuncularaGonder({
-        type: "CHAT_MESAJ",
-        gonderen: gonderen,
-        mesaj: mesaj
+        type: "OYUNU_BASLAT",
+        toplamOyuncu: toplamOyuncu
     });
 
-    input.value = '';
+    window.oyunuBaslatMeyveleriDagit(toplamOyuncu);
 };
 
+window.oyunuBaslatButonunaBas = function() {
+    window.odaOyunuBaslat();
+};
+
+window.kartTikla = function(pIndex, index, meyve) {
+    if (pIndex !== myPlayerIndex) return;
+    
+    tumOyuncularaGonder({
+        type: "KART_AC",
+        pIndex: pIndex,
+        index: index,
+        meyve: meyve
+    });
+};
+
+// PEERJS & NETWORK (ODA İŞLEMLERİ)
+function tumOyuncularaGonder(data) {
+    connectedPeers.forEach(conn => {
+        if (conn && conn.open) conn.send(data);
+    });
+}
+
+// ODA OLUŞTURMA (HOST)
+window.odaOlustur = function() {
+    isHost = true;
+    myPlayerIndex = 0;
+    connectedPeers = [];
+
+    // Rastgele 6 haneli oda kodu
+    const odaKodu = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    if (peer) peer.destroy();
+    peer = new Peer(odaKodu);
+
+    peer.on('open', (id) => {
+        myPeerId = id;
+        const odaKoduDisplay = document.getElementById('oda-kodu-display');
+        if (odaKoduDisplay) odaKoduDisplay.innerText = id;
+        window.ekranGoster('oda-ici-ekran');
+    });
+
+    // Misafir bağlantılarını dinle
+    peer.on('connection', (conn) => {
+        if (connectedPeers.length >= 3) { // Maks 4 kişi (Host + 3)
+            conn.close();
+            return;
+        }
+
+        connectedPeers.push(conn);
+        
+        conn.on('open', () => {
+            const yeniOyuncuIndex = connectedPeers.length;
+            conn.send({ type: "ASSIGN_INDEX", index: yeniOyuncuIndex });
+
+            const sayiEl = document.getElementById('oyuncu-sayisi-display');
+            if (sayiEl) sayiEl.innerText = connectedPeers.length + 1;
+        });
+
+        conn.on('data', (data) => window.sinyalIsle(data, conn));
+    });
+
+    peer.on('call', (call) => {
+        call.answer(localAudioStream || null);
+        sesAkisiniDinle(call);
+    });
+};
+// ODAYA BAGLAN (MİSAFİR)
+window.odayaBaglanTikla = function() {
+    const inputEl = document.getElementById('oda-kodu-input');
+    const kod = inputEl ? inputEl.value.trim() : '';
+    if (!kod) return alert("Lütfen geçerli bir oda kodu girin!");
+
+    isHost = false;
+    if (peer) peer.destroy();
+    peer = new Peer();
+
+    peer.on('open', (id) => {
+        myPeerId = id;
+        let conn = peer.connect(kod);
+
+        conn.on('open', () => {
+            connectedPeers = [conn];
+            conn.send({ type: "PROFILE_INFO", name: window.oyuncuVerisi.isim });
+            window.ekranGoster('misafir-bekleme-ekrani');
+        });
+
+        conn.on('data', (data) => window.sinyalIsle(data, conn));
+    });
+
+    peer.on('call', (call) => {
+        call.answer(localAudioStream || null);
+        sesAkisiniDinle(call);
+    });
+};
+
+window.odadanCik = function() {
+    if (peer) peer.destroy();
+    connectedPeers = [];
+    isHost = false;
+    alert("Odadan ayrıldınız! 🚪");
+    window.ekranGoster('ana-lobi');
+};
+
+// SİNYAL İŞLEYİCİ
+window.sinyalIsle = function(data, senderConn) {
+    if (!data) return;
+
+    if (data.type === "CHAT_MESAJ") {
+        window.chatEkranaEkle(data.gonderen, data.mesaj, false);
+        if (isHost) {
+            connectedPeers.forEach(c => {
+                if (c !== senderConn && c.open) c.send(data);
+            });
+        }
+    } else if (data.type === "ASSIGN_INDEX") {
+        myPlayerIndex = data.index;
+    } else if (data.type === "OYUNU_BASLAT") {
+        window.oyunuBaslatMeyveleriDagit(data.toplamOyuncu || 4);
+    } else if (data.type === "KART_AC") {
+        const hedefGrid = document.getElementById(`grid-p-${data.pIndex}`);
+        if (hedefGrid && hedefGrid.children[data.index]) {
+            const kart = hedefGrid.children[data.index];
+            kart.classList.add('acik');
+            kart.innerText = data.meyve || '🍎';
+        }
+        if (isHost) {
+            connectedPeers.forEach(c => {
+                if (c !== senderConn && c.open) c.send(data);
+            });
+        }
+    }
+};
+
+// CANLI CHAT & MİKROFON
 window.chatEkranaEkle = function(gonderen, mesaj, isMe = false) {
     const konteyner = document.getElementById('chat-mesajlar');
     if (!konteyner) return;
@@ -956,8 +836,110 @@ window.chatEkranaEkle = function(gonderen, mesaj, isMe = false) {
     msgEl.innerHTML = `<span style="opacity: 0.8;">${gonderen}:</span> <span style="color: #fff; font-weight: normal;">${mesaj}</span>`;
     
     konteyner.appendChild(msgEl);
-    konteyner.scrollTop = konteyner.scrollHeight; // Otomatik aşağı kaydır
+    konteyner.scrollTop = konteyner.scrollHeight;
 };
+
+window.chatMesajGonder = function() {
+    const input = document.getElementById('chat-input');
+    const mesaj = input.value.trim();
+    if (!mesaj) return;
+
+    const gonderen = window.oyuncuVerisi.isim || "Oyuncu";
+    window.chatEkranaEkle(gonderen, mesaj, true);
+
+    tumOyuncularaGonder({
+        type: "CHAT_MESAJ",
+        gonderen: gonderen,
+        mesaj: mesaj
+    });
+
+    input.value = '';
+};
+
+async function mikrofonuBaslat() {
+    try {
+        localAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        mikrofonAcik = true;
+        const btn = document.getElementById('btn-mikrofon');
+        if (btn) {
+            btn.innerText = "🎙️ Mikrofon Kapalı (Sustur)";
+            btn.style.background = "linear-gradient(180deg, #ff4757, #ff6b81)";
+        }
+        
+        connectedPeers.forEach(conn => {
+            if (peer) {
+                const call = peer.call(conn.peer, localAudioStream);
+                sesAkisiniDinle(call);
+            }
+        });
+    } catch (err) {
+        console.error("Mikrofon izni alınamadı:", err);
+        alert("⚠️ Mikrofon izni verilemedi veya cihaz bulunamadı!");
+    }
+        }
+        window.mikrofonDurumDegistir = function() {
+    if (!localAudioStream) {
+        mikrofonuBaslat();
+        return;
+    }
+
+    mikrofonAcik = !mikrofonAcik;
+    localAudioStream.getAudioTracks()[0].enabled = mikrofonAcik;
+
+    const btn = document.getElementById('btn-mikrofon');
+    if (btn) {
+        btn.innerText = mikrofonAcik ? "🎙️ Mikrofon Kapalı (Sustur)" : "🎙️ Mikrofonu Aç";
+        btn.style.background = mikrofonAcik ? "linear-gradient(180deg, #ff4757, #ff6b81)" : "linear-gradient(180deg, #2ed573, #26af5f)";
+    }
+};
+
+function sesAkisiniDinle(call) {
+    call.on('stream', (remoteStream) => {
+        let audioEl = document.getElementById(`audio-${call.peer}`);
+        if (!audioEl) {
+            audioEl = document.createElement('audio');
+            audioEl.id = `audio-${call.peer}`;
+            audioEl.autoplay = true;
+            let container = document.getElementById('audio-container') || document.body;
+            container.appendChild(audioEl);
+        }
+        audioEl.srcObject = remoteStream;
+    });
+}
+
+// PROFİL İŞLEMLERİ
+window.profilFotografiSec = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+        alert("⚠️ Lütfen 2MB'tan küçük bir fotoğraf seçin!");
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const base64Resim = e.target.result;
+        window.oyuncuVerisi.resim = base64Resim;
+        const onizleme = document.getElementById('profil-resim-onizleme');
+        if (onizleme) onizleme.src = base64Resim;
+        localStorage.setItem('seker_oyuncu_resim', base64Resim);
+    };
+    reader.readAsDataURL(file);
+};
+
+window.profilIsimKaydet = function() {
+    const inputEl = document.getElementById('profil-isim-input');
+    const yeniIsim = inputEl ? inputEl.value.trim() : '';
+    if (yeniIsim) {
+        window.oyuncuVerisi.isim = yeniIsim;
+        myPlayerName = yeniIsim;
+        localStorage.setItem('seker_oyuncu_isim', yeniIsim);
+        window.verileriKaydet();
+        alert("✅ Profil başarıyla güncellendi!");
+    }
+};
+
 // GÜNLÜK ÖDÜL MANTIĞI
 window.gunlukOdulAl = function() {
     const bugun = new Date().toDateString();
@@ -977,7 +959,6 @@ window.gunlukOdulAl = function() {
     window.SESLER.zafer();
     alert(`🎉 Günlük Ödül Alındı! Hesabınıza ${odulMiktari} 🍬 Şeker eklendi.`);
 
-    // Buton durumunu güncelle
     const btn = document.getElementById('btn-gunluk-odul');
     if (btn) {
         btn.innerText = "Alındı ✅";
@@ -985,9 +966,7 @@ window.gunlukOdulAl = function() {
         btn.disabled = true;
     }
 };
-
-// Sayfa yüklendiğinde günlük ödül kontrolü
-function gunlukOdulButonKontrol() {
+  function gunlukOdulButonKontrol() {
     const bugun = new Date().toDateString();
     const sonAlinanTarih = localStorage.getItem('son_gunluk_odul_tarihi');
     const btn = document.getElementById('btn-gunluk-odul');
@@ -999,17 +978,12 @@ function gunlukOdulButonKontrol() {
     }
 }
 
-//DOMContentLoaded dinleyicisine kontrolü ekleyelim
-window.addEventListener('DOMContentLoaded', () => {
-    gunlukOdulButonKontrol();
-});
-// Partner Alt Sekme Geçişi
+// PARTNER VE ÖDÜL KODLARI
 window.partnerSekmeAc = function(sekmeId) {
     document.getElementById('basvuru-formu').style.display = (sekmeId === 'basvuru-formu') ? 'block' : 'none';
     document.getElementById('kod-bozdur').style.display = (sekmeId === 'kod-bozdur') ? 'block' : 'none';
 };
 
-// Partner Başvurusu Gönderme
 window.partnerBasvuruGonder = function() {
     const kanal = document.getElementById('partner-kanal-link').value.trim();
     const iletisim = document.getElementById('partner-iletisim').value.trim();
@@ -1024,16 +998,14 @@ window.partnerBasvuruGonder = function() {
     document.getElementById('partner-iletisim').value = '';
 };
 
-// Kod Bozdurma Mantığı (Örnek Kodlar)
 window.kodKullan = function() {
     const input = document.getElementById('promosyon-kodu-input');
     const kod = input.value.trim().toUpperCase();
 
-    // Tanımlı Geçerli Kodlar
     const KODLAR = {
-        'SEKER2026': 100,  // 100 Şeker verir
-        'HOSGELDIN': 50,   // 50 Şeker verir
-        'PARTNER': 200     // 200 Şeker verir
+        'SEKER2026': 100,
+        'HOSGELDIN': 50,
+        'PARTNER': 200
     };
 
     let kullanilanKodlar = JSON.parse(localStorage.getItem('kullanilan_kodlar') || '[]');
@@ -1059,7 +1031,7 @@ window.kodKullan = function() {
         alert("❌ Geçersiz veya süresi dolmuş kod!");
     }
 };
-window.temaSatinAl = function(temaAdi, fiyat) {
+  window.temaSatinAl = function(temaAdi, fiyat) {
     if (window.oyuncuVerisi.sahipOlunanlar.includes(temaAdi)) {
         window.oyuncuVerisi.aktifSkin = temaAdi;
         alert(`🎨 ${temaAdi.toUpperCase()} teması aktif edildi!`);
@@ -1078,4 +1050,10 @@ window.temaSatinAl = function(temaAdi, fiyat) {
         alert("❌ Yetersiz Şeker Puanı!");
     }
 };
+
+// SAYFA YÜKLENDİĞİNDE BAŞLATILACAKLAR
+window.addEventListener('DOMContentLoaded', () => {
+    profilYukle();
+    gunlukOdulButonKontrol();
+});
     </script>
