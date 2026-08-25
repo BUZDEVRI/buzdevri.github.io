@@ -204,78 +204,82 @@
     border-color: #f1c40f;
     box-shadow: 0 0 14px rgba(241, 196, 15, 0.5);
 }
-
-/* 10 ŞİŞELİ SAHNE (ARALARI AÇIK VE NET) */
-.sise-sahne-10lu {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px; /* Arka ve ön sıra arasındaki mesafeyi artırdık */
-    height: 135px; /* Yükseklik genişletildi */
-    width: 100%;
-    background: rgba(0, 0, 0, 0.45);
-    border-radius: 12px;
-    padding: 12px 4px;
-    box-sizing: border-box;
+ /* SODA ŞİŞESİ ANA GÖVDESİ */
+.soda-sise {
+    position: relative;
+    width: 14px;
+    height: 38px;
+    background: linear-gradient(180deg, #27ae60 0%, #1e824c 100%);
+    border-radius: 4px 4px 3px 3px;
+    border: 1px solid #145a32;
+    box-shadow: inset -2px 0 3px rgba(0,0,0,0.3);
+    margin: 0 auto;
 }
 
-/* 5 ARKA ŞİŞE SİRASI */
-.sise-sira-5-arka {
-    display: flex;
-    justify-content: center;
-    gap: 8px; /* Şişelerin yan yana boşluğu artırıldı */
-    transform: scale(0.9);
-    opacity: 0.95;
+/* ŞİŞENİN DAR DAR BOYUN KISMI (ÜST KISIM) */
+.soda-sise::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: 3px;
+    width: 6px;
+    height: 12px;
+    background: #27ae60;
+    border: 1px solid #145a32;
+    border-bottom: none;
+    border-radius: 2px 2px 0 0;
 }
 
-/* 5 ÖN ŞİŞE SİRASI */
-.sise-sira-5-on {
-    display: flex;
-    justify-content: center;
-    gap: 8px; /* Ön sıradaki şişelerin yan yana boşluğu artırıldı */
-    margin-top: 0px; /* İç içe geçmeyi önlemek için negatif margin kaldırıldı */
+/* ŞİŞENİN KAPAK KISMI */
+.soda-sise::after {
+    content: '';
+    position: absolute;
+    top: -14px;
+    left: 2px;
+    width: 8px;
+    height: 3px;
+    background: #e74c3c; /* Kırmızı Gazoz Kapağı */
+    border-radius: 2px;
 }
 
-/* ŞİŞE KAPSAYICISI HİZALAMASI */
+/* ŞİŞE ETİKETİ */
+.soda-etiket {
+    position: absolute;
+    top: 10px;
+    left: 1px;
+    width: 10px;
+    height: 14px;
+    background: #ffffff;
+    border-radius: 1px;
+    opacity: 0.9;
+}
+
+/* ŞİŞELERİN VE ÇEMBERLERİN DÜZGÜN OTURMASI İÇİN ALAN */
 .soda-sise-kapsayici {
     position: relative;
     display: inline-flex;
     justify-content: center;
     align-items: flex-end;
-    width: 24px; /* Her şişe için net alan */
-}
-        
-/* Şişe Üzerindeki Çember Rozeti/Sayacı */
-/* UÇAN ÇEMBER ANİMASYONU (Ekranda Uçuş Anı) */
-.ucan-cember {
-    position: fixed;
-    width: 30px;
-    height: 12px;
-    border: 3px solid #f1c40f;
-    border-radius: 50%;
-    box-shadow: 0 0 10px #f1c40f, inset 0 0 4px #f39c12;
-    background: rgba(241, 196, 15, 0.4);
-    pointer-events: none;
-    z-index: 10001;
-    transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    width: 22px;
+    height: 52px;
+    margin: 0 2px;
 }
 
-/* ŞİŞEYE OTURAN HAREKETLİ ÇEMBER */
+/* ÇEMBERLERİN ŞİŞE BOYUNLARINA ÇIKMASI İÇİN */
 .cember-scalex-anim {
     position: absolute;
-    top: -4px;
-    left: -6px;
-    width: 26px;
-    height: 9px;
-    border: 2.5px solid #f1c40f;
+    top: 2px; /* Çemberleri şişenin boynuna denk getirir */
+    left: -2px;
+    width: 24px;
+    height: 8px;
+    border: 2px solid #f1c40f;
     border-radius: 50%;
-    box-shadow: 0 0 6px #f1c40f, inset 0 0 3px #f39c12;
+    box-shadow: 0 0 5px #f1c40f;
     background: rgba(241, 196, 15, 0.35);
     pointer-events: none;
     z-index: 10;
-    animation: scaleXCemberOturma 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
-
+        
 /* scaleX Genişleme ve Şişeye Yerleşme Efekti */
 @keyframes scaleXCemberOturma {
     0% {
