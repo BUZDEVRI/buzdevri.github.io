@@ -259,7 +259,42 @@
     box-shadow: 0 0 5px rgba(0,0,0,0.5);
     z-index: 5;
         }
-                                
+        /* Gerçekçi Çember Tasarımı */
+.cember-animasyonlu {
+    position: absolute;
+    top: -4px;
+    left: -6px;
+    width: 28px;
+    height: 10px;
+    border: 3px solid #f1c40f;
+    border-radius: 50%;
+    box-shadow: 0 0 6px #f1c40f, inset 0 0 3px #f39c12;
+    background: rgba(241, 196, 15, 0.3);
+    pointer-events: none;
+    z-index: 10;
+    /* scaleX animasyonu */
+    animation: cemberscaleXDusme 0.4s ease-out forwards;
+}
+
+/* Yukarıdan Aşağıya scaleX Efektli Düşüş Animasyonu */
+@keyframes cemberscaleXDusme {
+    0% {
+        transform: scaleX(0.2) scaleY(0.2) translateY(-60px);
+        opacity: 0;
+    }
+    60% {
+        transform: scaleX(1.5) scaleY(1.2) translateY(3px);
+        opacity: 1;
+    }
+    85% {
+        transform: scaleX(0.8) scaleY(0.9) translateY(-1px);
+    }
+    100% {
+        transform: scaleX(1) scaleY(1) translateY(0);
+        opacity: 1;
+    }
+        }
+    
     </style>
 </head>
   <body>
@@ -1292,47 +1327,46 @@ window.addEventListener('DOMContentLoaded', () => {
     gunlukOdulButonKontrol();
 });
         let etkinlikTimer = null;
-let etkinlikKalanSure = 60; // 63 çember için süreyi 60s yaptık
+let etkinlikKalanSure = 60;
 const TOPLAM_HEDEF = 63; // 7 şişe x 9 çember
 
-// Her oyuncunun 7 şişesindeki çember sayıları [şişe1, şişe2, ..., şişe7]
 let oyuncuSiseDurumlari = [
     [0,0,0,0,0,0,0], // Siz
-    [0,0,0,0,0,0,0], // Bot 1
-    [0,0,0,0,0,0,0], // Bot 2
-    [0,0,0,0,0,0,0], // Bot 3
-    [0,0,0,0,0,0,0]  // Bot 4
+    [0,0,0,0,0,0,0], // Ali
+    [0,0,0,0,0,0,0], // Ayşe
+    [0,0,0,0,0,0,0], // Mehmet
+    [0,0,0,0,0,0,0]  // Zeynep
 ];
 
+// OYUNU BAŞLATMA VE SÜRE TAKİBİ
 window.etkinlikOyununuBaslat = function() {
     etkinlikKalanSure = 60;
     oyuncuSiseDurumlari = [
-        [0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0]
+        [0,0,0,0,0,0,0], [0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0], [0,0,0,0,0,0,0], [0,0,0,0,0,0,0]
     ];
     
     document.getElementById('etkinlik-sure').innerText = etkinlikKalanSure;
-    document.getElementById('etkinlik-durum-mesajlari').innerText = "Her şişeyi 9 yap! Toplam Çember: 0 / 63";
+    document.getElementById('etkinlik-durum-mesajlari').innerText = "Yarış Başladı! 7 şişeyi de 9 çember yap!";
     
     window.etkinlikArayuzuGuncelle();
 
     if (etkinlikTimer) clearInterval(etkinlikTimer);
+    
+    // Canlı Süre Döngüsü
     etkinlikTimer = setInterval(() => {
         etkinlikKalanSure--;
         const sureEl = document.getElementById('etkinlik-sure');
         if (sureEl) sureEl.innerText = etkinlikKalanSure;
 
-        // Bot Simülasyonu
+        // Bot Hareketleri
         for (let i = 1; i < 5; i++) {
-            if (Math.random() > 0.5) {
+            if (Math.random() > 0.45) {
                 window.botaCemberEkle(i);
             }
         }
 
-        // Süre Biterse
+        // Süre Biterse Kazananı Belirle
         if (etkinlikKalanSure <= 0) {
             clearInterval(etkinlikTimer);
             window.kazananiBelirleVeBidir();
@@ -1340,8 +1374,10 @@ window.etkinlikOyununuBaslat = function() {
     }, 1000);
 };
 
-// ÇEMBERİ FIRLAT (Oyuncu Sırayla Dolmayan Şişelere Atar)
+// ÇEMBERİ FIRLAT
 window.cemberiFirlat = function() {
+    if (etkinlikKalanSure <= 0) return;
+    
     let siseler = oyuncuSiseDurumlari[0];
     let atisYapildi = false;
 
@@ -1355,7 +1391,7 @@ window.cemberiFirlat = function() {
 
     if (atisYapildi) {
         let toplam = siseler.reduce((a, b) => a + b, 0);
-        document.getElementById('etkinlik-durum-mesajlari').innerText = `Atış Başarılı! Toplam Çember: ${toplam} / 63`;
+        document.getElementById('etkinlik-durum-mesajlari').innerText = `Atış Başarılı! Çember: ${toplam} / 63`;
         window.etkinlikArayuzuGuncelle();
 
         if (toplam >= TOPLAM_HEDEF) {
@@ -1365,7 +1401,6 @@ window.cemberiFirlat = function() {
     }
 };
 
-// Botlara Çember Ekleme
 window.botaCemberEkle = function(botIndex) {
     let siseler = oyuncuSiseDurumlari[botIndex];
     for (let i = 0; i < 7; i++) {
@@ -1383,7 +1418,7 @@ window.botaCemberEkle = function(botIndex) {
     }
 };
 
-// ARAYÜZ GÜNCELLEME
+// ARAYÜZ VE ÇEMBER ANİMASYONLARI
 window.etkinlikArayuzuGuncelle = function() {
     const alan = document.getElementById('cember-oyuncular-alani');
     if (!alan) return;
@@ -1396,9 +1431,16 @@ window.etkinlikArayuzuGuncelle = function() {
 
         let siseRender = (siseIndex) => {
             let adet = siseler[siseIndex];
+            
+            // scaleX animasyonlu çemberler
+            let cemberlerHtml = '';
+            for (let c = 0; c < adet; c++) {
+                cemberlerHtml += `<div class="cember-animasyonlu" style="top: ${-4 - (c * 3)}px;"></div>`;
+            }
+
             return `
                 <div style="position: relative; display: inline-block;">
-                    ${adet > 0 ? `<div class="cember-rozet">💍${adet}</div>` : ''}
+                    ${cemberlerHtml}
                     <div class="soda-sise"><div class="soda-etiket"></div></div>
                 </div>
             `;
@@ -1407,7 +1449,7 @@ window.etkinlikArayuzuGuncelle = function() {
         return `
             <div style="background: rgba(15, 23, 42, 0.85); border: 2px solid ${oIdx === 0 ? '#f1c40f' : '#38bdf8'}; border-radius: 12px; padding: 6px; width: 46%; max-width: 175px; text-align: center; box-sizing: border-box;">
                 <div style="font-size: 11px; font-weight: bold; color: ${oIdx === 0 ? '#f1c40f' : '#fff'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${isim}</div>
-                <div style="font-size: 9px; color: #94a3b8; margin-bottom: 4px;">Toplam: <b>${toplamAtis} / 63</b></div>
+                <div style="font-size: 9px; color: #94a3b8; margin-bottom: 4px;">Puan: <b>${toplamAtis} / 63</b></div>
                 
                 <div class="sise-sahne-7li">
                     <div class="sise-sira-arka">
@@ -1422,17 +1464,20 @@ window.etkinlikArayuzuGuncelle = function() {
     }).join('');
 };
 
-// KAZANANI İLAN ET
+// KAZANANI EKRANDA VE BİLDİRİMDE GÖSTERME
 window.oyunBittiKazanan = function(kazananIndex) {
     let isimler = [window.oyuncuVerisi?.isim || "Siz", "Ali", "Ayşe", "Mehmet", "Zeynep"];
     let kazananIsim = isimler[kazananIndex];
 
-    document.getElementById('etkinlik-durum-mesajlari').innerText = `🏆 KAZANAN: ${kazananIsim.toUpperCase()}!`;
-    alert(`🎉 ETKİNLİK BİTTİ!\n\n🏆 7 Şişenin hepsini 9 çemberle dolduran kazanan: ${kazananIsim}`);
-    
+    const mesajEl = document.getElementById('etkinlik-durum-mesajlari');
+    if (mesajEl) {
+        mesajEl.innerText = `🏆 OYUN BİTTİ! KAZANAN: ${kazananIsim.toUpperCase()}`;
+        mesajEl.style.color = "#2ecc71";
+    }
+
     setTimeout(() => {
-        window.etkinlikOyununuBaslat();
-    }, 3000);
+        alert(`🎉 ETKİNLİK SONA ERDİ!\n\n🏆 Şişeleri ilk tamamlayan kazanan: ${kazananIsim}`);
+    }, 100);
 };
 
 window.kazananiBelirleVeBidir = function() {
