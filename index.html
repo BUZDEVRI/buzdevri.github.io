@@ -186,65 +186,65 @@
             z-index: 1;
             animation: yuksel linear forwards;
         }
-          /* Kompakt Şişeler */
-.soda-sise {
-    width: 16px;
-    height: 42px;
-    background: linear-gradient(90deg, #1b4d2e 0%, #2ecc71 45%, #4cd137 55%, #0f381e 100%);
-    border-radius: 4px;
-    position: relative;
-    display: inline-block;
-}
-
-.soda-sise::before {
-    content: '';
-    position: absolute;
-    top: -12px;
-    left: 4px;
-    width: 8px;
-    height: 12px;
-    background: linear-gradient(90deg, #1b4d2e, #2ecc71, #0f381e);
-    border-radius: 2px 2px 0 0;
-}
-
-.soda-sise::after {
-    content: '';
-    position: absolute;
-    top: -14px;
-    left: 3px;
-    width: 10px;
-    height: 3px;
-    background: #ffffff;
-    border-radius: 1px;
-}
-
-.soda-etiket {
-    position: absolute;
-    bottom: 5px;
-    left: 1px;
-    width: 14px;
-    height: 14px;
-    background: #fff;
-    border-top: 2px solid #e74c3c;
-    border-bottom: 2px solid #e74c3c;
-}
-
-/* Sahne Dizilimi */
-.sise-sahne-7li {
+          /* KULVAR GENİŞLİĞİ VE DÜZENİ */
+.oyuncu-kulvari {
+    flex: 0 0 195px; /* Kulvar genişliği şişelerin sığması için artırıldı */
+    min-width: 195px;
+    background: rgba(15, 23, 42, 0.9);
+    border: 2px solid #38bdf8;
+    border-radius: 16px;
+    padding: 10px 8px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 4px;
-    height: 95px;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 10px;
-    padding: 6px 2px;
+    box-sizing: border-box;
 }
 
-.sise-sira-arka { display: flex; gap: 10px; transform: scale(0.9); }
-.sise-sira-on { display: flex; gap: 8px; margin-top: -8px; }
+.oyuncu-kulvari.benim-kulvar {
+    border-color: #f1c40f;
+    box-shadow: 0 0 14px rgba(241, 196, 15, 0.5);
+}
 
+/* 10 ŞİŞELİ SAHNE (ARALARI AÇIK VE NET) */
+.sise-sahne-10lu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px; /* Arka ve ön sıra arasındaki mesafeyi artırdık */
+    height: 135px; /* Yükseklik genişletildi */
+    width: 100%;
+    background: rgba(0, 0, 0, 0.45);
+    border-radius: 12px;
+    padding: 12px 4px;
+    box-sizing: border-box;
+}
+
+/* 5 ARKA ŞİŞE SİRASI */
+.sise-sira-5-arka {
+    display: flex;
+    justify-content: center;
+    gap: 8px; /* Şişelerin yan yana boşluğu artırıldı */
+    transform: scale(0.9);
+    opacity: 0.95;
+}
+
+/* 5 ÖN ŞİŞE SİRASI */
+.sise-sira-5-on {
+    display: flex;
+    justify-content: center;
+    gap: 8px; /* Ön sıradaki şişelerin yan yana boşluğu artırıldı */
+    margin-top: 0px; /* İç içe geçmeyi önlemek için negatif margin kaldırıldı */
+}
+
+/* ŞİŞE KAPSAYICISI HİZALAMASI */
+.soda-sise-kapsayici {
+    position: relative;
+    display: inline-flex;
+    justify-content: center;
+    align-items: flex-end;
+    width: 24px; /* Her şişe için net alan */
+}
+        
 /* Şişe Üzerindeki Çember Rozeti/Sayacı */
 /* UÇAN ÇEMBER ANİMASYONU (Ekranda Uçuş Anı) */
 .ucan-cember {
@@ -1517,9 +1517,7 @@ window.etkinlikOyununuBaslat = function() {
         }
     }, 1000);
 };
-
-// ARAYÜZ ÇİZİMİ (İNSANLAR VE 10 ŞİŞE)
-window.etkinlikArayuzuGuncelle = function() {
+   window.etkinlikArayuzuGuncelle = function() {
     const alan = document.getElementById('cember-oyuncular-alani');
     if (!alan) return;
 
@@ -1539,7 +1537,7 @@ window.etkinlikArayuzuGuncelle = function() {
             }
 
             return `
-                <div style="position: relative; display: inline-block;">
+                <div class="soda-sise-kapsayici">
                     ${cemberlerHtml}
                     <div class="soda-sise"><div class="soda-etiket"></div></div>
                 </div>
@@ -1578,7 +1576,7 @@ window.etkinlikArayuzuGuncelle = function() {
     html += `</div>`;
     alan.innerHTML = html;
 };
-
+        
 // ÇEMBERİ TEK TEK ATMA VE HAREKETLENDİRME MANTIĞI
 window.cemberiFirlat = function() {
     if (window.etkinlikKalanSure <= 0) return;
