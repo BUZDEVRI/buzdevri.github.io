@@ -442,7 +442,9 @@
     <div style="margin: 15px 0; color: #2ed573; font-weight: bold;">
         Katılan Oyuncu Sayısı: <span id="oyuncu-sayisi-display">1</span> / 4
     </div>
-
+     <div id="kurucu-oyuncu-listesi" style="margin: 20px 0; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 12px; max-width: 320px; width: 100%;">
+        <!-- Katılan oyuncular ve kurucu buraya listelenecek -->
+     </div>
     <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
         <button onclick="window.oyunuBaslatButonunaBas()" style="background: linear-gradient(180deg, #facc15 0%, #eab308 100%); border: 2px solid #fffa65; border-radius: 16px; color: #1e1b4b; font-weight: 900; font-size: 16px; padding: 12px; cursor: pointer;">Oyunu Başlat 🚀</button>
         <button onclick="window.odadanCik(); window.sekmeDegistir('ana-lobi');" style="background: linear-gradient(180deg, #ff4757 0%, #ff6b81 100%); border: 2px solid #ff70a6; border-radius: 16px; color: white; font-weight: 900; font-size: 15px; padding: 12px; cursor: pointer;">Odadan Çık 🚪</button>
@@ -775,41 +777,43 @@ window.odaOlustur = function() {
 };
 
 // ODA OYUNCU LİSTESİNİ GÜNCELLEME VE ARAYÜZE YANSITMA
+// KURUCU EKRANINDA OYUNCU LİSTESİNİ GÜNCELLEME
 window.odaOyuncuListesiniGuncelle = function() {
-    const oyuncuListesiEl = document.getElementById('oda-oyuncu-listesi');
+    const kurucuKonteyner = document.getElementById('kurucu-oyuncu-listesi');
     const sayiEl = document.getElementById('oyuncu-sayisi-display');
     
-    // Aktif toplam oyuncu sayısı (Host + Bagli Misafirler)
+    // Toplam oyuncu sayısı (Kurucu + Katılan Misafirler)
     const toplamOyuncu = connectedPeers.length + 1;
     if (sayiEl) sayiEl.innerText = toplamOyuncu;
 
-    // Eğer arayüzde oyuncu listesi konteyneri varsa profilleri bas
-    if (oyuncuListesiEl) {
-        let htmlContent = `
-            <div class="oyuncu-kart" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 6px; background: rgba(255,255,255,0.1); border-radius: 8px;">
-                <img src="${window.oyuncuVerisi.resim || 'https://via.placeholder.com/40'}" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ff6b81; object-fit: cover;">
-                <span style="color: #ff6b81; font-weight: bold;">👑 ${window.oyuncuVerisi.isim} (Kurucu)</span>
+    // 1. Kurucunun Kendi Bilgisi
+    let htmlContent = `
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 8px; background: rgba(255,255,255,0.15); border-radius: 8px; text-align: left;">
+            <img src="${window.oyuncuVerisi.resim || 'https://via.placeholder.com/40'}" style="width: 38px; height: 38px; border-radius: 50%; border: 2px solid #ff6b81; object-fit: cover;">
+            <span style="color: #ff6b81; font-weight: bold; font-size: 14px;">👑 ${window.oyuncuVerisi.isim} (Siz - Oda Sahibi)</span>
+        </div>
+    `;
+
+    // 2. Katılan Misafirlerin Bilgisi
+    connectedPeers.forEach((conn, idx) => {
+        const oyuncuAdi = conn.playerInfo ? conn.playerInfo.name : `Oyuncu ${idx + 2}`;
+        const oyuncuResim = conn.playerInfo ? conn.playerInfo.img : 'https://via.placeholder.com/40';
+
+        htmlContent += `
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 8px; background: rgba(255,255,255,0.15); border-radius: 8px; text-align: left;">
+                <img src="${oyuncuResim}" style="width: 38px; height: 38px; border-radius: 50%; border: 2px solid #74b9ff; object-fit: cover;">
+                <span style="color: #74b9ff; font-weight: bold; font-size: 14px;">🎮 ${oyuncuAdi}</span>
             </div>
         `;
+    });
 
-        connectedPeers.forEach((conn, idx) => {
-            const oyuncuAdi = conn.playerInfo ? conn.playerInfo.name : `Oyuncu ${idx + 2}`;
-            const oyuncuResim = conn.playerInfo ? conn.playerInfo.img : 'https://via.placeholder.com/40';
-
-            htmlContent += `
-                <div class="oyuncu-kart" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 6px; background: rgba(255,255,255,0.1); border-radius: 8px;">
-                    <img src="${oyuncuResim}" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #74b9ff; object-fit: cover;">
-                    <span style="color: #74b9ff; font-weight: bold;">🎮 ${oyuncuAdi}</span>
-                </div>
-            `;
-        });
-
-        oyuncuListesiEl.innerHTML = htmlContent;
+    if (kurucuKonteyner) {
+        kurucuKonteyner.innerHTML = htmlContent;
     }
 
-    // Host tarafındaysak güncel listeyi diğer oyunculara duyur
+    // 3. Güncellenen tam listeyi misafirlere de yolla
     if (isHost) {
-        const oyuncuListesiData = [
+        const tumListe = [
             { name: window.oyuncuVerisi.isim, img: window.oyuncuVerisi.resim, isHost: true },
             ...connectedPeers.map(c => ({
                 name: c.playerInfo ? c.playerInfo.name : "Oyuncu",
@@ -820,10 +824,11 @@ window.odaOyuncuListesiniGuncelle = function() {
 
         tumOyuncularaGonder({
             type: "LISTE_GUNCELLE",
-            oyuncular: oyuncuListesiData
+            oyuncular: tumListe
         });
     }
 };
+        
 // ODAYA BAGLAN (MİSAFİR)
 window.odayaBaglanTikla = function() {
     const inputEl = document.getElementById('oda-kodu-input');
