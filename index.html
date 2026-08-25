@@ -846,11 +846,12 @@ window.odayaBaglanTikla = function() {
         conn.on('open', () => {
             connectedPeers = [conn];
             
-            // Bağlanır bağlanmaz profil bilgilerini Kurucuya yolla
+            // Bağlanır bağlanmaz profil ve mikrofon bilgilerini Kurucuya yolla
             conn.send({ 
                 type: "PROFILE_INFO", 
                 name: window.oyuncuVerisi.isim || "Oyuncu",
-                img: window.oyuncuVerisi.resim || ""
+                img: window.oyuncuVerisi.resim || "",
+                micOpen: mikrofonAcik
             });
 
             window.ekranGoster('misafir-bekleme-ekrani');
@@ -864,6 +865,7 @@ window.odayaBaglanTikla = function() {
         });
     });
 };
+        
         
 window.odadanCik = function() {
     if (peer) peer.destroy();
@@ -941,29 +943,38 @@ window.chatMesajGonder = function() {
 
     input.value = '';
 };
-
+// MİKROFONU İLK DEFA BAŞLATMA VE SES AKIŞINI BAĞLAMA
 async function mikrofonuBaslat() {
     try {
         localAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         mikrofonAcik = true;
-        const btn = document.getElementById('btn-mikrofon');
-        if (btn) {
-            btn.innerText = "🎙️ Mikrofon Kapalı (Sustur)";
-            btn.style.background = "linear-gradient(180deg, #ff4757, #ff6b81)";
-        }
-        
+
+        // Odadaki diğer kişilere ses akışını (Call) gönder
         connectedPeers.forEach(conn => {
             if (peer) {
                 const call = peer.call(conn.peer, localAudioStream);
                 sesAkisiniDinle(call);
             }
         });
+
+        // Durumu odadaki herkese bildir
+        tumOyuncularaGonder({
+            type: "PROFILE_INFO",
+            name: window.oyuncuVerisi.isim,
+            img: window.oyuncuVerisi.resim,
+            micOpen: true
+        });
+
+        if (isHost) window.odaOyuncuListesiniGuncelle();
+
     } catch (err) {
         console.error("Mikrofon izni alınamadı:", err);
         alert("⚠️ Mikrofon izni verilemedi veya cihaz bulunamadı!");
     }
-        }
-        window.mikrofonDurumDegistir = function() {
+}
+
+// MİKROFON AÇ / KAPAT (MUTE)
+window.mikrofonDurumDegistir = function() {
     if (!localAudioStream) {
         mikrofonuBaslat();
         return;
@@ -972,13 +983,20 @@ async function mikrofonuBaslat() {
     mikrofonAcik = !mikrofonAcik;
     localAudioStream.getAudioTracks()[0].enabled = mikrofonAcik;
 
-    const btn = document.getElementById('btn-mikrofon');
-    if (btn) {
-        btn.innerText = mikrofonAcik ? "🎙️ Mikrofon Kapalı (Sustur)" : "🎙️ Mikrofonu Aç";
-        btn.style.background = mikrofonAcik ? "linear-gradient(180deg, #ff4757, #ff6b81)" : "linear-gradient(180deg, #2ed573, #26af5f)";
+    // Yeni durumu odadaki herkese bildir
+    tumOyuncularaGonder({
+        type: "PROFILE_INFO",
+        name: window.oyuncuVerisi.isim,
+        img: window.oyuncuVerisi.resim,
+        micOpen: mikrofonAcik
+    });
+
+    if (isHost) {
+        window.odaOyuncuListesiniGuncelle();
     }
 };
 
+// GELEN SES AKIŞINI DİNLEME VE ÇALMA
 function sesAkisiniDinle(call) {
     call.on('stream', (remoteStream) => {
         let audioEl = document.getElementById(`audio-${call.peer}`);
@@ -991,8 +1009,8 @@ function sesAkisiniDinle(call) {
         }
         audioEl.srcObject = remoteStream;
     });
-}
-
+        }
+        
 // PROFİL İŞLEMLERİ
 window.profilFotografiSec = function(event) {
     const file = event.target.files[0];
