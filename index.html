@@ -246,55 +246,52 @@
 .sise-sira-on { display: flex; gap: 8px; margin-top: -8px; }
 
 /* Şişe Üzerindeki Çember Rozeti/Sayacı */
-.cember-rozet {
-    position: absolute;
-    top: -18px;
-    left: -4px;
-    background: #f1c40f;
-    color: #000;
-    font-size: 9px;
-    font-weight: 900;
-    border-radius: 8px;
-    padding: 1px 4px;
-    box-shadow: 0 0 5px rgba(0,0,0,0.5);
-    z-index: 5;
-        }
-        /* Gerçekçi Çember Tasarımı */
-.cember-animasyonlu {
+/* UÇAN ÇEMBER ANİMASYONU (Ekranda Uçuş Anı) */
+.ucan-cember {
+    position: fixed;
+    width: 30px;
+    height: 12px;
+    border: 3px solid #f1c40f;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #f1c40f, inset 0 0 4px #f39c12;
+    background: rgba(241, 196, 15, 0.4);
+    pointer-events: none;
+    z-index: 10001;
+    transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ŞİŞEYE OTURAN HAREKETLİ ÇEMBER */
+.cember-scalex-anim {
     position: absolute;
     top: -4px;
     left: -6px;
-    width: 28px;
-    height: 10px;
-    border: 3px solid #f1c40f;
+    width: 26px;
+    height: 9px;
+    border: 2.5px solid #f1c40f;
     border-radius: 50%;
     box-shadow: 0 0 6px #f1c40f, inset 0 0 3px #f39c12;
-    background: rgba(241, 196, 15, 0.3);
+    background: rgba(241, 196, 15, 0.35);
     pointer-events: none;
     z-index: 10;
-    /* scaleX animasyonu */
-    animation: cemberscaleXDusme 0.4s ease-out forwards;
+    animation: scaleXCemberOturma 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-/* Yukarıdan Aşağıya scaleX Efektli Düşüş Animasyonu */
-@keyframes cemberscaleXDusme {
+/* scaleX Genişleme ve Şişeye Yerleşme Efekti */
+@keyframes scaleXCemberOturma {
     0% {
-        transform: scaleX(0.2) scaleY(0.2) translateY(-60px);
-        opacity: 0;
+        transform: scaleX(1.8) scaleY(1.4);
+        opacity: 0.8;
     }
-    60% {
-        transform: scaleX(1.5) scaleY(1.2) translateY(3px);
+    70% {
+        transform: scaleX(0.8) scaleY(0.9);
         opacity: 1;
-    }
-    85% {
-        transform: scaleX(0.8) scaleY(0.9) translateY(-1px);
     }
     100% {
-        transform: scaleX(1) scaleY(1) translateY(0);
+        transform: scaleX(1) scaleY(1);
         opacity: 1;
     }
-        }
-     /* 5 KULVAR YAN YANA */
+    }
+        
 .etkinlik-sahne-kapsayici {
     display: flex;
     flex-direction: row;
@@ -1582,33 +1579,80 @@ window.etkinlikArayuzuGuncelle = function() {
     alan.innerHTML = html;
 };
 
-// ÇEMBERİ FIRLAT BUTONU
+// ÇEMBERİ TEK TEK ATMA VE HAREKETLENDİRME MANTIĞI
 window.cemberiFirlat = function() {
     if (window.etkinlikKalanSure <= 0) return;
     
     let siseler = window.oyuncuSiseDurumlari[0];
-    let atisYapildi = false;
+    let hedefSiseIndex = -1;
 
+    // Tek tek doldurma: 9'a ulaşmamış İLK şişeyi bul
     for (let i = 0; i < 10; i++) {
         if (siseler[i] < 9) {
-            siseler[i]++;
-            atisYapildi = true;
+            hedefSiseIndex = i;
             break;
         }
     }
 
-    if (atisYapildi) {
+    // Tüm şişeler doluysa atış yapma
+    if (hedefSiseIndex === -1) return;
+
+    // 1. ÇEMBERİ UÇURMA ANİMASYONU (Butondan Hedef Şişeye)
+    window.cemberUcurAnimasyonu(hedefSiseIndex, () => {
+        // 2. Animasyon tamamlanınca çemberi şişeye ekle
+        siseler[hedefSiseIndex]++;
         let toplam = siseler.reduce((a, b) => a + b, 0);
-        document.getElementById('etkinlik-durum-mesajlari').innerText = `Atış Yapıldı! Toplam: ${toplam} / 90`;
+
+        document.getElementById('etkinlik-durum-mesajlari').innerText = 
+            `Şişe ${hedefSiseIndex + 1}: ${siseler[hedefSiseIndex]}/9 Çember | Toplam: ${toplam} / 90`;
+
         window.etkinlikArayuzuGuncelle();
 
+        // Kazanan Kontrolü (90 Çember)
         if (toplam >= 90) {
             clearInterval(window.etkinlikTimer);
             window.oyunBittiKazanan(0);
         }
-    }
+    });
 };
 
+// ÇEMBERİN HAREKETLİ UÇUŞ FONKSİYONU
+window.cemberUcurAnimasyonu = function(siseIndex, callback) {
+    const firlatButon = document.querySelector("#etkinlik-cember-ekrani button[onclick*='cemberiFirlat']");
+    const hedefSiseEl = document.querySelectorAll(".benim-kulvar .soda-sise")[siseIndex];
+
+    if (!firlatButon || !hedefSiseEl) {
+        callback();
+        return;
+    }
+
+    // Başlangıç (Buton) ve Bitiş (Şişe) Pozisyonları
+    const btnRect = firlatButon.getBoundingClientRect();
+    const siseRect = hedefSiseEl.getBoundingClientRect();
+
+    // Geçici Uçan Çember Oluştur
+    const ucanCember = document.createElement("div");
+    ucanCember.className = "ucan-cember";
+    ucanCember.style.left = `${btnRect.left + btnRect.width / 2 - 15}px`;
+    ucanCember.style.top = `${btnRect.top - 10}px`;
+
+    document.body.appendChild(ucanCember);
+
+    // 20ms sonra hedef şişeye uçur
+    setTimeout(() => {
+        ucanCember.style.left = `${siseRect.left + siseRect.width / 2 - 15}px`;
+        ucanCember.style.top = `${siseRect.top - 5}px`;
+        ucanCember.style.transform = "scaleX(1.4) scaleY(1.2)";
+    }, 20);
+
+    // Uçuş bitince çemberi sil ve gerçek çemberi şişeye oturt
+    setTimeout(() => {
+        ucanCember.remove();
+        callback();
+    }, 350);
+};
+
+// BOTLARIN TEK TEK ATMA MANTIĞI
 window.botaCemberEkle = function(botIndex) {
     let siseler = window.oyuncuSiseDurumlari[botIndex];
     for (let i = 0; i < 10; i++) {
@@ -1619,6 +1663,7 @@ window.botaCemberEkle = function(botIndex) {
     }
     window.etkinlikArayuzuGuncelle();
 };
+        
 
 window.oyunBittiKazanan = function(kazananIndex) {
     let isimler = [window.oyuncuVerisi?.isim || "Siz", "Ali", "Ayşe", "Mehmet", "Zeynep"];
