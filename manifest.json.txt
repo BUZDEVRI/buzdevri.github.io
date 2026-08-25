@@ -1,0 +1,12 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Seker Oyunu",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "SekerOyunu",
+  "start_url": "/",
+  "theme_color": "#ffffff",
+  "lang": "tr"
+}
