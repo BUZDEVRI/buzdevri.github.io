@@ -186,85 +186,104 @@
             z-index: 1;
             animation: yuksel linear forwards;
         }
-         /* Gerçekçi Şişe Sahnesi */
-.sise-sahnesi {
+          /* GERÇEKÇİ BEYPAZARI SODA ŞİŞESİ (CSS) */
+.soda-sise {
+    width: 22px;
+    height: 60px;
+    background: linear-gradient(90deg, #1b4d2e 0%, #2ecc71 45%, #4cd137 55%, #0f381e 100%);
+    border-radius: 6px 6px 4px 4px;
     position: relative;
-    width: 100%;
-    height: 140px;
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
-    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.3) 100%);
-    border-radius: 12px;
-    padding-bottom: 10px;
+    box-shadow: inset -2px 0 4px rgba(255,255,255,0.4), 0 4px 8px rgba(0,0,0,0.5);
+    display: inline-block;
 }
 
-/* 3D Görünümlü Cam Şişe */
-.gercekci-tek-sise {
-    width: 24px;
-    height: 90px;
-    background: linear-gradient(90deg, #1e824c, #2ecc71 50%, #145a32);
-    border-radius: 8px 8px 4px 4px;
-    position: relative;
-    box-shadow: 0 8px 15px rgba(0,0,0,0.4), inset -3px 0 5px rgba(255,255,255,0.3);
-}
-
-/* Şişe Boynu */
-.gercekci-tek-sise::before {
-    content: '';
-    position: absolute;
-    top: -16px;
-    left: 6px;
-    width: 12px;
-    height: 16px;
-    background: linear-gradient(90deg, #1e824c, #2ecc71, #145a32);
-    border-radius: 3px 3px 0 0;
-}
-
-/* Şişe Kapak Halkası */
-.gercekci-tek-sise::after {
+/* Şişe Boynu ve Ağzı */
+.soda-sise::before {
     content: '';
     position: absolute;
     top: -18px;
     left: 5px;
-    width: 14px;
-    height: 3px;
-    background: #f1c40f;
-    border-radius: 2px;
+    width: 12px;
+    height: 18px;
+    background: linear-gradient(90deg, #1b4d2e, #2ecc71, #0f381e);
+    border-radius: 4px 4px 0 0;
 }
 
-/* scaleX Komutlu Hareketli Çember Düşüş Animasyonu */
-@keyframes cemberDusmeScaleX {
-    0% {
-        transform: scaleX(0.2) scaleY(0.2) translateY(-80px);
-        opacity: 0;
-    }
-    50% {
-        transform: scaleX(1.6) scaleY(1.2) translateY(-10px);
-        opacity: 1;
-    }
-    80% {
-        transform: scaleX(0.8) scaleY(0.9) translateY(2px);
-    }
-    100% {
-        transform: scaleX(1) scaleY(1) translateY(0);
-        opacity: 1;
-    }
-}
-
-/* Şişenin Üstüne Dizilen Çemberler */
-.ust-uste-cember {
+/* Metal Gazoz Kapağı (Tırtıklı Beyaz/Gümüş) */
+.soda-sise::after {
+    content: '';
     position: absolute;
-    left: -5px;
+    top: -22px;
+    left: 3px;
+    width: 16px;
+    height: 5px;
+    background: linear-gradient(180deg, #ffffff, #dcdde1);
+    border-radius: 2px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Şişe Etiketi (Beypazarı Kırmızı/Beyaz Tarzı) */
+.soda-etiket {
+    position: absolute;
+    bottom: 8px;
+    left: 1px;
+    width: 20px;
+    height: 22px;
+    background: #fff;
+    border-top: 3px solid #e74c3c;
+    border-bottom: 2px solid #e74c3c;
+    border-radius: 1px;
+    box-sizing: border-box;
+}
+
+/* 7'Lİ ŞİŞE DİZİLİMİ (Arka 3, Ön 4 Sıra) */
+.sise-sahne-7li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 120px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 12px;
+    padding: 10px 5px 5px 5px;
+    position: relative;
+}
+
+.sise-sira-arka {
+    display: flex;
+    gap: 14px;
+    transform: scale(0.88); /* Arka sıra biraz daha küçük ve uzakta görünsün */
+    opacity: 0.9;
+}
+
+.sise-sira-on {
+    display: flex;
+    gap: 10px;
+    margin-top: -12px; /* Ön sıra arkadakileri hafif kapatsın (Derinlik hissi) */
+}
+
+/* ÇEMBER HAREKETİ (scaleX animasyonu ile şişeye konma) */
+.cember-gecen {
+    position: absolute;
+    top: -6px;
+    left: -6px;
     width: 34px;
-    height: 8px;
+    height: 14px;
     border: 3px solid #f1c40f;
     border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.6);
-    background: rgba(241, 196, 15, 0.2);
-    animation: cemberDusmeScaleX 0.4s ease-out forwards;
-                }
-                
+    box-shadow: 0 0 8px #f1c40f, inset 0 0 4px #f39c12;
+    background: rgba(241, 196, 15, 0.25);
+    pointer-events: none;
+    animation: scaleXCemberLanding 0.3s ease-out forwards;
+}
+
+@keyframes scaleXCemberLanding {
+    0% { transform: scaleX(0.2) scaleY(0.2) translateY(-40px); opacity: 0; }
+    70% { transform: scaleX(1.4) scaleY(1.2) translateY(3px); opacity: 1; }
+    100% { transform: scaleX(1) scaleY(1) translateY(0); opacity: 1; }
+    }
+        
     </style>
 </head>
   <body>
@@ -504,13 +523,12 @@
     </div>
 
     <!-- Kontrol Paneli (Atış Yap Butonu ve Çember Animasyonu) -->
-    <div style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 15px; text-align: center; width: 100%; max-width: 400px;">
-        <p id="etkinlik-durum-mesajlari" style="margin: 0 0 10px 0; font-size: 14px; color: #f39c12;">Sıra sende! Çemberi fırlatmak için butona bas.</p>
-        <button onclick="window.cemberiFirlat()" style="background: linear-gradient(180deg, #f1c40f, #d4ac0d); color: #000; font-weight: bold; font-size: 18px; border: none; padding: 12px 30px; border-radius: 25px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-            💍 ÇEMBERİ FIRLAT!
-        </button>
+    <div style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 18px 18px 0 0; text-align: center; width: 100%; max-width: 480px; margin: 0 auto; box-sizing: border-box; backdrop-filter: blur(8px); border-top: 2px solid #f1c40f;">
+    <p id="etkinlik-durum-mesajlari" style="margin: 0 0 10px 0; font-size: 13px; color: #f39c12; font-weight: bold;">Önünde 7 şişe var! Çemberi fırlat ve 9 puana ulaş.</p>
+    <button onclick="window.cemberiFirlat()" style="background: linear-gradient(180deg, #f1c40f, #d4ac0d); color: #000; font-weight: 900; font-size: 16px; border: none; padding: 12px 28px; border-radius: 25px; cursor: pointer; box-shadow: 0 4px 12px rgba(241, 196, 15, 0.4); width: 80%;">
+        💍 ÇEMBERİ FIRLAT!
+    </button>
     </div>
-</div>
       
 
 <!-- 8. ARKADAŞLAR EKRANI -->
@@ -1297,20 +1315,21 @@ window.addEventListener('DOMContentLoaded', () => {
     profilYukle();
     gunlukOdulButonKontrol();
 });
-        // ETKİNLİK OYUNU DEĞİŞKENLERİ
-let etkinlikTimer = null;
+        let etkinlikTimer = null;
 let etkinlikKalanSure = 30;
-let benimAtisSayim = 0;
-const HEDEF_ATIS = 9;
+let benimPuanim = 0;
+let oyuncuPuanlari = [0, 0, 0, 0, 0];
+const HEDEF_PUAN = 9;
 
 window.etkinlikOyununuBaslat = function() {
     etkinlikKalanSure = 30;
-    benimAtisSayim = 0;
+    benimPuanim = 0;
+    oyuncuPuanlari = [0, 0, 0, 0, 0];
     
     document.getElementById('etkinlik-sure').innerText = etkinlikKalanSure;
-    document.getElementById('etkinlik-durum-mesajlari').innerText = "Önünde 9 şişe var! Çemberi fırlat ve şişelere geçir.";
+    document.getElementById('etkinlik-durum-mesajlari').innerText = "Yarış başladı! 9 çember takan ilk kişi kazanır!";
     
-    window.etkinlikArayuzuGuncelle(0);
+    window.etkinlikArayuzuGuncelle();
 
     if (etkinlikTimer) clearInterval(etkinlikTimer);
     etkinlikTimer = setInterval(() => {
@@ -1318,51 +1337,69 @@ window.etkinlikOyununuBaslat = function() {
         const sureEl = document.getElementById('etkinlik-sure');
         if (sureEl) sureEl.innerText = etkinlikKalanSure;
 
+        // Botlar rastgele çember atar
+        for (let i = 1; i < 5; i++) {
+            if (Math.random() > 0.65 && oyuncuPuanlari[i] < HEDEF_PUAN) {
+                oyuncuPuanlari[i]++;
+                window.etkinlikArayuzuGuncelle();
+                
+                // Bot kazandıysa
+                if (oyuncuPuanlari[i] >= HEDEF_PUAN) {
+                    window.oyunBittiKazanan(i);
+                    return;
+                }
+            }
+        }
+
+        // Süre Biterse En Yüksek Puanlı Kazanır
         if (etkinlikKalanSure <= 0) {
             clearInterval(etkinlikTimer);
-            alert("⏰ Süre bitti! Çember atma etkinliği yeniden başlatılıyor...");
-            window.etkinlikOyununuBaslat();
+            let maxPuan = -1;
+            let kazananIndex = 0;
+            oyuncuPuanlari.forEach((p, idx) => {
+                if (p > maxPuan) {
+                    maxPuan = p;
+                    kazananIndex = idx;
+                }
+            });
+            window.oyunBittiKazanan(kazananIndex);
         }
     }, 1000);
 };
 
-// 5 KİŞİLİK GERÇEKÇİ ŞİŞE ARAYÜZÜ (Her birinin önünde 9 şişe var)
-// 5 KİŞİLİK TEK ŞİŞELİ ETKİNLİK ARAYÜZÜ
-window.etkinlikArayuzuGuncelle = function(puan) {
+// 7 Lİ GERÇEKÇİ BEYPAZARI ŞİŞE ARAYÜZÜ
+window.etkinlikArayuzuGuncelle = function() {
     const alan = document.getElementById('cember-oyuncular-alani');
     if (!alan) return;
 
-    let oyuncular = [
-        { isim: window.oyuncuVerisi?.isim || "Siz", resim: window.oyuncuVerisi?.resim, puan: puan, ben: true },
-        { isim: "Ali", resim: "https://via.placeholder.com/40", puan: Math.floor(Math.random() * 8), ben: false },
-        { isim: "Ayşe", resim: "https://via.placeholder.com/40", puan: Math.floor(Math.random() * 8), ben: false },
-        { isim: "Mehmet", resim: "https://via.placeholder.com/40", puan: Math.floor(Math.random() * 8), ben: false },
-        { isim: "Zeynep", resim: "https://via.placeholder.com/40", puan: Math.floor(Math.random() * 8), ben: false }
-    ];
+    let isimler = [window.oyuncuVerisi?.isim || "Siz", "Ali", "Ayşe", "Mehmet", "Zeynep"];
 
-    alan.innerHTML = oyuncular.map((o) => {
-        // Şişenin üzerine üst üste geçirilecek 9 çemberin yerleşimi
-        let cemberlerHtml = '';
-        for (let i = 0; i < o.puan; i++) {
-            // Çemberler alt kısımdan yukarı doğru dizilir (her çember 7px yukarı kayar)
-            let altMesafe = 6 + (i * 7); 
-            cemberlerHtml += `<div class="ust-uste-cember" style="bottom: ${altMesafe}px;"></div>`;
-        }
+    alan.innerHTML = isimler.map((isim, oIdx) => {
+        let p = oyuncuPuanlari[oIdx];
+
+        // 7 Şişenin (Arka 3, Ön 4) HTML'i ve üzerlerine geçecek çemberler
+        let siseRender = (siseNo) => {
+            let cemberVar = siseNo <= p;
+            return `
+                <div style="position: relative; display: inline-block;">
+                    <div class="soda-sise"><div class="soda-etiket"></div></div>
+                    ${cemberVar ? '<div class="cember-gecen"></div>' : ''}
+                </div>
+            `;
+        };
 
         return `
-            <div style="background: rgba(0,0,0,0.35); border: 2px solid ${o.ben ? '#f1c40f' : '#74b9ff'}; border-radius: 12px; padding: 10px; width: 170px; text-align: center;">
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                    <img src="${o.resim || 'https://via.placeholder.com/40'}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid #fff;">
-                    <div style="text-align: left;">
-                        <div style="font-size: 12px; font-weight: bold; color: ${o.ben ? '#f1c40f' : '#fff'};">${o.isim}</div>
-                        <div style="font-size: 10px; color: #a5b1c2;">Çember: <b>${o.puan} / 9</b></div>
-                    </div>
-                </div>
+            <div style="background: rgba(15, 23, 42, 0.7); border: 2px solid ${oIdx === 0 ? '#f1c40f' : '#38bdf8'}; border-radius: 14px; padding: 8px; width: 45%; max-width: 180px; text-align: center; box-sizing: border-box;">
+                <div style="font-size: 12px; font-weight: bold; color: ${oIdx === 0 ? '#f1c40f' : '#fff'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${isim}</div>
+                <div style="font-size: 10px; color: #94a3b8; margin-bottom: 4px;">Çember: <b>${p} / 9</b></div>
                 
-                <!-- Tek Şişeli ve Üst Üste Çemberli Sahne -->
-                <div class="sise-sahnesi">
-                    <div class="gercekci-tek-sise">
-                        ${cemberlerHtml}
+                <!-- 7'li Şişe Sahnesi (3 Arka, 4 Ön) -->
+                <div class="sise-sahne-7li">
+                    <div class="sise-sira-arka">
+                        ${siseRender(1)} ${siseRender(2)} ${siseRender(3)}
+                    </div>
+                    <div class="sise-sira-on">
+                        ${siseRender(4)} ${siseRender(5)} ${siseRender(6)} ${siseRender(7)}
                     </div>
                 </div>
             </div>
@@ -1370,23 +1407,30 @@ window.etkinlikArayuzuGuncelle = function(puan) {
     }).join('');
 };
 
-// ÇEMBERİ ŞİŞEYE ATMA
+// ÇEMBERİ FIRLATMA
 window.cemberiFirlat = function() {
-    if (benimAtisSayim >= HEDEF_ATIS) return;
+    if (oyuncuPuanlari[0] >= HEDEF_PUAN || etkinlikKalanSure <= 0) return;
 
-    benimAtisSayim++;
-    window.etkinlikArayuzuGuncelle(benimAtisSayim);
+    oyuncuPuanlari[0]++;
+    window.etkinlikArayuzuGuncelle();
 
-    if (benimAtisSayim >= HEDEF_ATIS) {
-        clearInterval(etkinlikTimer);
-        document.getElementById('etkinlik-durum-mesajlari').innerText = "🏆 HARİKA! 9 ÇEMBERİN HEPSİNİ TEK ŞİŞEYE GEÇİRDİN!";
-        alert("🎉 Tebrikler! Tek şişeye 9 çemberi de takarak etkinliği kazandın!");
-        setTimeout(() => {
-            window.etkinlikOyununuBaslat();
-        }, 2000);
-    } else {
-        document.getElementById('etkinlik-durum-mesajlari').innerText = `Atış başarılı! Kalan çember: ${HEDEF_ATIS - benimAtisSayim}`;
+    if (oyuncuPuanlari[0] >= HEDEF_PUAN) {
+        window.oyunBittiKazanan(0);
     }
+};
+
+// KAZANANI İLAN ETME
+window.oyunBittiKazanan = function(kazananIndex) {
+    clearInterval(etkinlikTimer);
+    let isimler = [window.oyuncuVerisi?.isim || "Siz", "Ali", "Ayşe", "Mehmet", "Zeynep"];
+    let kazananIsim = isimler[kazananIndex];
+
+    document.getElementById('etkinlik-durum-mesajlari').innerText = `🏆 OYUN BİTTİ! KAZANAN: ${kazananIsim.toUpperCase()}`;
+    alert(`🎉 ETKİNLİK BİTTİ!\n\n🏆 Kazanan Oyuncu: ${kazananIsim}`);
+    
+    setTimeout(() => {
+        window.etkinlikOyununuBaslat();
+    }, 3000);
 };
         
     </script>
