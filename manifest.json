@@ -1,9 +1,17 @@
 {
   "name": "Seker Oyunu",
   "short_name": "SekerOyunu",
-  "description": "Eğlenceli Meyve ve Şeker Eşleştirme Oyunu",
+  "description": "Eglenceli Meyve ve Seker Eslestirme Oyunu",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#1e0f2d",
-  "theme_color": "#ff75c3"
+  "theme_color": "#ff75c3",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2917/2917995.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
