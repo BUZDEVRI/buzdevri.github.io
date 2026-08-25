@@ -266,19 +266,21 @@
 }
 
 /* ÇEMBERLERİN ŞİŞE BOYUNLARINA ÇIKMASI İÇİN */
+/* ÇEMBERLERİN ŞİŞE TABANINDAN YUKARIYA DİZİLİŞ KODU */
 .cember-scalex-anim {
     position: absolute;
-    top: 2px; /* Çemberleri şişenin boynuna denk getirir */
     left: -2px;
-    width: 24px;
-    height: 8px;
+    width: 22px;
+    height: 7px;
     border: 2px solid #f1c40f;
     border-radius: 50%;
-    box-shadow: 0 0 5px #f1c40f;
-    background: rgba(241, 196, 15, 0.35);
+    box-shadow: 0 0 5px #f1c40f, inset 0 0 2px #f39c12;
+    background: rgba(241, 196, 15, 0.4);
     pointer-events: none;
     z-index: 10;
+    animation: scaleXCemberOturma 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
+        
         
 /* scaleX Genişleme ve Şişeye Yerleşme Efekti */
 @keyframes scaleXCemberOturma {
@@ -1536,9 +1538,11 @@ window.etkinlikOyununuBaslat = function() {
         let siseRender = (siseIndex) => {
             let adet = siseler[siseIndex];
             let cemberlerHtml = '';
-            for (let c = 0; c < adet; c++) {
-                cemberlerHtml += `<div class="cember-scalex-anim" style="top: ${-4 - (c * 2.5)}px;"></div>`;
-            }
+for (let c = 0; c < adet; c++) {
+    // 3px taban boşluğundan başlayarak her çember üst üste (4px yükselerek) dizilir
+    let altMesafe = 3 + (c * 4); 
+    cemberlerHtml += `<div class="cember-scalex-anim" style="bottom: ${altMesafe}px;"></div>`;
+        }
 
             return `
                 <div class="soda-sise-kapsayici">
