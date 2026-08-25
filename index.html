@@ -186,49 +186,65 @@
             z-index: 1;
             animation: yuksel linear forwards;
         }
-          /* Şişe ve Çember Efektleri */
-.sise-konteyner {
+         /* Gerçekçi Şişe Sahnesi */
+.sise-sahnesi {
+    position: relative;
+    width: 100%;
+    height: 140px;
     display: flex;
     justify-content: center;
     align-items: flex-end;
-    gap: 3px;
-    height: 45px;
-    position: relative;
-    background: rgba(0,0,0,0.2);
-    border-radius: 8px;
-    padding: 4px;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.3) 100%);
+    border-radius: 12px;
+    padding-bottom: 10px;
 }
 
-.gercekci-sise {
-    width: 12px;
-    height: 35px;
-    background: linear-gradient(90deg, #2ecc71, #27ae60);
-    border-radius: 4px 4px 2px 2px;
+/* 3D Görünümlü Cam Şişe */
+.gercekci-tek-sise {
+    width: 24px;
+    height: 90px;
+    background: linear-gradient(90deg, #1e824c, #2ecc71 50%, #145a32);
+    border-radius: 8px 8px 4px 4px;
     position: relative;
-    display: inline-block;
-    box-shadow: inset -2px -2px 4px rgba(0,0,0,0.3);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.4), inset -3px 0 5px rgba(255,255,255,0.3);
 }
 
-.gercekci-sise::before {
+/* Şişe Boynu */
+.gercekci-tek-sise::before {
     content: '';
     position: absolute;
-    top: -6px;
-    left: 3px;
-    width: 6px;
-    height: 6px;
-    background: #27ae60;
+    top: -16px;
+    left: 6px;
+    width: 12px;
+    height: 16px;
+    background: linear-gradient(90deg, #1e824c, #2ecc71, #145a32);
+    border-radius: 3px 3px 0 0;
+}
+
+/* Şişe Kapak Halkası */
+.gercekci-tek-sise::after {
+    content: '';
+    position: absolute;
+    top: -18px;
+    left: 5px;
+    width: 14px;
+    height: 3px;
+    background: #f1c40f;
     border-radius: 2px;
 }
 
-/* scaleX Komutu ile Çember Atma Animasyonu */
-@keyframes scaleXCemberAnim {
+/* scaleX Komutlu Hareketli Çember Düşüş Animasyonu */
+@keyframes cemberDusmeScaleX {
     0% {
-        transform: scaleX(0.2) scaleY(0.2) translateY(-30px);
+        transform: scaleX(0.2) scaleY(0.2) translateY(-80px);
         opacity: 0;
     }
-    60% {
-        transform: scaleX(1.5) scaleY(1.5) translateY(5px);
+    50% {
+        transform: scaleX(1.6) scaleY(1.2) translateY(-10px);
         opacity: 1;
+    }
+    80% {
+        transform: scaleX(0.8) scaleY(0.9) translateY(2px);
     }
     100% {
         transform: scaleX(1) scaleY(1) translateY(0);
@@ -236,9 +252,18 @@
     }
 }
 
-.cember-scaleX-efekt {
-    animation: scaleXCemberAnim 0.35s ease-out forwards;
-        }
+/* Şişenin Üstüne Dizilen Çemberler */
+.ust-uste-cember {
+    position: absolute;
+    left: -5px;
+    width: 34px;
+    height: 8px;
+    border: 3px solid #f1c40f;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.6);
+    background: rgba(241, 196, 15, 0.2);
+    animation: cemberDusmeScaleX 0.4s ease-out forwards;
+                }
                 
     </style>
 </head>
@@ -1302,6 +1327,7 @@ window.etkinlikOyununuBaslat = function() {
 };
 
 // 5 KİŞİLİK GERÇEKÇİ ŞİŞE ARAYÜZÜ (Her birinin önünde 9 şişe var)
+// 5 KİŞİLİK TEK ŞİŞELİ ETKİNLİK ARAYÜZÜ
 window.etkinlikArayuzuGuncelle = function(puan) {
     const alan = document.getElementById('cember-oyuncular-alani');
     if (!alan) return;
@@ -1314,39 +1340,37 @@ window.etkinlikArayuzuGuncelle = function(puan) {
         { isim: "Zeynep", resim: "https://via.placeholder.com/40", puan: Math.floor(Math.random() * 8), ben: false }
     ];
 
-    alan.innerHTML = oyuncular.map((o, oIndex) => {
-        // 9 adet şişe oluşturuyoruz. Puan kadar olanların üzerine çember (💍) oturuyor.
-        let siseHtml = '';
-        for (let i = 0; i < 9; i++) {
-            let cemberVarmi = i < o.puan;
-            siseHtml += `
-                <div style="position: relative; display: inline-block; margin: 0 1px;">
-                    <div class="gercekci-sise"></div>
-                    ${cemberVarmi ? '<div style="position: absolute; top: 2px; left: -3px; font-size: 14px;" class="cember-scaleX-efekt">💍</div>' : ''}
-                </div>
-            `;
+    alan.innerHTML = oyuncular.map((o) => {
+        // Şişenin üzerine üst üste geçirilecek 9 çemberin yerleşimi
+        let cemberlerHtml = '';
+        for (let i = 0; i < o.puan; i++) {
+            // Çemberler alt kısımdan yukarı doğru dizilir (her çember 7px yukarı kayar)
+            let altMesafe = 6 + (i * 7); 
+            cemberlerHtml += `<div class="ust-uste-cember" style="bottom: ${altMesafe}px;"></div>`;
         }
 
         return `
-            <div style="background: rgba(0,0,0,0.35); border: 2px solid ${o.ben ? '#f1c40f' : '#74b9ff'}; border-radius: 12px; padding: 10px; width: 210px; text-align: center;">
+            <div style="background: rgba(0,0,0,0.35); border: 2px solid ${o.ben ? '#f1c40f' : '#74b9ff'}; border-radius: 12px; padding: 10px; width: 170px; text-align: center;">
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
                     <img src="${o.resim || 'https://via.placeholder.com/40'}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid #fff;">
-                    <div style="text-align: left; overflow: hidden;">
+                    <div style="text-align: left;">
                         <div style="font-size: 12px; font-weight: bold; color: ${o.ben ? '#f1c40f' : '#fff'};">${o.isim}</div>
-                        <div style="font-size: 10px; color: #a5b1c2;">Şişeye Atılan: <b>${o.puan} / 9</b></div>
+                        <div style="font-size: 10px; color: #a5b1c2;">Çember: <b>${o.puan} / 9</b></div>
                     </div>
                 </div>
                 
-                <!-- 9 Şişe ve Çember Alanı -->
-                <div class="sise-konteyner">
-                    ${siseHtml}
+                <!-- Tek Şişeli ve Üst Üste Çemberli Sahne -->
+                <div class="sise-sahnesi">
+                    <div class="gercekci-tek-sise">
+                        ${cemberlerHtml}
+                    </div>
                 </div>
             </div>
         `;
     }).join('');
 };
 
-// ÇEMBERİ FIRLATMA VE SCALEX KOMUTU UYGULAMA
+// ÇEMBERİ ŞİŞEYE ATMA
 window.cemberiFirlat = function() {
     if (benimAtisSayim >= HEDEF_ATIS) return;
 
@@ -1355,13 +1379,13 @@ window.cemberiFirlat = function() {
 
     if (benimAtisSayim >= HEDEF_ATIS) {
         clearInterval(etkinlikTimer);
-        document.getElementById('etkinlik-durum-mesajlari').innerText = "🏆 HELAL OLSUN! 9 ŞİŞEYE DE ÇEMBERİ ATTIN VE KAZANDIN!";
-        alert("🎉 Tebrikler! 9 şişenin hepsine çember atarak etkinliği kazandın!");
+        document.getElementById('etkinlik-durum-mesajlari').innerText = "🏆 HARİKA! 9 ÇEMBERİN HEPSİNİ TEK ŞİŞEYE GEÇİRDİN!";
+        alert("🎉 Tebrikler! Tek şişeye 9 çemberi de takarak etkinliği kazandın!");
         setTimeout(() => {
             window.etkinlikOyununuBaslat();
         }, 2000);
     } else {
-        document.getElementById('etkinlik-durum-mesajlari').innerText = `Harika atış! Kalan şişe sayısı: ${HEDEF_ATIS - benimAtisSayim}`;
+        document.getElementById('etkinlik-durum-mesajlari').innerText = `Atış başarılı! Kalan çember: ${HEDEF_ATIS - benimAtisSayim}`;
     }
 };
         
