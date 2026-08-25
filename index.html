@@ -731,33 +731,95 @@ window.odaOlustur = function() {
         myPeerId = id;
         const odaKoduDisplay = document.getElementById('oda-kodu-display');
         if (odaKoduDisplay) odaKoduDisplay.innerText = id;
+        
+        // Host (Oda Kurucusu) bilgilerini odaya ilk oyuncu olarak ekle
+        window.odaOyuncuListesiniGuncelle();
         window.ekranGoster('oda-ici-ekran');
     });
 
     // Misafir bağlantılarını dinle
     peer.on('connection', (conn) => {
-        if (connectedPeers.length >= 3) { // Maks 4 kişi (Host + 3)
+        if (connectedPeers.length >= 3) { // Maks 4 kişi
             conn.close();
             return;
         }
 
-        connectedPeers.push(conn);
-        
         conn.on('open', () => {
+            // Yeni katılan misafir bilgisini diziye ekle
+            connectedPeers.push(conn);
             const yeniOyuncuIndex = connectedPeers.length;
+            
+            // Misafire kendi index'ini bildir
             conn.send({ type: "ASSIGN_INDEX", index: yeniOyuncuIndex });
-
-            const sayiEl = document.getElementById('oyuncu-sayisi-display');
-            if (sayiEl) sayiEl.innerText = connectedPeers.length + 1;
+            
+            // Mevcut tüm oyuncu listesini yeni gelene gönder
+            window.odaOyuncuListesiniGuncelle();
         });
 
         conn.on('data', (data) => window.sinyalIsle(data, conn));
+
+        // Kullanıcı pencereyi kapattığında veya odadan çıktığında listeden düşür
+        conn.on('close', () => {
+            connectedPeers = connectedPeers.filter(c => c.peer !== conn.peer);
+            window.odaOyuncuListesiniGuncelle();
+        });
     });
 
     peer.on('call', (call) => {
         call.answer(localAudioStream || null);
         sesAkisiniDinle(call);
     });
+};
+
+// ODA OYUNCU LİSTESİNİ GÜNCELLEME VE ARAYÜZE YANSITMA
+window.odaOyuncuListesiniGuncelle = function() {
+    const oyuncuListesiEl = document.getElementById('oda-oyuncu-listesi');
+    const sayiEl = document.getElementById('oyuncu-sayisi-display');
+    
+    // Aktif toplam oyuncu sayısı (Host + Bagli Misafirler)
+    const toplamOyuncu = connectedPeers.length + 1;
+    if (sayiEl) sayiEl.innerText = toplamOyuncu;
+
+    // Eğer arayüzde oyuncu listesi konteyneri varsa profilleri bas
+    if (oyuncuListesiEl) {
+        let htmlContent = `
+            <div class="oyuncu-kart" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 6px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                <img src="${window.oyuncuVerisi.resim || 'https://via.placeholder.com/40'}" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ff6b81; object-fit: cover;">
+                <span style="color: #ff6b81; font-weight: bold;">👑 ${window.oyuncuVerisi.isim} (Kurucu)</span>
+            </div>
+        `;
+
+        connectedPeers.forEach((conn, idx) => {
+            const oyuncuAdi = conn.playerInfo ? conn.playerInfo.name : `Oyuncu ${idx + 2}`;
+            const oyuncuResim = conn.playerInfo ? conn.playerInfo.img : 'https://via.placeholder.com/40';
+
+            htmlContent += `
+                <div class="oyuncu-kart" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 6px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                    <img src="${oyuncuResim}" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #74b9ff; object-fit: cover;">
+                    <span style="color: #74b9ff; font-weight: bold;">🎮 ${oyuncuAdi}</span>
+                </div>
+            `;
+        });
+
+        oyuncuListesiEl.innerHTML = htmlContent;
+    }
+
+    // Host tarafındaysak güncel listeyi diğer oyunculara duyur
+    if (isHost) {
+        const oyuncuListesiData = [
+            { name: window.oyuncuVerisi.isim, img: window.oyuncuVerisi.resim, isHost: true },
+            ...connectedPeers.map(c => ({
+                name: c.playerInfo ? c.playerInfo.name : "Oyuncu",
+                img: c.playerInfo ? c.playerInfo.img : "",
+                isHost: false
+            }))
+        ];
+
+        tumOyuncularaGonder({
+            type: "LISTE_GUNCELLE",
+            oyuncular: oyuncuListesiData
+        });
+    }
 };
 // ODAYA BAGLAN (MİSAFİR)
 window.odayaBaglanTikla = function() {
@@ -775,11 +837,21 @@ window.odayaBaglanTikla = function() {
 
         conn.on('open', () => {
             connectedPeers = [conn];
-            conn.send({ type: "PROFILE_INFO", name: window.oyuncuVerisi.isim });
+            // Baglanirken hem Isim hem Fotoğraf verisini yolla
+            conn.send({ 
+                type: "PROFILE_INFO", 
+                name: window.oyuncuVerisi.isim,
+                img: window.oyuncuVerisi.resim
+            });
             window.ekranGoster('misafir-bekleme-ekrani');
         });
 
         conn.on('data', (data) => window.sinyalIsle(data, conn));
+        
+        conn.on('close', () => {
+            alert("Oda sahibi bağlantıyı kesti veya odadan ayrıldı.");
+            window.ekranGoster('ana-lobi');
+        });
     });
 
     peer.on('call', (call) => {
@@ -787,12 +859,10 @@ window.odayaBaglanTikla = function() {
         sesAkisiniDinle(call);
     });
 };
-
 window.odadanCik = function() {
     if (peer) peer.destroy();
     connectedPeers = [];
     isHost = false;
-    alert("Odadan ayrıldınız! 🚪");
     window.ekranGoster('ana-lobi');
 };
 
@@ -800,7 +870,17 @@ window.odadanCik = function() {
 window.sinyalIsle = function(data, senderConn) {
     if (!data) return;
 
-    if (data.type === "CHAT_MESAJ") {
+    if (data.type === "PROFILE_INFO") {
+        // Gelen misafir bilgilerini ilgili bağlantıya ekle
+        senderConn.playerInfo = {
+            name: data.name,
+            img: data.img
+        };
+        window.odaOyuncuListesiniGuncelle();
+    } else if (data.type === "LISTE_GUNCELLE") {
+        // Misafir tarafında liste güncellemesi gelirse arayüzü yenile
+        window.misafirOdaListesiniYazdir(data.oyuncular);
+    } else if (data.type === "CHAT_MESAJ") {
         window.chatEkranaEkle(data.gonderen, data.mesaj, false);
         if (isHost) {
             connectedPeers.forEach(c => {
@@ -825,6 +905,26 @@ window.sinyalIsle = function(data, senderConn) {
         }
     }
 };
+
+// MİSAFİR EKRANINDA LİSTEYİ BASTIRMA
+window.misafirOdaListesiniYazdir = function(oyuncular) {
+    const oyuncuListesiEl = document.getElementById('misafir-oyuncu-listesi') || document.getElementById('oda-oyuncu-listesi');
+    const sayiEl = document.getElementById('oyuncu-sayisi-display');
+
+    if (sayiEl) sayiEl.innerText = oyuncular.length;
+
+    if (oyuncuListesiEl) {
+        oyuncuListesiEl.innerHTML = oyuncular.map(o => `
+            <div class="oyuncu-kart" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 6px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                <img src="${o.img || 'https://via.placeholder.com/40'}" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid ${o.isHost ? '#ff6b81' : '#74b9ff'}; object-fit: cover;">
+                <span style="color: ${o.isHost ? '#ff6b81' : '#74b9ff'}; font-weight: bold;">
+                    ${o.isHost ? '👑 ' + o.name + ' (Kurucu)' : '🎮 ' + o.name}
+                </span>
+            </div>
+        `).join('');
+    }
+};
+        
 
 // CANLI CHAT & MİKROFON
 window.chatEkranaEkle = function(gonderen, mesaj, isMe = false) {
