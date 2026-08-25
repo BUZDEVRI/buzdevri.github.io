@@ -239,7 +239,7 @@
 
         <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
 
-        <button onclick="window.odaOlustur()" style="width: 100%; padding: 12px; background: #ff4757; color: white; border: none; border-radius: 12px; font-weight: bold; margin-bottom: 10px; cursor: pointer;">👑 Oda Oluştur (Max 4 Kişi)</button>
+        <button onclick="window.odaOlustur()">Oda Oluştur 👑</button>
         <div style="display: flex; gap: 8px;">
             <input type="text" id="oda-kodu-input" placeholder="Oda Kodu..." style="flex: 1; padding: 10px; border-radius: 10px; border: none;">
             <button onclick="window.odayaBaglanTikla()" style="padding: 10px 15px; background: #54a0ff; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer;">Katıl 🚀</button>
@@ -725,43 +725,38 @@ kartSimgeleri.sort(() => Math.random() - 0.5);
         });
     }
 
-    window.odaOlustur = function() {
-        isHost = true;
-        myPlayerIndex = 0;
-        myPeerId = 'seker_' + Math.random().toString(36).substring(2, 7);
-        peer = new Peer(myPeerId);
+      // Oda Oluşturma Fonksiyonu
+window.odaOlustur = function() {
+    // Oda içi ekranını görünür yap
+    const odaEkrani = document.getElementById('oda-ici-ekran');
+    if (odaEkrani) {
+        odaEkrani.style.display = 'block';
+        
+        // Ekrana otomatik kaydır
+        odaEkrani.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Örnek Oda Kodu Üret
+    const odaKodu = Math.floor(100000 + Math.random() * 900000);
+    const odaKoduDisplay = document.getElementById('oda-kodu-display');
+    if (odaKoduDisplay) odaKoduDisplay.innerText = odaKodu;
+};
 
-        peer.on('open', (id) => {
-            const odaDisplay = document.getElementById('oda-kodu-display');
-            if (odaDisplay) odaDisplay.innerText = id;
-            
-            const myIdDisplay = document.getElementById('my-peer-id-display');
-            if (myIdDisplay) myIdDisplay.innerText = window.oyuncuVerisi.isim;
-            
-            window.ekranGoster('oda-ici-ekran');
-        });
+// Oyunu Başlat Buton Fonksiyonu
+window.oyunuBaslatButonunaBas = function() {
+    alert("Oyun başlatılıyor!");
+    // Oyun başlatma kodların buraya gelecek
+};
 
-        peer.on('call', (call) => {
-            call.answer(localAudioStream || null);
-            sesAkisiniDinle(call);
-        });
-
-        peer.on('connection', (conn) => {
-            if (connectedPeers.length >= 3) {
-                conn.close();
-                return;
-            }
-            connectedPeers.push(conn);
-            
-            const sayiDisplay = document.getElementById('oyuncu-sayisi-display');
-            if (sayiDisplay) sayiDisplay.innerText = connectedPeers.length + 1;
-
-            // Yeni oyuncuya sıra indeksi ver
-            conn.send({ type: "ASSIGN_INDEX", index: connectedPeers.length });
-
-            conn.on('data', (data) => window.sinyalIsle(data, conn));
-        });
-    };
+// Odadan Çık Fonksiyonu
+window.odadanCik = function() {
+    const odaEkrani = document.getElementById('oda-ici-ekran');
+    const misafirEkrani = document.getElementById('misafir-bekleme-ekrani');
+    
+    if (odaEkrani) odaEkrani.style.display = 'none';
+    if (misafirEkrani) misafirEkrani.style.display = 'none';
+};
+        
       window.odayaBaglanTikla = function() {
         const inputEl = document.getElementById('oda-kodu-input');
         const kod = inputEl ? inputEl.value.trim() : '';
