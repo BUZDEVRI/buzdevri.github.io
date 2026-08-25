@@ -186,24 +186,60 @@
             z-index: 1;
             animation: yuksel linear forwards;
         }
-
-        @keyframes yuksel {
-            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
-        }
-          #seker-efekt-konteyner {
-    pointer-events: none; /* Tıklamaların alt tarafa geçmesini sağlar */
+          /* Şişe ve Çember Efektleri */
+.sise-konteyner {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 3px;
+    height: 45px;
+    position: relative;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    padding: 4px;
 }
-      @keyframes scaleXAnimasyon {
-    0% { transform: scaleX(0.5) scaleY(0.5); opacity: 0; }
-    50% { transform: scaleX(1.3) scaleY(1.3); opacity: 1; }
-    100% { transform: scaleX(1) scaleY(1); opacity: 1; }
+
+.gercekci-sise {
+    width: 12px;
+    height: 35px;
+    background: linear-gradient(90deg, #2ecc71, #27ae60);
+    border-radius: 4px 4px 2px 2px;
+    position: relative;
+    display: inline-block;
+    box-shadow: inset -2px -2px 4px rgba(0,0,0,0.3);
 }
 
-.cember-firlatiliyor {
-    animation: scaleXAnimasyon 0.4s ease-in-out forwards;
+.gercekci-sise::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 3px;
+    width: 6px;
+    height: 6px;
+    background: #27ae60;
+    border-radius: 2px;
+}
+
+/* scaleX Komutu ile Çember Atma Animasyonu */
+@keyframes scaleXCemberAnim {
+    0% {
+        transform: scaleX(0.2) scaleY(0.2) translateY(-30px);
+        opacity: 0;
+    }
+    60% {
+        transform: scaleX(1.5) scaleY(1.5) translateY(5px);
+        opacity: 1;
+    }
+    100% {
+        transform: scaleX(1) scaleY(1) translateY(0);
+        opacity: 1;
+    }
+}
+
+.cember-scaleX-efekt {
+    animation: scaleXCemberAnim 0.35s ease-out forwards;
         }
-        
+                
     </style>
 </head>
   <body>
@@ -1239,20 +1275,18 @@ window.addEventListener('DOMContentLoaded', () => {
         // ETKİNLİK OYUNU DEĞİŞKENLERİ
 let etkinlikTimer = null;
 let etkinlikKalanSure = 30;
-let benimPuanim = 0;
-const HEDEF_PUAN = 9;
+let benimAtisSayim = 0;
+const HEDEF_ATIS = 9;
 
 window.etkinlikOyununuBaslat = function() {
     etkinlikKalanSure = 30;
-    benimPuanim = 0;
+    benimAtisSayim = 0;
     
     document.getElementById('etkinlik-sure').innerText = etkinlikKalanSure;
-    document.getElementById('etkinlik-durum-mesajlari').innerText = "Sıra sende! Çemberi fırlatmak için butona bas.";
+    document.getElementById('etkinlik-durum-mesajlari').innerText = "Önünde 9 şişe var! Çemberi fırlat ve şişelere geçir.";
     
-    // 5 Kişilik Şişe Alanını Oluştur (Örnek 5 oyuncu: 1 Sen + 4 Rakip/Bot)
     window.etkinlikArayuzuGuncelle(0);
 
-    // Süreyi Başlat
     if (etkinlikTimer) clearInterval(etkinlikTimer);
     etkinlikTimer = setInterval(() => {
         etkinlikKalanSure--;
@@ -1261,72 +1295,73 @@ window.etkinlikOyununuBaslat = function() {
 
         if (etkinlikKalanSure <= 0) {
             clearInterval(etkinlikTimer);
-            alert("⏰ Süre bitti! Oyun yeniden başlatılıyor...");
-            window.etkinlikOyununuBaslat(); // Süre bitince otomatik yeniden başlat
+            alert("⏰ Süre bitti! Çember atma etkinliği yeniden başlatılıyor...");
+            window.etkinlikOyununuBaslat();
         }
     }, 1000);
 };
 
-// 5 Lİ ŞİŞE VE OYUNCU GÖRÜNÜMÜ
+// 5 KİŞİLİK GERÇEKÇİ ŞİŞE ARAYÜZÜ (Her birinin önünde 9 şişe var)
 window.etkinlikArayuzuGuncelle = function(puan) {
     const alan = document.getElementById('cember-oyuncular-alani');
     if (!alan) return;
 
-    // 5 kişilik liste (1. oyuncu siz, diğerleri rakip/arkadaş simülasyonu)
     let oyuncular = [
         { isim: window.oyuncuVerisi?.isim || "Siz", resim: window.oyuncuVerisi?.resim, puan: puan, ben: true },
-        { isim: "Ali", resim: "https://via.placeholder.com/40", puan: Math.floor(Math.random() * 5), ben: false },
-        { isim: "Ayşe", resim: "https://via.placeholder.com/40", puan: Math.floor(Math.random() * 5), ben: false },
-        { isim: "Mehmet", resim: "https://via.placeholder.com/40", puan: Math.floor(Math.random() * 5), ben: false },
-        { isim: "Zeynep", resim: "https://via.placeholder.com/40", puan: Math.floor(Math.random() * 5), ben: false }
+        { isim: "Ali", resim: "https://via.placeholder.com/40", puan: Math.floor(Math.random() * 8), ben: false },
+        { isim: "Ayşe", resim: "https://via.placeholder.com/40", puan: Math.floor(Math.random() * 8), ben: false },
+        { isim: "Mehmet", resim: "https://via.placeholder.com/40", puan: Math.floor(Math.random() * 8), ben: false },
+        { isim: "Zeynep", resim: "https://via.placeholder.com/40", puan: Math.floor(Math.random() * 8), ben: false }
     ];
 
-    alan.innerHTML = oyuncular.map((o, index) => `
-        <div style="background: rgba(0,0,0,0.3); border: 2px solid ${o.ben ? '#f1c40f' : '#74b9ff'}; border-radius: 12px; padding: 10px; width: 170px; text-align: center;">
-            <img src="${o.resim || 'https://via.placeholder.com/40'}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; margin-bottom: 5px;">
-            <div style="font-size: 13px; font-weight: bold; color: ${o.ben ? '#f1c40f' : '#fff'};">${o.isim}</div>
-            <div style="font-size: 11px; color: #a5b1c2; margin-bottom: 8px;">Puan: <b>${o.puan} / 9</b></div>
-            
-            <!-- ÖNÜNDEKİ 5 ŞİŞE VE ÇEMBER GÖRSELİ -->
-            <div style="font-size: 20px; position: relative; height: 40px; display: flex; justify-content: center; align-items: center; gap: 4px;">
-                🍾🍾🍾🍾🍾
-                <!-- scaleX Animasyonlu Çember -->
-                <div id="cember-efekt-${index}" style="position: absolute; font-size: 24px; transform: scaleX(0.5) scaleY(0.5); opacity: 0; transition: transform 0.3s ease, opacity 0.3s ease;">
-                    💍
+    alan.innerHTML = oyuncular.map((o, oIndex) => {
+        // 9 adet şişe oluşturuyoruz. Puan kadar olanların üzerine çember (💍) oturuyor.
+        let siseHtml = '';
+        for (let i = 0; i < 9; i++) {
+            let cemberVarmi = i < o.puan;
+            siseHtml += `
+                <div style="position: relative; display: inline-block; margin: 0 1px;">
+                    <div class="gercekci-sise"></div>
+                    ${cemberVarmi ? '<div style="position: absolute; top: 2px; left: -3px; font-size: 14px;" class="cember-scaleX-efekt">💍</div>' : ''}
+                </div>
+            `;
+        }
+
+        return `
+            <div style="background: rgba(0,0,0,0.35); border: 2px solid ${o.ben ? '#f1c40f' : '#74b9ff'}; border-radius: 12px; padding: 10px; width: 210px; text-align: center;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    <img src="${o.resim || 'https://via.placeholder.com/40'}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid #fff;">
+                    <div style="text-align: left; overflow: hidden;">
+                        <div style="font-size: 12px; font-weight: bold; color: ${o.ben ? '#f1c40f' : '#fff'};">${o.isim}</div>
+                        <div style="font-size: 10px; color: #a5b1c2;">Şişeye Atılan: <b>${o.puan} / 9</b></div>
+                    </div>
+                </div>
+                
+                <!-- 9 Şişe ve Çember Alanı -->
+                <div class="sise-konteyner">
+                    ${siseHtml}
                 </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 };
 
-// ÇEMBERİ FIRLATMA VE SCALEX KOMUTU
+// ÇEMBERİ FIRLATMA VE SCALEX KOMUTU UYGULAMA
 window.cemberiFirlat = function() {
-    benimPuanim++;
-    
-    // Arayüzü puanla birlikte güncelle
-    window.etkinlikArayuzuGuncelle(benimPuanim);
+    if (benimAtisSayim >= HEDEF_ATIS) return;
 
-    // scaleX animasyonunu tetikle (0 numaralı kart senin kartın)
-    const efektEl = document.getElementById('cember-efekt-0');
-    if (efektEl) {
-        efektEl.style.opacity = '1';
-        efektEl.style.transform = 'scaleX(1.4) scaleY(1.4)'; // scaleX komutu ile büyüme efekti
-        
-        setTimeout(() => {
-            efektEl.style.transform = 'scaleX(1) scaleY(1)';
-        }, 300);
-    }
+    benimAtisSayim++;
+    window.etkinlikArayuzuGuncelle(benimAtisSayim);
 
-    // 9 Atan Kazanır Kontrolü
-    if (benimPuanim >= HEDEF_PUAN) {
+    if (benimAtisSayim >= HEDEF_ATIS) {
         clearInterval(etkinlikTimer);
-        document.getElementById('etkinlik-durum-mesajlari').innerText = "🏆 TEBRİKLER! 9 ÇEMBERİ ATIP KAZANDIN!";
-        alert("🎉 Tebrikler! 9 puana ulaşarak etkinliği kazandın!");
+        document.getElementById('etkinlik-durum-mesajlari').innerText = "🏆 HELAL OLSUN! 9 ŞİŞEYE DE ÇEMBERİ ATTIN VE KAZANDIN!";
+        alert("🎉 Tebrikler! 9 şişenin hepsine çember atarak etkinliği kazandın!");
         setTimeout(() => {
-            window.etkinlikOyununuBaslat(); // Otomatik yeniden başlat
+            window.etkinlikOyununuBaslat();
         }, 2000);
     } else {
-        document.getElementById('etkinlik-durum-mesajlari').innerText = `Harika atış! Kalan çember: ${HEDEF_PUAN - benimPuanim}`;
+        document.getElementById('etkinlik-durum-mesajlari').innerText = `Harika atış! Kalan şişe sayısı: ${HEDEF_ATIS - benimAtisSayim}`;
     }
 };
         
