@@ -199,7 +199,7 @@
 </head>
   <body>
   <!-- NAV BAR -->
-    <div class="game-navbar">
+<div class="game-navbar">
     <div class="logo">🍬 Şeker Odası</div>
     <div class="nav-links">
         <button class="nav-btn active" onclick="window.sekmeDegistir('ana-lobi', this)">🏠 Anasayfa</button>
@@ -209,15 +209,13 @@
         <button class="nav-btn" onclick="window.sekmeDegistir('partner-ekrani', this)">🤝 Partner</button>
         <button class="nav-btn" onclick="window.sekmeDegistir('iletisim-ekrani', this)">📞 İletişim Bilgileri</button>
         <button class="nav-btn" onclick="window.sekmeDegistir('etkinlikler-ekrani', this)">🎉 Etkinlikler</button>
-
     </div>
-    </div>
+</div>
 
-    <div id="seker-efekt-konteyner"></div>
-    <div id="audio-container"></div>
-  
+<div id="seker-efekt-konteyner"></div>
+<div id="audio-container"></div>
 
-    <!-- 1. ANA LOBİ EKRANI -->
+<!-- 1. ANA LOBİ EKRANI -->
 <div id="ana-lobi" class="card-panel" style="display: block; max-width: 400px; margin: 20px auto; text-align: center; color: white;">
     <div class="bakiye-rozet">🍬 Bakiyeniz: <span id="kullanici-bakiye">0</span> Şeker</div>
     
@@ -239,7 +237,9 @@
 
         <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
 
-        <button onclick="window.odaOlustur()">Oda Oluştur 👑</button>
+        <!-- ODA OLUŞTUR BUTONU (Sekme değişimi eklendi) -->
+        <button onclick="window.odaOlustur(); window.sekmeDegistir('oda-ici-ekran');" style="padding: 12px 20px; background: linear-gradient(180deg, #ff75c3 0%, #ff4757 100%); border: none; color: white; border-radius: 12px; font-weight: bold; font-size: 15px; cursor: pointer; width: 100%; margin-bottom: 12px;">Oda Oluştur 👑</button>
+        
         <div style="display: flex; gap: 8px;">
             <input type="text" id="oda-kodu-input" placeholder="Oda Kodu..." style="flex: 1; padding: 10px; border-radius: 10px; border: none;">
             <button onclick="window.odayaBaglanTikla()" style="padding: 10px 15px; background: #54a0ff; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer;">Katıl 🚀</button>
@@ -247,7 +247,7 @@
     </div>
 </div>
 
-     <!-- OYUNLARIM EKRANI -->
+<!-- 2. OYUNLARIM EKRANI -->
 <div id="oyunlarim-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff75c3; border-radius: 24px; padding: 25px; max-width: 450px; margin: 20px auto; color: #fff; text-align: center;">
     <h2 style="color: #fffa65;">🎮 Oyunlarım</h2>
     <p style="color: #ffeaa7; font-size: 13px;">Oynayabileceğiniz mevcut oyunlar:</p>
@@ -258,7 +258,7 @@
     </div>
 </div>
 
-<!-- DOWNLOAD EKRANI -->
+<!-- 3. DOWNLOAD EKRANI -->
 <div id="download-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #54a0ff; border-radius: 24px; padding: 25px; max-width: 480px; margin: 20px auto; color: #fff; text-align: center;">
     <h2 style="color: #74b9ff; margin-top: 0;">📥 İndirme Merkezi</h2>
     <p style="color: #ffeaa7; font-size: 13px;">Şeker Odası'nı mobil cihazınızda kesintisiz oynayın!</p>
@@ -270,9 +270,10 @@
                 <strong style="color: #74b9ff; font-size: 14px;">Android (APK)</strong>
                 <div style="font-size: 11px; color: #a5b1c2;">Mobil cihazlar için optimize edildi</div>
             </div>
-            <a href="https://meyvecokluoyunculu.com.tr/oyun.apk" download>
-    <button>Android (.apk) İndir</button>
+            <a href="https://meyvecokluoyunculu.com.tr/oyun.apk" download style="padding: 10px 16px; background: #54a0ff; color: white; border-radius: 10px; font-weight: bold; text-decoration: none; font-size: 13px;">
+                İndir (.apk)
             </a>
+        </div>
             
         <!-- WINDOWS (EXE) İNDİRME ALANI -->
         <div style="background: rgba(20, 10, 35, 0.7); padding: 14px; border-radius: 14px; border: 1px solid #2ed573; display: flex; align-items: center; justify-content: space-between;">
@@ -286,17 +287,16 @@
         </div>
     </div>
 </div>
-<!-- PARTNER EKRANI -->
+
+<!-- 4. PARTNER EKRANI -->
 <div id="partner-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #facc15; border-radius: 24px; padding: 25px; max-width: 480px; margin: 20px auto; color: #fff;">
     <h2 style="color: #fffa65; text-shadow: 0 0 10px #ffa502; text-align: center; margin-top: 0;">🤝 Partner & Ödül Sistemi</h2>
     
-    <!-- SEKME BUTONLARI -->
     <div style="display: flex; gap: 10px; margin-bottom: 20px;">
         <button onclick="window.partnerSekmeAc('basvuru-formu')" style="flex: 1; padding: 10px; background: #ff75c3; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;">Partner Başvurusu</button>
         <button onclick="window.partnerSekmeAc('kod-bozdur')" style="flex: 1; padding: 10px; background: #2ed573; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;">🎁 Kod Bozdur</button>
     </div>
 
-    <!-- PARTNER BAŞVURU FORMU -->
     <div id="basvuru-formu" style="display: block; background: rgba(20, 10, 35, 0.7); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
         <h3 style="margin-top: 0; color: #fffa65; font-size: 15px;">Yayıncı / İçerik Üretici Başvurusu</h3>
         <p style="font-size: 12px; color: #a5b1c2; margin-bottom: 12px;">Özel komisyon oranları ve kanalınıza özel hediye kodları almak için formu doldurun.</p>
@@ -307,7 +307,6 @@
         <button onclick="window.partnerBasvuruGonder()" style="width: 100%; padding: 12px; background: linear-gradient(180deg, #facc15 0%, #eab308 100%); border: none; color: #1e1b4b; border-radius: 10px; font-weight: 900; cursor: pointer;">Başvuruyu Gönder 🚀</button>
     </div>
 
-    <!-- KOD BOZDURMA MODÜLÜ -->
     <div id="kod-bozdur" style="display: none; background: rgba(20, 10, 35, 0.7); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
         <h3 style="margin-top: 0; color: #2ed573; font-size: 15px;">Promosyon / Ödül Kodu Kullan</h3>
         <p style="font-size: 12px; color: #a5b1c2; margin-bottom: 12px;">Yayıncılardan veya etkinliklerden aldığınız promosyon kodunu girin.</p>
@@ -319,7 +318,7 @@
     </div>
 </div>
 
-<!-- İLETİŞİM EKRANI -->
+<!-- 5. İLETİŞİM EKRANI -->
 <div id="iletisim-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff4757; border-radius: 24px; padding: 25px; max-width: 450px; margin: 20px auto; color: #fff; text-align: center;">
     <h2 style="color: #ff6b81;">📞 İletişim Bilgileri</h2>
     <div style="text-align: left; font-size: 14px; line-height: 1.8; margin-top: 15px; background: rgba(20, 10, 35, 0.7); padding: 15px; border-radius: 15px;">
@@ -328,20 +327,19 @@
         <p>🌐 <strong>Web:</strong> www.sekerodasi.com</p>
     </div>
 </div>
-    <!-- GELİŞMİŞ ŞEKER MAĞAZASI -->
+
+<!-- 6. MAĞAZA EKRANI -->
 <div id="magaza-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff75c3; border-radius: 24px; box-shadow: 0 0 25px rgba(255, 117, 195, 0.4); padding: 25px; max-width: 480px; margin: 20px auto; color: #fff;">
     <div style="text-align: center; margin-bottom: 20px;">
         <h2 style="color: #fffa65; text-shadow: 0 0 10px #ffa502; font-weight: 900; margin: 0 0 8px 0;">🛒 Şeker & Büyü Mağazası</h2>
         <p style="color: #ffeaa7; font-size: 13px; font-weight: 600; margin: 0;">Güçlendirmeler ve yeni kart temaları satın alın!</p>
     </div>
 
-    <!-- MAĞAZA KATEGORİ BUTONLARI -->
     <div style="display: flex; gap: 8px; margin-bottom: 15px;">
         <button onclick="window.magazaKategoriAc('guc-kategori')" style="flex: 1; padding: 8px; background: #ff75c3; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 12px;">⚡ Güçler</button>
         <button onclick="window.magazaKategoriAc('tema-kategori')" style="flex: 1; padding: 8px; background: #54a0ff; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 12px;">🎨 Kart Temaları</button>
     </div>
 
-    <!-- 1. GÜÇLENDİRMELER KATEGORİSİ -->
     <div id="guc-kategori" style="display: flex; flex-direction: column; gap: 12px;">
         <div class="magaza-urun-kart" style="background: rgba(20, 10, 35, 0.7); border: 2px solid #a55eea; border-radius: 18px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
             <div style="font-size: 32px;">🧙‍♀️</div>
@@ -364,7 +362,6 @@
         </div>
     </div>
 
-    <!-- 2. KART TEMALARI KATEGORİSİ -->
     <div id="tema-kategori" style="display: none; flex-direction: column; gap: 12px;">
         <div class="magaza-urun-kart" style="background: rgba(20, 10, 35, 0.7); border: 2px solid #ff7675; border-radius: 18px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
             <div style="font-size: 32px;">🧁</div>
@@ -387,7 +384,8 @@
         </div>
     </div>
 </div>
-     <!-- 🎉 ETKİNLİKLER EKRANI -->
+
+<!-- 7. ETKİNLİKLER EKRANI -->
 <div id="etkinlikler-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff9f43; border-radius: 24px; box-shadow: 0 0 25px rgba(255, 159, 67, 0.4); padding: 25px; max-width: 480px; margin: 20px auto; color: #fff;">
     <div style="text-align: center; margin-bottom: 20px;">
         <h2 style="color: #feca57; text-shadow: 0 0 10px #ff9f43; font-weight: 900; margin: 0 0 8px 0;">🎉 Özel Etkinlikler & Ödüller</h2>
@@ -395,7 +393,6 @@
     </div>
 
     <div style="display: flex; flex-direction: column; gap: 14px;">
-        <!-- 1. GÜNLÜK ÖDÜL -->
         <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #ff9f43; border-radius: 18px; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
             <div style="font-size: 32px;">🎁</div>
             <div style="flex: 1; text-align: left;">
@@ -405,7 +402,6 @@
             <button id="btn-gunluk-odul" onclick="window.gunlukOdulAl()" style="background: linear-gradient(180deg, #2ed573 0%, #26af5f 100%); border: none; border-radius: 12px; color: white; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">Ödülü Al</button>
         </div>
 
-        <!-- 2. HAFTALIK ETKİNLİK -->
         <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #ff4757; border-radius: 18px; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
             <div style="font-size: 32px;">🔥</div>
             <div style="flex: 1; text-align: left;">
@@ -419,81 +415,81 @@
     </div>
 </div>
 
-    <!-- 4. ARKADAŞLAR VE PM EKRANI -->
-    <div id="arkadaslar-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.9); backdrop-filter: blur(12px); border: 3px solid #ff75c3; border-radius: 24px; padding: 20px; max-width: 400px; margin: 20px auto; color: #fff;">
-        <h2 style="color: #fffa65; text-shadow: 0 0 10px #ffa502; font-weight: 900; text-align: center; margin-top: 0;">👥 Şeker Arkadaşlarım</h2>
-        <div style="margin: 15px 0; display: flex; gap: 10px; justify-content: center;">
-            <input type="text" id="arkadas-id-input" placeholder="Arkadaşının Şeker İsmi..." style="padding: 8px; border-radius: 8px; border: 1px solid #ff69b4; flex: 1;">
-            <button onclick="window.arkadasEkle()" style="padding: 8px 15px; background: #ff69b4; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Ekle</button>
-        </div>
-
-        <div style="background: rgba(255, 255, 255, 0.1); border: 2px dashed #ff75c3; border-radius: 16px; padding: 10px; text-align: center; margin-bottom: 15px;">
-            <span style="font-size: 11px; color: #ffeaa7;">Senin Şeker İsmin:</span>
-            <div id="my-peer-id-display" style="font-weight: 900; font-size: 16px; color: #fffa65; margin-top: 2px;">Yükleniyor...</div>
-        </div>
-
-        <div id="arkadas-listesi" style="margin-bottom: 15px;"></div>
+<!-- 8. ARKADAŞLAR EKRANI -->
+<div id="arkadaslar-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.9); backdrop-filter: blur(12px); border: 3px solid #ff75c3; border-radius: 24px; padding: 20px; max-width: 400px; margin: 20px auto; color: #fff;">
+    <h2 style="color: #fffa65; text-shadow: 0 0 10px #ffa502; font-weight: 900; text-align: center; margin-top: 0;">👥 Şeker Arkadaşlarım</h2>
+    <div style="margin: 15px 0; display: flex; gap: 10px; justify-content: center;">
+        <input type="text" id="arkadas-id-input" placeholder="Arkadaşının Şeker İsmi..." style="padding: 8px; border-radius: 8px; border: 1px solid #ff69b4; flex: 1;">
+        <button onclick="window.arkadasEkle()" style="padding: 8px 15px; background: #ff69b4; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Ekle</button>
     </div>
 
-    <!-- 5. ODA İÇİ (HOST) EKRANI -->
-    <div id="oda-ici-ekran" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff75c3; border-radius: 24px; padding: 25px; text-align: center; max-width: 400px; margin: 20px auto; color: #fff;">
-        <h2 style="color: #fffa65; text-shadow: 0 0 10px #ffa502; font-weight: 900; margin-bottom: 15px;">👑 Şeker Oyun Odası</h2>
-        <p style="margin: 15px 0; color: #74b9ff; font-weight: bold; font-size: 15px;">
-            Oda Kodun: 
-            <span style="background: rgba(255, 255, 255, 0.1); padding: 6px 14px; border-radius: 14px; border: 2px dashed #ff75c3; display: inline-block; margin-left: 5px;">
-                <strong id="oda-kodu-display" style="font-size: 22px; color: #ff4757;">-</strong>
-            </span>
-        </p>
-
-        <div style="margin: 15px 0; color: #2ed573; font-weight: bold;">
-            Katılan Oyuncu Sayısı: <span id="oyuncu-sayisi-display">1</span> / 4
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
-            <button onclick="window.oyunuBaslatButonunaBas()" style="background: linear-gradient(180deg, #facc15 0%, #eab308 100%); border: 2px solid #fffa65; border-radius: 16px; color: #1e1b4b; font-weight: 900; font-size: 16px; padding: 12px; cursor: pointer;">Oyunu Başlat 🚀</button>
-            <button onclick="window.odadanCik()" style="background: linear-gradient(180deg, #ff4757 0%, #ff6b81 100%); border: 2px solid #ff70a6; border-radius: 16px; color: white; font-weight: 900; font-size: 15px; padding: 12px; cursor: pointer;">Odadan Çık 🚪</button>
-        </div>
+    <div style="background: rgba(255, 255, 255, 0.1); border: 2px dashed #ff75c3; border-radius: 16px; padding: 10px; text-align: center; margin-bottom: 15px;">
+        <span style="font-size: 11px; color: #ffeaa7;">Senin Şeker İsmin:</span>
+        <div id="my-peer-id-display" style="font-weight: 900; font-size: 16px; color: #fffa65; margin-top: 2px;">Yükleniyor...</div>
     </div>
 
-    <!-- 6. MİSAFİR BEKLEME EKRANI -->
-    <div id="misafir-bekleme-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #54a0ff; border-radius: 24px; padding: 25px; text-align: center; max-width: 400px; margin: 20px auto; color: #fff;">
-        <h2 style="color: #74b9ff; text-shadow: 0 0 10px #54a0ff; font-weight: 900; margin-bottom: 15px;">⏳ Odadasınız</h2>
-        <p style="color: #ffeaa7; margin: 15px 0; font-size: 14px; font-weight: 600;">Oda sahibi oyunu başlatınca ekranınız otomatik açılacaktır... 🍭</p>
-        <div style="margin-top: 20px;">
-            <button onclick="window.odadanCik()" style="background: linear-gradient(180deg, #ff4757 0%, #ff6b81 100%); border: 2px solid #ff70a6; border-radius: 16px; color: white; font-weight: 900; font-size: 15px; padding: 12px; cursor: pointer; width: 100%;">Odadan Çık 🚪</button>
-        </div>
+    <div id="arkadas-listesi" style="margin-bottom: 15px;"></div>
+</div>
+<div id="oda-ici-ekran" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff75c3; border-radius: 24px; padding: 25px; text-align: center; max-width: 400px; margin: 20px auto; color: #fff;">
+    <h2 style="color: #fffa65; text-shadow: 0 0 10px #ffa502; font-weight: 900; margin-bottom: 15px;">👑 Şeker Oyun Odası</h2>
+    <p style="margin: 15px 0; color: #74b9ff; font-weight: bold; font-size: 15px;">
+        Oda Kodun: 
+        <span style="background: rgba(255, 255, 255, 0.1); padding: 6px 14px; border-radius: 14px; border: 2px dashed #ff75c3; display: inline-block; margin-left: 5px;">
+            <strong id="oda-kodu-display" style="font-size: 22px; color: #ff4757;">-</strong>
+        </span>
+    </p>
+
+    <div style="margin: 15px 0; color: #2ed573; font-weight: bold;">
+        Katılan Oyuncu Sayısı: <span id="oyuncu-sayisi-display">1</span> / 4
     </div>
 
-    <!-- 7. OYUN EKRANI -->
-    <div id="game-screen" class="card-panel" style="display: none; flex-direction: column; gap: 15px; padding: 10px;">
-      <button id="btn-mikrofon" onclick="window.mikrofonDurumDegistir()" style="padding: 8px 16px; font-size: 13px; font-weight: bold; background: linear-gradient(180deg, #2ed573, #26af5f); border: 2px solid #ffffff; border-radius: 16px; color: white; cursor: pointer;">
-    🎙️ Mikrofonu Aç
-      </button>
-        <div id="envanter-modal" class="modal">
-            <div class="modal-icerik">
-                <span class="kapat" onclick="window.kapatEnvanter()">&times;</span>
-                <h2 style="color: #fffa65;">🎒 Şeker Envanterim</h2>
-                <div id="envanter-listesi"></div>
-            </div>
-        </div>
-         <div id="oyun-chat-kutusu" style="background: rgba(20, 10, 35, 0.85); border: 2px solid #ff75c3; border-radius: 16px; padding: 10px; margin-top: 10px; width: 100%; box-sizing: border-box;">
-    <div id="chat-mesajlar" style="height: 80px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; font-size: 12px; text-align: left; padding: 4px; margin-bottom: 8px; background: rgba(0,0,0,0.3); border-radius: 8px;">
-        <div style="color: #fffa65;">💬 <i>Oda sohbetine hoş geldiniz!</i></div>
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
+        <button onclick="window.oyunuBaslatButonunaBas()" style="background: linear-gradient(180deg, #facc15 0%, #eab308 100%); border: 2px solid #fffa65; border-radius: 16px; color: #1e1b4b; font-weight: 900; font-size: 16px; padding: 12px; cursor: pointer;">Oyunu Başlat 🚀</button>
+        <button onclick="window.odadanCik(); window.sekmeDegistir('ana-lobi');" style="background: linear-gradient(180deg, #ff4757 0%, #ff6b81 100%); border: 2px solid #ff70a6; border-radius: 16px; color: white; font-weight: 900; font-size: 15px; padding: 12px; cursor: pointer;">Odadan Çık 🚪</button>
     </div>
-    <div style="display: flex; gap: 6px;">
-        <input type="text" id="chat-input" placeholder="Mesaj yazın..." style="flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #ff75c3; background: #1e0a1b; color: white; font-size: 12px;">
-        <button onclick="window.chatMesajGonder()" style="padding: 8px 14px; background: #ff75c3; border: none; color: white; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;">Gönder</button>
-    </div>
-         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: rgba(25, 15, 40, 0.85); backdrop-filter: blur(10px); border-radius: 20px; border: 2px solid #ff75c3;">
-            <button onclick="window.anasayfayaDon()" style="padding: 8px 16px; font-size: 13px; font-weight: bold; background: linear-gradient(180deg, #ff4757, #ff6b81); border: 2px solid #ff70a6; border-radius: 16px; color: white; cursor: pointer;">🏠 Lobiye Dön</button>
-            <div style="color: #fffa65; font-weight: bold; font-size: 16px;">Skorunuz: <span id="skor-siz">0</span></div>
-            <button onclick="window.odadanCik()" style="padding: 8px 16px; font-size: 13px; font-weight: bold; background: linear-gradient(180deg, #ff4757, #ff6b81); border: 2px solid #ff70a6; border-radius: 16px; color: white; cursor: pointer;">Odadan Çık 🚪</button>
-        </div>
+</div>
 
-        <!-- 4 KİŞİLİK SAVAŞ ALANI -->
-        <div class="savas-alani"></div>
+<!-- 10. MİSAFİR BEKLEME EKRANI -->
+<div id="misafir-bekleme-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #54a0ff; border-radius: 24px; padding: 25px; text-align: center; max-width: 400px; margin: 20px auto; color: #fff;">
+    <h2 style="color: #74b9ff; text-shadow: 0 0 10px #54a0ff; font-weight: 900; margin-bottom: 15px;">⏳ Odadasınız</h2>
+    <p style="color: #ffeaa7; margin: 15px 0; font-size: 14px; font-weight: 600;">Oda sahibi oyunu başlatınca ekranınız otomatik açılacaktır... 🍭</p>
+    <div style="margin-top: 20px;">
+        <button onclick="window.odadanCik(); window.sekmeDegistir('ana-lobi');" style="background: linear-gradient(180deg, #ff4757 0%, #ff6b81 100%); border: 2px solid #ff70a6; border-radius: 16px; color: white; font-weight: 900; font-size: 15px; padding: 12px; cursor: pointer; width: 100%;">Odadan Çık 🚪</button>
     </div>
+</div>
+      <!-- 11. OYUN EKRANI -->
+<div id="game-screen" class="card-panel" style="display: none; flex-direction: column; gap: 15px; padding: 10px;">
+    <button id="btn-mikrofon" onclick="window.mikrofonDurumDegistir()" style="padding: 8px 16px; font-size: 13px; font-weight: bold; background: linear-gradient(180deg, #2ed573, #26af5f); border: 2px solid #ffffff; border-radius: 16px; color: white; cursor: pointer;">
+        🎙️ Mikrofonu Aç
+    </button>
+    
+    <div id="envanter-modal" class="modal">
+        <div class="modal-icerik">
+            <span class="kapat" onclick="window.kapatEnvanter()">&times;</span>
+            <h2 style="color: #fffa65;">🎒 Şeker Envanterim</h2>
+            <div id="envanter-listesi"></div>
+        </div>
+    </div>
+    
+    <div id="oyun-chat-kutusu" style="background: rgba(20, 10, 35, 0.85); border: 2px solid #ff75c3; border-radius: 16px; padding: 10px; margin-top: 10px; width: 100%; box-sizing: border-box;">
+        <div id="chat-mesajlar" style="height: 80px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; font-size: 12px; text-align: left; padding: 4px; margin-bottom: 8px; background: rgba(0,0,0,0.3); border-radius: 8px;">
+            <div style="color: #fffa65;">💬 <i>Oda sohbetine hoş geldiniz!</i></div>
+        </div>
+        <div style="display: flex; gap: 6px;">
+            <input type="text" id="chat-input" placeholder="Mesaj yazın..." style="flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #ff75c3; background: #1e0a1b; color: white; font-size: 12px;">
+            <button onclick="window.chatMesajGonder()" style="padding: 8px 14px; background: #ff75c3; border: none; color: white; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;">Gönder</button>
+        </div>
+    </div>
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: rgba(25, 15, 40, 0.85); backdrop-filter: blur(10px); border-radius: 20px; border: 2px solid #ff75c3;">
+        <button onclick="window.sekmeDegistir('ana-lobi')" style="padding: 8px 16px; font-size: 13px; font-weight: bold; background: linear-gradient(180deg, #ff4757, #ff6b81); border: 2px solid #ff70a6; border-radius: 16px; color: white; cursor: pointer;">🏠 Lobiye Dön</button>
+        <div style="color: #fffa65; font-weight: bold; font-size: 16px;">Skorunuz: <span id="skor-siz">0</span></div>
+        <button onclick="window.odadanCik(); window.sekmeDegistir('ana-lobi');" style="padding: 8px 16px; font-size: 13px; font-weight: bold; background: linear-gradient(180deg, #ff4757, #ff6b81); border: 2px solid #ff70a6; border-radius: 16px; color: white; cursor: pointer;">Odadan Çık 🚪</button>
+    </div>
+
+    <!-- 4 KİŞİLİK SAVAŞ ALANI -->
+    <div class="savas-alani"></div>
+</div>
     <script>
       // OYUNUN UYGULAMA İÇİNDEKİ SÜRÜMÜ
 const MEVCUT_VERSIYON = "1.0.0";
