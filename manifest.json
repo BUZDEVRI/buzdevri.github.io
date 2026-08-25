@@ -1,12 +1,16 @@
 {
-  "background_color": "#ffffff",
-  "dir": "ltr",
-  "display": "standalone",
   "name": "Seker Oyunu",
-  "orientation": "any",
-  "scope": "/",
   "short_name": "SekerOyunu",
-  "start_url": "/",
-  "theme_color": "#ffffff",
-  "lang": "tr"
+  "description": "Eğlenceli Meyve ve Şeker Eşleştirme Oyunu",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1e0f2d",
+  "theme_color": "#ff75c3",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
 }
