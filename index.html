@@ -782,43 +782,50 @@ window.odaOyuncuListesiniGuncelle = function() {
     const kurucuKonteyner = document.getElementById('kurucu-oyuncu-listesi');
     const sayiEl = document.getElementById('oyuncu-sayisi-display');
     
-    // Toplam oyuncu sayısı (Kurucu + Katılan Misafirler)
     const toplamOyuncu = connectedPeers.length + 1;
     if (sayiEl) sayiEl.innerText = toplamOyuncu;
 
-    // 1. Kurucunun Kendi Bilgisi
+    // 1. Kurucu Bilgisi (Siz)
     let htmlContent = `
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 8px; background: rgba(255,255,255,0.15); border-radius: 8px; text-align: left;">
-            <img src="${window.oyuncuVerisi.resim || 'https://via.placeholder.com/40'}" style="width: 38px; height: 38px; border-radius: 50%; border: 2px solid #ff6b81; object-fit: cover;">
-            <span style="color: #ff6b81; font-weight: bold; font-size: 14px;">👑 ${window.oyuncuVerisi.isim} (Siz - Oda Sahibi)</span>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 8px; background: rgba(255,255,255,0.15); border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <img src="${window.oyuncuVerisi.resim || 'https://via.placeholder.com/40'}" style="width: 36px; height: 36px; border-radius: 50%; border: 2px solid #ff6b81; object-fit: cover;">
+                <span style="color: #ff6b81; font-weight: bold; font-size: 13px;">👑 ${window.oyuncuVerisi.isim} (Siz)</span>
+            </div>
+            <button onclick="window.mikrofonDurumDegistir()" id="btn-mikrofon-mini" style="background: ${mikrofonAcik ? '#ff4757' : '#2ed573'}; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 14px;">
+                ${mikrofonAcik ? '🎙️' : '🔇'}
+            </button>
         </div>
     `;
 
-    // 2. Katılan Misafirlerin Bilgisi
+    // 2. Katılan Misafirler
     connectedPeers.forEach((conn, idx) => {
         const oyuncuAdi = conn.playerInfo ? conn.playerInfo.name : `Oyuncu ${idx + 2}`;
         const oyuncuResim = conn.playerInfo ? conn.playerInfo.img : 'https://via.placeholder.com/40';
+        const micDurumu = conn.playerInfo && conn.playerInfo.micOpen ? '🎙️' : '🔇';
 
         htmlContent += `
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 8px; background: rgba(255,255,255,0.15); border-radius: 8px; text-align: left;">
-                <img src="${oyuncuResim}" style="width: 38px; height: 38px; border-radius: 50%; border: 2px solid #74b9ff; object-fit: cover;">
-                <span style="color: #74b9ff; font-weight: bold; font-size: 14px;">🎮 ${oyuncuAdi}</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 8px; background: rgba(255,255,255,0.15); border-radius: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <img src="${oyuncuResim}" style="width: 36px; height: 36px; border-radius: 50%; border: 2px solid #74b9ff; object-fit: cover;">
+                    <span style="color: #74b9ff; font-weight: bold; font-size: 13px;">🎮 ${oyuncuAdi}</span>
+                </div>
+                <span style="font-size: 16px;" title="Mikrofon Durumu">${micDurumu}</span>
             </div>
         `;
     });
 
-    if (kurucuKonteyner) {
-        kurucuKonteyner.innerHTML = htmlContent;
-    }
+    if (kurucuKonteyner) kurucuKonteyner.innerHTML = htmlContent;
 
-    // 3. Güncellenen tam listeyi misafirlere de yolla
+    // Listeyi diğer oyunculara senkronize et
     if (isHost) {
         const tumListe = [
-            { name: window.oyuncuVerisi.isim, img: window.oyuncuVerisi.resim, isHost: true },
+            { name: window.oyuncuVerisi.isim, img: window.oyuncuVerisi.resim, isHost: true, micOpen: mikrofonAcik },
             ...connectedPeers.map(c => ({
                 name: c.playerInfo ? c.playerInfo.name : "Oyuncu",
                 img: c.playerInfo ? c.playerInfo.img : "",
-                isHost: false
+                isHost: false,
+                micOpen: c.playerInfo ? c.playerInfo.micOpen : false
             }))
         ];
 
@@ -827,7 +834,7 @@ window.odaOyuncuListesiniGuncelle = function() {
             oyuncular: tumListe
         });
     }
-};
+}; 
         
 // ODAYA BAGLAN (MİSAFİR)
 window.odayaBaglanTikla = function() {
@@ -904,14 +911,28 @@ window.misafirOdaListesiniYazdir = function(oyuncular) {
     const konteyner = document.getElementById('misafir-oyuncu-listesi');
     if (!konteyner) return;
 
-    konteyner.innerHTML = oyuncular.map(o => `
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 8px; background: rgba(255,255,255,0.15); border-radius: 8px;">
-            <img src="${o.img || 'https://via.placeholder.com/40'}" style="width: 36px; height: 36px; border-radius: 50%; border: 2px solid ${o.isHost ? '#ff6b81' : '#74b9ff'}; object-fit: cover;">
-            <span style="color: ${o.isHost ? '#ff6b81' : '#fff'}; font-weight: bold; font-size: 14px;">
-                ${o.isHost ? '👑 ' + o.name + ' (Oda Sahibi)' : '🎮 ' + o.name}
-            </span>
-        </div>
-    `).join('');
+    konteyner.innerHTML = oyuncular.map(o => {
+        const isMe = o.name === window.oyuncuVerisi.isim;
+        const micIcon = o.micOpen ? '🎙️' : '🔇';
+        
+        return `
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 8px; background: rgba(255,255,255,0.15); border-radius: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <img src="${o.img || 'https://via.placeholder.com/40'}" style="width: 36px; height: 36px; border-radius: 50%; border: 2px solid ${o.isHost ? '#ff6b81' : '#74b9ff'}; object-fit: cover;">
+                    <span style="color: ${o.isHost ? '#ff6b81' : '#fff'}; font-weight: bold; font-size: 13px;">
+                        ${o.isHost ? '👑 ' + o.name + ' (Kurucu)' : '🎮 ' + o.name} ${isMe ? '(Siz)' : ''}
+                    </span>
+                </div>
+                ${isMe ? `
+                    <button onclick="window.mikrofonDurumDegistir()" style="background: ${mikrofonAcik ? '#ff4757' : '#2ed573'}; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 14px;">
+                        ${mikrofonAcik ? '🎙️' : '🔇'}
+                    </button>
+                ` : `
+                    <span style="font-size: 16px;">${micIcon}</span>
+                `}
+            </div>
+        `;
+    }).join('');
 };
 
 // CANLI CHAT & MİKROFON
