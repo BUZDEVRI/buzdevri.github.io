@@ -614,8 +614,8 @@
         </div>
     </div>
 </div>
-        <!-- ETKİNLİKLER VE EŞLEŞTİRME MENÜSÜ -->
-<div id="etkinlikler-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff9f43; border-radius: 24px; box-shadow: 0 0 25px rgba(255, 159, 67, 0.4); padding: 25px; max-width: 480px; margin: 20px auto; color: #fff;">
+   <!-- ETKİNLİKLER VE EŞLEŞTİRME MENÜSÜ -->
+<div id="etkinlikler-ekrani" class="card-panel" style="display: block; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff9f43; border-radius: 24px; box-shadow: 0 0 25px rgba(255, 159, 67, 0.4); padding: 25px; max-width: 480px; margin: 20px auto; color: #fff;">
     <div style="text-align: center; margin-bottom: 20px;">
         <h2 style="color: #feca57; text-shadow: 0 0 10px #ff9f43; font-weight: 900; margin: 0 0 8px 0;">🎉 Özel Etkinlikler & Ödüller</h2>
         <p style="color: #ffeaa7; font-size: 13px; font-weight: 600; margin: 0;">Mod seçin ve diğer oyuncularla eşleşin!</p>
@@ -640,17 +640,17 @@
                 <h3 style="margin: 0; color: #f1c40f; font-size: 15px; font-weight: bold;">Çember Atma (1v1)</h3>
                 <p style="margin: 2px 0 0 0; color: #a5b1c2; font-size: 11px;">2 Kişilik Hızlı Eşleşme</p>
             </div>
-            <button onclick="window.eslesmeBaslat(2)" style="background: linear-gradient(180deg, #f1c40f 0%, #d4ac0d 100%); border: none; border-radius: 12px; color: #000; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">2 Kişilik Oyna 💍</button>
+            <button onclick="window.odaAramayiBaslat(2)" style="background: linear-gradient(180deg, #f1c40f 0%, #d4ac0d 100%); border: none; border-radius: 12px; color: #000; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">2 Kişilik Oyna 💍</button>
         </div>
 
-        <!-- 4 Kişilik Eşleşme Kartı -->
+        <!-- 5 Kişilik Eşleşme Kartı -->
         <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #e74c3c; border-radius: 18px; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
             <div style="font-size: 32px;">👑</div>
             <div style="flex: 1; text-align: left;">
-                <h3 style="margin: 0; color: #e74c3c; font-size: 15px; font-weight: bold;">Çember Atma (4 Kişilik)</h3>
-                <p style="margin: 2px 0 0 0; color: #a5b1c2; font-size: 11px;">4 Kişilik Büyük Yarış</p>
+                <h3 style="margin: 0; color: #e74c3c; font-size: 15px; font-weight: bold;">Çember Atma (5 Kişilik)</h3>
+                <p style="margin: 2px 0 0 0; color: #a5b1c2; font-size: 11px;">5 Kişilik Büyük Yarış</p>
             </div>
-            <button onclick="window.eslesmeBaslat(4)" style="background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%); border: none; border-radius: 12px; color: #fff; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">4 Kişilik Oyna 💍</button>
+            <button onclick="window.odaAramayiBaslat(5)" style="background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%); border: none; border-radius: 12px; color: #fff; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">5 Kişilik Oyna 💍</button>
         </div>
     </div>
 
@@ -1681,25 +1681,25 @@ window.kazananiBelirleVeBidir = function() {
 // ==========================================
 // 6. MULTIPLAYER VE EŞLEŞTİRME SİSTEMİ
 // ==========================================
-window.odaAramayiBaslat = function(secilenMod) { // secilenMod = 2 veya 5
-    // Mod seçim ekranını gizle, arama ekranını göster
+window.odaAramayiBaslat = function(secilenMod) {
     const modSecimi = document.getElementById("etkinlik-mod-secimi");
     const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
+    const aramaMetni = document.getElementById("arama-durum-metni");
 
     if (modSecimi) modSecimi.style.display = "none";
     if (aramaEkrani) aramaEkrani.style.display = "flex";
+    if (aramaMetni) aramaMetni.innerText = `${secilenMod} Kişilik Oda Aranıyor...`;
 
-    // Sunucuya 'find_match' sinyalini gönder
+    // Sunucuya arama isteği gönder
     if (typeof socket !== "undefined" && socket) {
-        socket.emit('find_match', {
-            mode: secilenMod,
-            isim: window.kullaniciAdi || "Oyuncu " + Math.floor(Math.random() * 100)
-        });
+        let oyuncuAdi = window.oyuncuVerisi?.isim || "Oyuncu";
+        socket.emit("find_match", { mode: secilenMod, isim: oyuncuAdi });
     } else {
         console.error("Socket bağlantısı kurulamadı!");
     }
 };
 
+// Aramayı İptal Et Butonu
 window.eslesmeyiIptalEt = function() {
     const modSecimi = document.getElementById("etkinlik-mod-secimi");
     const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
