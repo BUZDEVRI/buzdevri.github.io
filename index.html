@@ -1708,21 +1708,29 @@ window.eslesmeyiIptalEt = function() {
         socket.emit("cancel_match");
     }
 };
-
 function cemberiSunucuyaBildir(hedefSiseIndex) {
     if (socket && currentRoomId) {
+        let benimIndexim = window.kendiIndexim !== undefined ? window.kendiIndexim : 0;
+        
         socket.emit('player_action', {
             roomId: currentRoomId,
-            oyuncuIndex: 0,
-            siselerData: window.oyuncuSiseDurumlari[0]
+            oyuncuIndex: benimIndexim,
+            siselerData: window.oyuncuSiseDurumlari[benimIndexim]
         });
     }
 }
 
-// Socket Dinleyicileri
+// ==========================================
+// SOCKET DİNLEYİCİLERİ (SADECE SCRIPT.JS İÇİNDE OLMALI)
+// ==========================================
 if (socket) {
     socket.on('match_found', (data) => {
         currentRoomId = data.roomId;
+        window.kendiIndexim = data.oyuncuIndex;
+
+        if (data.oyuncular) {
+            window.oyuncuListesi = data.oyuncular.map(o => o.isim);
+        }
 
         const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
         if (aramaEkrani) aramaEkrani.style.display = "none";
@@ -1737,5 +1745,4 @@ if (socket) {
         }
     });
         }
-        
     </script>
