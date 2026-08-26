@@ -1,18 +1,23 @@
 <!DOCTYPE html>
 <lang="tr">
 <head>
-    <link rel="manifest" href="manifest.json">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meyve & Şeker Odası - 4 Kişilik Sesli & Çok Oyunculu</title>
+    <title>Meyve & Şeker Odası - Çok Oyunculu</title>
+    
+    <link rel="manifest" href="manifest.json">
 
-    <!-- 1. Firebase SDK Kütüphaneleri -->
+    <!-- 1. Socket.io İstemci Kütüphanesi -->
+    <script src="/socket.io/socket.io.js"></script>
+
+    <!-- 2. PeerJS (Sesli Sohbet Kullanıyorsan Kalmalı) -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+    <!-- 3. Firebase (Sadece Veritabanında Kullanıcı Verisi Tutuyorsan Dursun, Eşleşmeyi Socket.io Yapıyor) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-    <!-- 2. PeerJS Kütüphanesi -->
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-
+</head>
+    
     <style>
         body {
             background-image: url("seker_temali_tekli_hareketli_arka_plan.gif");
@@ -1445,6 +1450,11 @@ window.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 // 1. OYUN VE ZAMANLAYICI DEĞİŞKENLERİ
 // ==========================================
+const socket = (typeof io !== "undefined") ? io(window.location.origin, {
+    transports: ['websocket', 'polling']
+}) : null;
+
+let currentRoomId = null;
 window.etkinlikTimer = null;
 window.etkinlikKalanSure = 60;
 
@@ -1457,8 +1467,6 @@ window.oyuncuSiseDurumlari = [
 ];
 
 // Socket.io Bağlantısı (Tek Bir Defa Tanımlandı)
-const socket = (typeof io !== "undefined") ? io() : null;
-let currentRoomId = null;
 window.etkinlikOyununuBaslat = function() {
     window.etkinlikKalanSure = 60;
     
@@ -1673,18 +1681,22 @@ window.kazananiBelirleVeBidir = function() {
 // ==========================================
 // 6. MULTIPLAYER VE EŞLEŞTİRME SİSTEMİ
 // ==========================================
-window.eslesmeBaslat = function(kisiSayisi) {
+window.odaAramayiBaslat = function(secilenMod) { // secilenMod = 2 veya 5
+    // Mod seçim ekranını gizle, arama ekranını göster
     const modSecimi = document.getElementById("etkinlik-mod-secimi");
     const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
-    const aramaMetni = document.getElementById("arama-durum-metni");
 
     if (modSecimi) modSecimi.style.display = "none";
-    if (aramaEkrani) aramaEkrani.style.display = "block";
-    if (aramaMetni) aramaMetni.innerText = `${kisiSayisi} Kişilik Oda Aranıyor...`;
+    if (aramaEkrani) aramaEkrani.style.display = "flex";
 
-    if (socket) {
-        const oyuncuAdi = window.oyuncuVerisi?.isim || "Oyuncu";
-        socket.emit("find_match", { mode: kisiSayisi, isim: oyuncuAdi });
+    // Sunucuya 'find_match' sinyalini gönder
+    if (typeof socket !== "undefined" && socket) {
+        socket.emit('find_match', {
+            mode: secilenMod,
+            isim: window.kullaniciAdi || "Oyuncu " + Math.floor(Math.random() * 100)
+        });
+    } else {
+        console.error("Socket bağlantısı kurulamadı!");
     }
 };
 
@@ -1695,7 +1707,7 @@ window.eslesmeyiIptalEt = function() {
     if (aramaEkrani) aramaEkrani.style.display = "none";
     if (modSecimi) modSecimi.style.display = "flex";
 
-    if (socket) {
+    if (typeof socket !== "undefined" && socket) {
         socket.emit("cancel_match");
     }
 };
