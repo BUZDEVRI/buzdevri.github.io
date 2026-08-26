@@ -1553,7 +1553,13 @@ window.etkinlikOyununuBaslat = function() {
     alan.innerHTML = html;
 };
         
-// ÇEMBERİ TEK TEK ATMA VE HAREKETLENDİRME MANTIĞI
+
+// 1. Socket Bağlantısı
+const socket = (typeof io !== "undefined") ? io() : null;
+let currentRoomId = null;
+     // ==========================================
+// 1. ÇEMBER FIRLATMA FONKSİYONU (DÜZELTİLDİ)
+// ==========================================
 window.cemberiFirlat = function() {
     if (window.etkinlikKalanSure <= 0) return;
     
@@ -1567,18 +1573,39 @@ window.cemberiFirlat = function() {
             break;
         }
     }
- 
+
     // Tüm şişeler doluysa atış yapma
     if (hedefSiseIndex === -1) return;
-    // ==========================================
-// EŞLEŞTİRME VE MULTIPLAYER ENTEGRASYONU
+
+    // Animasyonla çemberi fırlat
+    window.cemberUcurAnimasyonu(hedefSiseIndex, () => {
+        siseler[hedefSiseIndex]++;
+        let toplam = siseler.reduce((a, b) => a + b, 0);
+
+        document.getElementById('etkinlik-durum-mesajlari').innerText = 
+            `Şişe ${hedefSiseIndex + 1}: ${siseler[hedefSiseIndex]}/9 Çember | Toplam: ${toplam} / 90`;
+
+        window.etkinlikArayuzuGuncelle();
+
+        // Atışı sunucuya bildir
+        cemberiSunucuyaBildir(hedefSiseIndex);
+
+        if (toplam >= 90) {
+            clearInterval(window.etkinlikTimer);
+            window.oyunBittiKazanan(0);
+        }
+    });
+};
+
+// ==========================================
+// 2. EŞLEŞTİRME VE MULTIPLAYER ENTEGRASYONU
 // ==========================================
 
-// 1. Socket Bağlantısı
+// Socket Bağlantısı
 const socket = (typeof io !== "undefined") ? io() : null;
 let currentRoomId = null;
 
-// 2. Menüden Eşleşme Başlatma
+// Menüden Eşleşme Başlatma
 window.eslesmeBaslat = function(kisiSayisi) {
     const modSecimi = document.getElementById("etkinlik-mod-secimi");
     const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
@@ -1588,14 +1615,13 @@ window.eslesmeBaslat = function(kisiSayisi) {
     if (aramaEkrani) aramaEkrani.style.display = "block";
     if (aramaMetni) aramaMetni.innerText = `${kisiSayisi} Kişilik Oda Aranıyor...`;
 
-    // Sunucuya arama isteği gönder
     if (socket) {
         const oyuncuAdi = window.oyuncuVerisi?.isim || "Oyuncu";
         socket.emit("find_match", { mode: kisiSayisi, isim: oyuncuAdi });
     }
 };
 
-// 3. Eşleşmeyi İptal Etme
+// Eşleşmeyi İptal Etme
 window.eslesmeyiIptalEt = function() {
     const modSecimi = document.getElementById("etkinlik-mod-secimi");
     const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
@@ -1608,22 +1634,18 @@ window.eslesmeyiIptalEt = function() {
     }
 };
 
-// 4. Sunucudan "Maç Bulundu" Sinyali Geldiğinde
+// Sunucudan "Maç Bulundu" Sinyali Geldiğinde
 if (socket) {
     socket.on('match_found', (data) => {
         currentRoomId = data.roomId;
 
-        // Arama ekranını kapat
         const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
         if (aramaEkrani) aramaEkrani.style.display = "none";
 
-        // Oyunu başlat
         window.etkinlikOyununuBaslat();
     });
 
-    // 5. Diğer Oyuncuların Çember Atışlarını Yakalama
     socket.on('update_game', (data) => {
-        // Rakip indexi ve attığı yeni şişe verisini güncelle
         if (data.oyuncuIndex !== undefined && data.siselerData) {
             window.oyuncuSiseDurumlari[data.oyuncuIndex] = data.siselerData;
             window.etkinlikArayuzuGuncelle();
@@ -1631,12 +1653,12 @@ if (socket) {
     });
 }
 
-// 6. Kendi Çember Atışını Sunucuya Bildirme (cemberiFirlat İçinden Çağrılır)
+// Kendi Çember Atışını Sunucuya Bildirme
 function cemberiSunucuyaBildir(hedefSiseIndex) {
     if (socket && currentRoomId) {
         socket.emit('player_action', {
             roomId: currentRoomId,
-            oyuncuIndex: 0, // Kendi kulvarınız (0)
+            oyuncuIndex: 0,
             siselerData: window.oyuncuSiseDurumlari[0]
         });
     }
