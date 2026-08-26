@@ -1459,16 +1459,8 @@ window.oyuncuSiseDurumlari = [
 // Socket.io Bağlantısı (Tek Bir Defa Tanımlandı)
 const socket = (typeof io !== "undefined") ? io() : null;
 let currentRoomId = null;
-
-// ==========================================
-// 2. OYUNU BAŞLATMA
-// ==========================================
 window.etkinlikOyununuBaslat = function() {
     window.etkinlikKalanSure = 60;
-    window.oyuncuSiseDurumlari = [
-        [0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0]
-    ];
     
     // Ekranı Görünür Yap
     const oyunEkrani = document.getElementById('etkinlik-cember-ekrani');
@@ -1476,9 +1468,6 @@ window.etkinlikOyununuBaslat = function() {
 
     const sureEl = document.getElementById('etkinlik-sure');
     if (sureEl) sureEl.innerText = window.etkinlikKalanSure;
-    
-    const mesajEl = document.getElementById('etkinlik-durum-mesajlari');
-    if (mesajEl) mesajEl.innerText = "Yarış Başladı! Her şişeyi 9 yap!";
 
     window.etkinlikArayuzuGuncelle();
 
@@ -1489,7 +1478,7 @@ window.etkinlikOyununuBaslat = function() {
         const sEl = document.getElementById('etkinlik-sure');
         if (sEl) sEl.innerText = window.etkinlikKalanSure;
 
-        // Botlar Rastgele Atış Yapar (Eğer offline ise)
+        // Yalnızca Oda Yoksa (Singleplayer ise) Botlar Atış Yapar
         if (!currentRoomId) {
             for (let i = 1; i < 5; i++) {
                 if (Math.random() > 0.45) {
@@ -1504,24 +1493,25 @@ window.etkinlikOyununuBaslat = function() {
         }
     }, 1000);
 };
-
 // ==========================================
-// 3. ARAYÜZÜ GÜNCELLEME / RENDER
+// ARAYÜZDE DİĞER OYUNCULARI GÖSTERME
 // ==========================================
 window.etkinlikArayuzuGuncelle = function() {
     const alan = document.getElementById('cember-oyuncular-alani');
     if (!alan) return;
 
-    let isimler = [window.oyuncuVerisi?.isim || "Siz", "Ali", "Ayşe", "Mehmet", "Zeynep"];
+    // Eğer sunucudan gerçek oyuncu listesi geldiyse onu kullan, yoksa varsayılan isimleri koy
+    let varsayilanIsimler = ["Siz", "Ali", "Ayşe", "Mehmet", "Zeynep"];
+    let isimler = window.oyuncuListesi && window.oyuncuListesi.length > 0 ? window.oyuncuListesi : varsayilanIsimler;
 
     let html = `<div class="etkinlik-sahne-kapsayici">`;
 
     html += isimler.map((isim, oIdx) => {
-        let siseler = window.oyuncuSiseDurumlari[oIdx];
+        let siseler = window.oyuncuSiseDurumlari[oIdx] || [0,0,0,0,0,0,0,0,0,0];
         let toplamAtis = siseler.reduce((a, b) => a + b, 0);
 
         let siseRender = (siseIndex) => {
-            let adet = siseler[siseIndex];
+            let adet = siseler[siseIndex] || 0;
             let cemberlerHtml = '';
             
             for (let c = 0; c < adet; c++) {
@@ -1537,8 +1527,10 @@ window.etkinlikArayuzuGuncelle = function() {
             `;
         };
         
+        let benMiyim = (window.kendiIndexim !== undefined) ? (oIdx === window.kendiIndexim) : (oIdx === 0);
+
         return `
-            <div class="oyuncu-kulvari ${oIdx === 0 ? 'benim-kulvar' : ''}">
+            <div class="oyuncu-kulvari ${benMiyim ? 'benim-kulvar' : ''}">
                 <div class="insan-figuru">
                     <div class="insan-kafa"><div class="insan-sac"></div></div>
                     <div class="insan-govde">
@@ -1551,7 +1543,7 @@ window.etkinlikArayuzuGuncelle = function() {
                     </div>
                 </div>
 
-                <div style="font-size: 11px; font-weight: bold; color: ${oIdx === 0 ? '#f1c40f' : '#fff'}; white-space: nowrap;">${isim}</div>
+                <div style="font-size: 11px; font-weight: bold; color: ${benMiyim ? '#f1c40f' : '#fff'}; white-space: nowrap;">${isim}</div>
                 <div style="font-size: 9px; color: #94a3b8; margin-bottom: 4px;">Puan: <b>${toplamAtis} / 90</b></div>
                 
                 <div class="sise-sahne-10lu">
@@ -1569,7 +1561,6 @@ window.etkinlikArayuzuGuncelle = function() {
     html += `</div>`;
     alan.innerHTML = html;
 };
-
 // ==========================================
 // 4. ÇEMBER FIRLATMA VE ANİMASYON
 // ==========================================
@@ -1719,9 +1710,8 @@ function cemberiSunucuyaBildir(hedefSiseIndex) {
         });
     }
 }
-
 // ==========================================
-// SOCKET DİNLEYİCİLERİ (SADECE SCRIPT.JS İÇİNDE OLMALI)
+// SOCKET DİNLEYİCİLERİ
 // ==========================================
 if (socket) {
     socket.on('match_found', (data) => {
