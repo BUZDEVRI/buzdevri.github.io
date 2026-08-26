@@ -1672,5 +1672,37 @@ window.kazananiBelirleVeBidir = function() {
     });
     window.oyunBittiKazanan(kazananIndex);
 };
+        const socket = io(); // Sunucuya bağlan
+
+let currentRoomId = null;
+
+// 2 Kişilik eşleşme başlatma örneği
+function ikiKilikMacAra() {
+    document.getElementById("menu").innerHTML = "Eşleşme aranıyor, lütfen bekleyin...";
+    socket.emit('find_match_2', { isim: "Oyuncu" });
+}
+
+// Eşleşme bulunduğunda tetiklenir
+socket.on('match_found', (data) => {
+    currentRoomId = data.roomId;
+    document.getElementById("menu").style.display = "none";
+    document.getElementById("oyunAlani").style.display = "block";
+    console.log("Maç başladı! Oda ID:", currentRoomId);
+});
+
+// Çember atıldığında karşı tarafa haber verme
+function cemberFirlattiktanSonra() {
+    socket.emit('player_action', {
+        roomId: currentRoomId,
+        siselerData: siseler // Güncel şişe durumunu gönder
+    });
+}
+
+// Diğer oyuncunun hamlesini yakalama
+socket.on('update_game', (data) => {
+    siseler = data.siselerData;
+    // Ekranı güncelleme fonksiyonunuzu burada çağırın
+    oyunEkraniniYenile(); 
+});
         
     </script>
