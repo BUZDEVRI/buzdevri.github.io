@@ -5,9 +5,6 @@ const io = require('socket.io')(http);
 
 app.use(express.static('public')); // Frontend dosyalarının olduğu klasör
 
-// ==========================================
-// EŞLEŞTİRME SUNUCU MANTIĞI (BURAYA GELECEK)
-// ==========================================
 let beklemeOdalari = { 2: [], 5: [] };
 
 io.on('connection', (socket) => {
