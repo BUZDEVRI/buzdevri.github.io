@@ -1442,18 +1442,27 @@ window.addEventListener('DOMContentLoaded', () => {
     profilYukle();
     gunlukOdulButonKontrol();
 });
-        window.etkinlikTimer = null;
+// ==========================================
+// 1. OYUN VE ZAMANLAYICI DEĞİŞKENLERİ
+// ==========================================
+window.etkinlikTimer = null;
 window.etkinlikKalanSure = 60;
 
 window.oyuncuSiseDurumlari = [
     [0,0,0,0,0,0,0,0,0,0], // Siz (10 Şişe)
-    [0,0,0,0,0,0,0,0,0,0], // Ali
-    [0,0,0,0,0,0,0,0,0,0], // Ayşe
-    [0,0,0,0,0,0,0,0,0,0], // Mehmet
+    [0,0,0,0,0,0,0,0,0,0], // Ali / Rakip 1
+    [0,0,0,0,0,0,0,0,0,0], // Ayşe / Rakip 2
+    [0,0,0,0,0,0,0,0,0,0], // Mehmet / Rakip 3
     [0,0,0,0,0,0,0,0,0,0]  // Zeynep
 ];
 
-// OYUNU BAŞLATMA VE ARAYÜZÜ EKRA GETİRME
+// Socket.io Bağlantısı (Tek Bir Defa Tanımlandı)
+const socket = (typeof io !== "undefined") ? io() : null;
+let currentRoomId = null;
+
+// ==========================================
+// 2. OYUNU BAŞLATMA
+// ==========================================
 window.etkinlikOyununuBaslat = function() {
     window.etkinlikKalanSure = 60;
     window.oyuncuSiseDurumlari = [
@@ -1465,8 +1474,11 @@ window.etkinlikOyununuBaslat = function() {
     const oyunEkrani = document.getElementById('etkinlik-cember-ekrani');
     if (oyunEkrani) oyunEkrani.style.display = 'flex';
 
-    document.getElementById('etkinlik-sure').innerText = window.etkinlikKalanSure;
-    document.getElementById('etkinlik-durum-mesajlari').innerText = "Yarış Başladı! Her şişeyi 9 yap!";
+    const sureEl = document.getElementById('etkinlik-sure');
+    if (sureEl) sureEl.innerText = window.etkinlikKalanSure;
+    
+    const mesajEl = document.getElementById('etkinlik-durum-mesajlari');
+    if (mesajEl) mesajEl.innerText = "Yarış Başladı! Her şişeyi 9 yap!";
 
     window.etkinlikArayuzuGuncelle();
 
@@ -1474,13 +1486,15 @@ window.etkinlikOyununuBaslat = function() {
     
     window.etkinlikTimer = setInterval(() => {
         window.etkinlikKalanSure--;
-        const sureEl = document.getElementById('etkinlik-sure');
-        if (sureEl) sureEl.innerText = window.etkinlikKalanSure;
+        const sEl = document.getElementById('etkinlik-sure');
+        if (sEl) sEl.innerText = window.etkinlikKalanSure;
 
-        // Botlar Rastgele Atış Yapar
-        for (let i = 1; i < 5; i++) {
-            if (Math.random() > 0.45) {
-                window.botaCemberEkle(i);
+        // Botlar Rastgele Atış Yapar (Eğer offline ise)
+        if (!currentRoomId) {
+            for (let i = 1; i < 5; i++) {
+                if (Math.random() > 0.45) {
+                    window.botaCemberEkle(i);
+                }
             }
         }
 
@@ -1490,7 +1504,11 @@ window.etkinlikOyununuBaslat = function() {
         }
     }, 1000);
 };
-   window.etkinlikArayuzuGuncelle = function() {
+
+// ==========================================
+// 3. ARAYÜZÜ GÜNCELLEME / RENDER
+// ==========================================
+window.etkinlikArayuzuGuncelle = function() {
     const alan = document.getElementById('cember-oyuncular-alani');
     if (!alan) return;
 
@@ -1503,22 +1521,21 @@ window.etkinlikOyununuBaslat = function() {
         let toplamAtis = siseler.reduce((a, b) => a + b, 0);
 
         let siseRender = (siseIndex) => {
-    let adet = siseler[siseIndex];
-    let cemberlerHtml = '';
-    
-    for (let c = 0; c < adet; c++) {
-        // En alt tabandan (bottom: 2px) başlar, her yeni çember 4px yukarı dizilir
-        let altMesafe = 2 + (c * 4); 
-        cemberlerHtml += `<div class="cember-scalex-anim" style="bottom: ${altMesafe}px;"></div>`;
-    }
+            let adet = siseler[siseIndex];
+            let cemberlerHtml = '';
+            
+            for (let c = 0; c < adet; c++) {
+                let altMesafe = 2 + (c * 4); 
+                cemberlerHtml += `<div class="cember-scalex-anim" style="bottom: ${altMesafe}px;"></div>`;
+            }
 
-    return `
-        <div class="soda-sise-kapsayici">
-            <div class="soda-sise"><div class="soda-etiket"></div></div>
-            ${cemberlerHtml}
-        </div>
-    `;
-};
+            return `
+                <div class="soda-sise-kapsayici">
+                    <div class="soda-sise"><div class="soda-etiket"></div></div>
+                    ${cemberlerHtml}
+                </div>
+            `;
+        };
         
         return `
             <div class="oyuncu-kulvari ${oIdx === 0 ? 'benim-kulvar' : ''}">
@@ -1552,13 +1569,9 @@ window.etkinlikOyununuBaslat = function() {
     html += `</div>`;
     alan.innerHTML = html;
 };
-        
 
-// 1. Socket Bağlantısı
-const socket = (typeof io !== "undefined") ? io() : null;
-let currentRoomId = null;
-     // ==========================================
-// 1. ÇEMBER FIRLATMA FONKSİYONU (DÜZELTİLDİ)
+// ==========================================
+// 4. ÇEMBER FIRLATMA VE ANİMASYON
 // ==========================================
 window.cemberiFirlat = function() {
     if (window.etkinlikKalanSure <= 0) return;
@@ -1566,7 +1579,6 @@ window.cemberiFirlat = function() {
     let siseler = window.oyuncuSiseDurumlari[0];
     let hedefSiseIndex = -1;
 
-    // Tek tek doldurma: 9'a ulaşmamış İLK şişeyi bul
     for (let i = 0; i < 10; i++) {
         if (siseler[i] < 9) {
             hedefSiseIndex = i;
@@ -1574,20 +1586,20 @@ window.cemberiFirlat = function() {
         }
     }
 
-    // Tüm şişeler doluysa atış yapma
     if (hedefSiseIndex === -1) return;
 
-    // Animasyonla çemberi fırlat
     window.cemberUcurAnimasyonu(hedefSiseIndex, () => {
         siseler[hedefSiseIndex]++;
         let toplam = siseler.reduce((a, b) => a + b, 0);
 
-        document.getElementById('etkinlik-durum-mesajlari').innerText = 
-            `Şişe ${hedefSiseIndex + 1}: ${siseler[hedefSiseIndex]}/9 Çember | Toplam: ${toplam} / 90`;
+        const mesajEl = document.getElementById('etkinlik-durum-mesajlari');
+        if (mesajEl) {
+            mesajEl.innerText = `Şişe ${hedefSiseIndex + 1}: ${siseler[hedefSiseIndex]}/9 Çember | Toplam: ${toplam} / 90`;
+        }
 
         window.etkinlikArayuzuGuncelle();
 
-        // Atışı sunucuya bildir
+        // Atışı multiplayer sunucusuna ilet
         cemberiSunucuyaBildir(hedefSiseIndex);
 
         if (toplam >= 90) {
@@ -1597,93 +1609,6 @@ window.cemberiFirlat = function() {
     });
 };
 
-// ==========================================
-// 2. EŞLEŞTİRME VE MULTIPLAYER ENTEGRASYONU
-// ==========================================
-
-// Socket Bağlantısı
-const socket = (typeof io !== "undefined") ? io() : null;
-let currentRoomId = null;
-
-// Menüden Eşleşme Başlatma
-window.eslesmeBaslat = function(kisiSayisi) {
-    const modSecimi = document.getElementById("etkinlik-mod-secimi");
-    const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
-    const aramaMetni = document.getElementById("arama-durum-metni");
-
-    if (modSecimi) modSecimi.style.display = "none";
-    if (aramaEkrani) aramaEkrani.style.display = "block";
-    if (aramaMetni) aramaMetni.innerText = `${kisiSayisi} Kişilik Oda Aranıyor...`;
-
-    if (socket) {
-        const oyuncuAdi = window.oyuncuVerisi?.isim || "Oyuncu";
-        socket.emit("find_match", { mode: kisiSayisi, isim: oyuncuAdi });
-    }
-};
-
-// Eşleşmeyi İptal Etme
-window.eslesmeyiIptalEt = function() {
-    const modSecimi = document.getElementById("etkinlik-mod-secimi");
-    const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
-
-    if (aramaEkrani) aramaEkrani.style.display = "none";
-    if (modSecimi) modSecimi.style.display = "flex";
-
-    if (socket) {
-        socket.emit("cancel_match");
-    }
-};
-
-// Sunucudan "Maç Bulundu" Sinyali Geldiğinde
-if (socket) {
-    socket.on('match_found', (data) => {
-        currentRoomId = data.roomId;
-
-        const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
-        if (aramaEkrani) aramaEkrani.style.display = "none";
-
-        window.etkinlikOyununuBaslat();
-    });
-
-    socket.on('update_game', (data) => {
-        if (data.oyuncuIndex !== undefined && data.siselerData) {
-            window.oyuncuSiseDurumlari[data.oyuncuIndex] = data.siselerData;
-            window.etkinlikArayuzuGuncelle();
-        }
-    });
-}
-
-// Kendi Çember Atışını Sunucuya Bildirme
-function cemberiSunucuyaBildir(hedefSiseIndex) {
-    if (socket && currentRoomId) {
-        socket.emit('player_action', {
-            roomId: currentRoomId,
-            oyuncuIndex: 0,
-            siselerData: window.oyuncuSiseDurumlari[0]
-        });
-    }
-        }
-        
-    // 1. ÇEMBERİ UÇURMA ANİMASYONU (Butondan Hedef Şişeye)
-    window.cemberUcurAnimasyonu(hedefSiseIndex, () => {
-        // 2. Animasyon tamamlanınca çemberi şişeye ekle
-        siseler[hedefSiseIndex]++;
-        let toplam = siseler.reduce((a, b) => a + b, 0);
-
-        document.getElementById('etkinlik-durum-mesajlari').innerText = 
-            `Şişe ${hedefSiseIndex + 1}: ${siseler[hedefSiseIndex]}/9 Çember | Toplam: ${toplam} / 90`;
-
-        window.etkinlikArayuzuGuncelle();
-
-        // Kazanan Kontrolü (90 Çember)
-        if (toplam >= 90) {
-            clearInterval(window.etkinlikTimer);
-            window.oyunBittiKazanan(0);
-        }
-    });
-};
-
-// ÇEMBERİN HAREKETLİ UÇUŞ FONKSİYONU
 window.cemberUcurAnimasyonu = function(siseIndex, callback) {
     const firlatButon = document.querySelector("#etkinlik-cember-ekrani button[onclick*='cemberiFirlat']");
     const hedefSiseEl = document.querySelectorAll(".benim-kulvar .soda-sise")[siseIndex];
@@ -1693,11 +1618,9 @@ window.cemberUcurAnimasyonu = function(siseIndex, callback) {
         return;
     }
 
-    // Başlangıç (Buton) ve Bitiş (Şişe) Pozisyonları
     const btnRect = firlatButon.getBoundingClientRect();
     const siseRect = hedefSiseEl.getBoundingClientRect();
 
-    // Geçici Uçan Çember Oluştur
     const ucanCember = document.createElement("div");
     ucanCember.className = "ucan-cember";
     ucanCember.style.left = `${btnRect.left + btnRect.width / 2 - 15}px`;
@@ -1705,21 +1628,21 @@ window.cemberUcurAnimasyonu = function(siseIndex, callback) {
 
     document.body.appendChild(ucanCember);
 
-    // 20ms sonra hedef şişeye uçur
     setTimeout(() => {
         ucanCember.style.left = `${siseRect.left + siseRect.width / 2 - 15}px`;
         ucanCember.style.top = `${siseRect.top - 5}px`;
         ucanCember.style.transform = "scaleX(1.4) scaleY(1.2)";
     }, 20);
 
-    // Uçuş bitince çemberi sil ve gerçek çemberi şişeye oturt
     setTimeout(() => {
         ucanCember.remove();
         callback();
     }, 350);
 };
 
-// BOTLARIN TEK TEK ATMA MANTIĞI
+// ==========================================
+// 5. BOTLAR VE OYUN BİTİŞİ
+// ==========================================
 window.botaCemberEkle = function(botIndex) {
     let siseler = window.oyuncuSiseDurumlari[botIndex];
     for (let i = 0; i < 10; i++) {
@@ -1730,7 +1653,6 @@ window.botaCemberEkle = function(botIndex) {
     }
     window.etkinlikArayuzuGuncelle();
 };
-        
 
 window.oyunBittiKazanan = function(kazananIndex) {
     let isimler = [window.oyuncuVerisi?.isim || "Siz", "Ali", "Ayşe", "Mehmet", "Zeynep"];
@@ -1756,37 +1678,64 @@ window.kazananiBelirleVeBidir = function() {
     });
     window.oyunBittiKazanan(kazananIndex);
 };
-        const socket = io(); // Sunucuya bağlan
 
-let currentRoomId = null;
+// ==========================================
+// 6. MULTIPLAYER VE EŞLEŞTİRME SİSTEMİ
+// ==========================================
+window.eslesmeBaslat = function(kisiSayisi) {
+    const modSecimi = document.getElementById("etkinlik-mod-secimi");
+    const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
+    const aramaMetni = document.getElementById("arama-durum-metni");
 
-// 2 Kişilik eşleşme başlatma örneği
-function ikiKilikMacAra() {
-    document.getElementById("menu").innerHTML = "Eşleşme aranıyor, lütfen bekleyin...";
-    socket.emit('find_match_2', { isim: "Oyuncu" });
+    if (modSecimi) modSecimi.style.display = "none";
+    if (aramaEkrani) aramaEkrani.style.display = "block";
+    if (aramaMetni) aramaMetni.innerText = `${kisiSayisi} Kişilik Oda Aranıyor...`;
+
+    if (socket) {
+        const oyuncuAdi = window.oyuncuVerisi?.isim || "Oyuncu";
+        socket.emit("find_match", { mode: kisiSayisi, isim: oyuncuAdi });
+    }
+};
+
+window.eslesmeyiIptalEt = function() {
+    const modSecimi = document.getElementById("etkinlik-mod-secimi");
+    const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
+
+    if (aramaEkrani) aramaEkrani.style.display = "none";
+    if (modSecimi) modSecimi.style.display = "flex";
+
+    if (socket) {
+        socket.emit("cancel_match");
+    }
+};
+
+function cemberiSunucuyaBildir(hedefSiseIndex) {
+    if (socket && currentRoomId) {
+        socket.emit('player_action', {
+            roomId: currentRoomId,
+            oyuncuIndex: 0,
+            siselerData: window.oyuncuSiseDurumlari[0]
+        });
+    }
 }
 
-// Eşleşme bulunduğunda tetiklenir
-socket.on('match_found', (data) => {
-    currentRoomId = data.roomId;
-    document.getElementById("menu").style.display = "none";
-    document.getElementById("oyunAlani").style.display = "block";
-    console.log("Maç başladı! Oda ID:", currentRoomId);
-});
+// Socket Dinleyicileri
+if (socket) {
+    socket.on('match_found', (data) => {
+        currentRoomId = data.roomId;
 
-// Çember atıldığında karşı tarafa haber verme
-function cemberFirlattiktanSonra() {
-    socket.emit('player_action', {
-        roomId: currentRoomId,
-        siselerData: siseler // Güncel şişe durumunu gönder
+        const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
+        if (aramaEkrani) aramaEkrani.style.display = "none";
+
+        window.etkinlikOyununuBaslat();
     });
-}
 
-// Diğer oyuncunun hamlesini yakalama
-socket.on('update_game', (data) => {
-    siseler = data.siselerData;
-    // Ekranı güncelleme fonksiyonunuzu burada çağırın
-    oyunEkraniniYenile(); 
-});
+    socket.on('update_game', (data) => {
+        if (data.oyuncuIndex !== undefined && data.siselerData) {
+            window.oyuncuSiseDurumlari[data.oyuncuIndex] = data.siselerData;
+            window.etkinlikArayuzuGuncelle();
+        }
+    });
+        }
         
     </script>
