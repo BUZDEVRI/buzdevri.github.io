@@ -484,7 +484,7 @@
     <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #ff75c3; border-radius: 18px; padding: 15px; margin-top: 10px;">
         <h3 style="margin: 0; color: #ff70a6;">🍓 Meyve & Şeker Eşleştirme</h3>
         <p style="font-size: 12px; color: #a5b1c2;">4 Kişilik Çok Oyunculu Hafıza Oyunu</p>
-        <button onclick="window.sekmeDegistir('ana-lobi')" style="padding: 8px 16px; background: #2ed573; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;">Lobiye Git</button>
+        <button onclick="window.ekranGoster('ana-lobi')">Anasayfa</button>
     </div>
 </div>
 
@@ -871,18 +871,19 @@ window.ekranGoster = function(ekranId) {
         'etkinlikler-ekrani', 'download-ekrani', 'partner-ekrani', 
         'iletisim-ekrani', 'arkadaslar-ekrani', 'oda-ici-ekran', 
         'misafir-bekleme-ekrani', 'game-screen',
-        'etkinlik-cember-ekrani' // 1. BURAYA EKLENDİ
+        'etkinlik-cember-ekrani'
     ];
     
     paneller.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
-            // Tam ekran flex olan ekranlar için 'flex', diğerleri için 'block'
+            // Tam ekran flex olması gerekenler flex, diğerleri block yapılır
             const flexEkranlar = ['game-screen', 'etkinlik-cember-ekrani'];
             el.style.display = (id === ekranId) ? (flexEkranlar.includes(id) ? 'flex' : 'block') : 'none';
         }
     });
 };
+        
 
 // 2. HEMEN ALTINA (DIŞINA) BU FONKSİYONLARI EKLE:
 window.etkinlikEkraniniAc = function() {
