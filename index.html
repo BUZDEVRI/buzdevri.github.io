@@ -609,61 +609,52 @@
         </div>
     </div>
 </div>
-       <!-- MANTIKLI ETKİNLİKLER MENÜSÜ -->
+        <!-- ETKİNLİKLER VE EŞLEŞTİRME MENÜSÜ -->
 <div id="etkinlikler-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff9f43; border-radius: 24px; box-shadow: 0 0 25px rgba(255, 159, 67, 0.4); padding: 25px; max-width: 480px; margin: 20px auto; color: #fff;">
     <div style="text-align: center; margin-bottom: 20px;">
         <h2 style="color: #feca57; text-shadow: 0 0 10px #ff9f43; font-weight: 900; margin: 0 0 8px 0;">🎉 Özel Etkinlikler & Ödüller</h2>
-        <p style="color: #ffeaa7; font-size: 13px; font-weight: 600; margin: 0;">Süreli görevleri tamamlayın ve ekstra Şeker kazanın!</p>
+        <p style="color: #ffeaa7; font-size: 13px; font-weight: 600; margin: 0;">Mod seçin ve diğer oyuncularla eşleşin!</p>
     </div>
 
-    <div style="display: flex; flex-direction: column; gap: 14px;">
-        <!-- 1. Günlük Ödül Kutu -->
+    <!-- EŞLEŞTİRME MODLARI -->
+    <div id="etkinlik-mod-secimi" style="display: flex; flex-direction: column; gap: 14px;">
+        <!-- Günlük Ödül Kutu -->
         <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #ff9f43; border-radius: 18px; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
             <div style="font-size: 32px;">🎁</div>
             <div style="flex: 1; text-align: left;">
                 <h3 style="margin: 0; color: #feca57; font-size: 15px; font-weight: bold;">Günlük Giriş Ödülü</h3>
-                <p style="margin: 2px 0 0 0; color: #a5b1c2; font-size: 11px;">Her gün giriş yapıp bedava 50 Şekerinizi alın!</p>
+                <p style="margin: 2px 0 0 0; color: #a5b1c2; font-size: 11px;">Her gün 50 Şekerinizi alın!</p>
             </div>
-            <button id="btn-gunluk-odul" onclick="window.gunlukOdulAl()" style="background: linear-gradient(180deg, #2ed573 0%, #26af5f 100%); border: none; border-radius: 12px; color: white; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">Ödülü Al</button>
+            <button onclick="window.gunlukOdulAl()" style="background: linear-gradient(180deg, #2ed573 0%, #26af5f 100%); border: none; border-radius: 12px; color: white; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">Ödülü Al</button>
         </div>
 
-        <!-- 2. Çember Atma Etkinlik Kartı ve KATIL Butonu -->
+        <!-- 2 Kişilik Eşleşme Kartı -->
         <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #f1c40f; border-radius: 18px; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-            <div style="font-size: 32px;">🎯</div>
+            <div style="font-size: 32px;">🥊</div>
             <div style="flex: 1; text-align: left;">
-                <h3 style="margin: 0; color: #f1c40f; font-size: 15px; font-weight: bold;">Çember Atma Yarışı</h3>
-                <p style="margin: 2px 0 0 0; color: #a5b1c2; font-size: 11px;">10 Şişenin her birine 9 çember tak, rakipleri yen!</p>
+                <h3 style="margin: 0; color: #f1c40f; font-size: 15px; font-weight: bold;">Çember Atma (1v1)</h3>
+                <p style="margin: 2px 0 0 0; color: #a5b1c2; font-size: 11px;">2 Kişilik Hızlı Eşleşme</p>
             </div>
-            <button onclick="window.etkinlikOyununuBaslat();" style="background: linear-gradient(180deg, #f1c40f 0%, #d4ac0d 100%); border: none; border-radius: 12px; color: #000; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px; box-shadow: 0 4px 10px rgba(241, 196, 15, 0.3);">Katıl 💍</button>
+            <button onclick="window.eslesmeBaslat(2)" style="background: linear-gradient(180deg, #f1c40f 0%, #d4ac0d 100%); border: none; border-radius: 12px; color: #000; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">2 Kişilik Oyna 💍</button>
+        </div>
+
+        <!-- 4 Kişilik Eşleşme Kartı -->
+        <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #e74c3c; border-radius: 18px; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+            <div style="font-size: 32px;">👑</div>
+            <div style="flex: 1; text-align: left;">
+                <h3 style="margin: 0; color: #e74c3c; font-size: 15px; font-weight: bold;">Çember Atma (4 Kişilik)</h3>
+                <p style="margin: 2px 0 0 0; color: #a5b1c2; font-size: 11px;">4 Kişilik Büyük Yarış</p>
+            </div>
+            <button onclick="window.eslesmeBaslat(4)" style="background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%); border: none; border-radius: 12px; color: #fff; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">4 Kişilik Oyna 💍</button>
         </div>
     </div>
-</div>
 
-<!-- ETKİNLİK: ÇEMBER ATMA OYUN EKRANI (Menünün DIŞINA Taşındı) -->
-<div id="etkinlik-cember-ekrani" style="display: none; flex-direction: column; justify-content: space-between; height: 100vh; background: linear-gradient(135deg, #1e293b, #0f172a); padding: 10px; box-sizing: border-box; color: #fff; position: fixed; top: 0; left: 0; width: 100%; z-index: 9999; overflow: hidden;">
-    
-    <!-- Üst Bilgi Barı -->
-    <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; background: rgba(0,0,0,0.5); padding: 8px 15px; border-radius: 12px; box-sizing: border-box; flex-shrink: 0;">
-        <h3 style="margin: 0; color: #f1c40f; font-size: 14px;">🎯 Çember Atma (10 Şişe x 9 Çember)</h3>
-        <div style="font-size: 14px; font-weight: bold; background: #e74c3c; padding: 4px 10px; border-radius: 8px;">
-            Süre: <span id="etkinlik-sure">60</span>s
-        </div>
-        <button onclick="document.getElementById('etkinlik-cember-ekrani').style.display='none'; if(window.etkinlikTimer) clearInterval(window.etkinlikTimer);" style="background: #c0392b; color: white; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;">Çıkış 🚪</button>
-    </div>
-
-    <!-- OYUNCULAR VE ŞİŞELER ALANI -->
-    <div id="cember-oyuncular-alani" style="width: 100%; flex: 1; display: flex; align-items: flex-end; justify-content: center; overflow-x: auto; padding-bottom: 90px; box-sizing: border-box;">
-        <!-- JS ile 5 oyuncu ve şişeleri yüklenecek -->
-    </div>
-
-    <!-- ALT SABİT KONTROL PANELİ -->
-    <div style="position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(10, 15, 30, 0.95); padding: 12px 10px; border-radius: 16px 16px 0 0; text-align: center; box-sizing: border-box; backdrop-filter: blur(10px); border-top: 2px solid #f1c40f; z-index: 10000;">
-        <p id="etkinlik-durum-mesajlari" style="margin: 0 0 6px 0; font-size: 12px; color: #f39c12; font-weight: bold;">
-            Her Şişeye 9 Çember Tak! Toplam: 0 / 90
-        </p>
-        <button onclick="window.cemberiFirlat()" style="background: linear-gradient(180deg, #f1c40f, #d4ac0d); color: #000; font-weight: 900; font-size: 16px; border: none; padding: 12px 24px; border-radius: 20px; cursor: pointer; box-shadow: 0 4px 12px rgba(241, 196, 15, 0.4); width: 90%; max-width: 360px;">
-            💍 ÇEMBERİ FIRLAT!
-        </button>
+    <!-- MAÇ ARANIYOR BEKLEME EKRANI (Varsayılan Olarak Gizli) -->
+    <div id="etkinlik-arama-ekrani" style="display: none; text-align: center; padding: 20px 0;">
+        <div class="arama-animasyonu" style="font-size: 40px; margin-bottom: 10px; animation: pulse 1s infinite alternate;">🔍</div>
+        <h3 id="arama-durum-metni" style="color: #feca57; margin: 0 0 8px 0;">Rakip Aranıyor...</h3>
+        <p style="color: #a5b1c2; font-size: 12px; margin-bottom: 20px;">Lütfen diğer oyuncuların katılması bekleniyor.</p>
+        <button onclick="window.eslesmeyiIptalEt()" style="background: #c0392b; color: #fff; border: none; padding: 8px 16px; border-radius: 10px; font-weight: bold; cursor: pointer;">Aramayı İptal Et</button>
     </div>
 </div>
       
@@ -1576,10 +1567,81 @@ window.cemberiFirlat = function() {
             break;
         }
     }
-
+ 
     // Tüm şişeler doluysa atış yapma
     if (hedefSiseIndex === -1) return;
+    // ==========================================
+// EŞLEŞTİRME VE MULTIPLAYER ENTEGRASYONU
+// ==========================================
 
+// 1. Socket Bağlantısı
+const socket = (typeof io !== "undefined") ? io() : null;
+let currentRoomId = null;
+
+// 2. Menüden Eşleşme Başlatma
+window.eslesmeBaslat = function(kisiSayisi) {
+    const modSecimi = document.getElementById("etkinlik-mod-secimi");
+    const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
+    const aramaMetni = document.getElementById("arama-durum-metni");
+
+    if (modSecimi) modSecimi.style.display = "none";
+    if (aramaEkrani) aramaEkrani.style.display = "block";
+    if (aramaMetni) aramaMetni.innerText = `${kisiSayisi} Kişilik Oda Aranıyor...`;
+
+    // Sunucuya arama isteği gönder
+    if (socket) {
+        const oyuncuAdi = window.oyuncuVerisi?.isim || "Oyuncu";
+        socket.emit("find_match", { mode: kisiSayisi, isim: oyuncuAdi });
+    }
+};
+
+// 3. Eşleşmeyi İptal Etme
+window.eslesmeyiIptalEt = function() {
+    const modSecimi = document.getElementById("etkinlik-mod-secimi");
+    const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
+
+    if (aramaEkrani) aramaEkrani.style.display = "none";
+    if (modSecimi) modSecimi.style.display = "flex";
+
+    if (socket) {
+        socket.emit("cancel_match");
+    }
+};
+
+// 4. Sunucudan "Maç Bulundu" Sinyali Geldiğinde
+if (socket) {
+    socket.on('match_found', (data) => {
+        currentRoomId = data.roomId;
+
+        // Arama ekranını kapat
+        const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
+        if (aramaEkrani) aramaEkrani.style.display = "none";
+
+        // Oyunu başlat
+        window.etkinlikOyununuBaslat();
+    });
+
+    // 5. Diğer Oyuncuların Çember Atışlarını Yakalama
+    socket.on('update_game', (data) => {
+        // Rakip indexi ve attığı yeni şişe verisini güncelle
+        if (data.oyuncuIndex !== undefined && data.siselerData) {
+            window.oyuncuSiseDurumlari[data.oyuncuIndex] = data.siselerData;
+            window.etkinlikArayuzuGuncelle();
+        }
+    });
+}
+
+// 6. Kendi Çember Atışını Sunucuya Bildirme (cemberiFirlat İçinden Çağrılır)
+function cemberiSunucuyaBildir(hedefSiseIndex) {
+    if (socket && currentRoomId) {
+        socket.emit('player_action', {
+            roomId: currentRoomId,
+            oyuncuIndex: 0, // Kendi kulvarınız (0)
+            siselerData: window.oyuncuSiseDurumlari[0]
+        });
+    }
+        }
+        
     // 1. ÇEMBERİ UÇURMA ANİMASYONU (Butondan Hedef Şişeye)
     window.cemberUcurAnimasyonu(hedefSiseIndex, () => {
         // 2. Animasyon tamamlanınca çemberi şişeye ekle
