@@ -1,128 +1,56 @@
 const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+const http = require('http').createServer(app);
+const io = require('socket.io')(http);
 
-app.use(express.static('public'));
+app.use(express.static('public')); // Frontend dosyalarının olduğu klasör
 
-let waitingPlayers2 = [];
-let waitingPlayers4 = [];
+// ==========================================
+// EŞLEŞTİRME SUNUCU MANTIĞI (BURAYA GELECEK)
+// ==========================================
+let beklemeOdalari = { 2: [], 5: [] };
 
 io.on('connection', (socket) => {
     console.log('Bir oyuncu bağlandı:', socket.id);
 
-    // ==========================================
-    // 2 KİŞİLİK EŞLEŞTİRME
-    // ==========================================
-    socket.on('find_match_2', (playerData) => {
-        console.log('2 kişilik eşleştirme isteği:', socket.id);
+    socket.on('find_match', (data) => {
+        const mode = Number(data.mode) || 2;
+        
+        // Oyuncuyu bekleme listesine ekle
+        beklemeOdalari[mode].push({ id: socket.id, isim: data.isim || "Oyuncu" });
 
-        waitingPlayers2.push({
-            socket: socket,
-            id: socket.id,
-            data: playerData
-        });
+        // Yeterli oyuncu sayısına ulaşıldıysa maçı kur
+        if (beklemeOdalari[mode].length >= mode) {
+            const roomId = "oda_" + Date.now();
+            const oyuncular = beklemeOdalari[mode].splice(0, mode);
 
-        console.log('2 kişilik bekleyen oyuncu:', waitingPlayers2.length);
+            // Odadaki her oyuncuya maçın başladığını bildir
+            oyuncular.forEach((o, index) => {
+                const playerSocket = io.sockets.sockets.get(o.id);
+                if (playerSocket) playerSocket.join(roomId);
 
-        if (waitingPlayers2.length >= 2) {
-            const p1 = waitingPlayers2.shift();
-            const p2 = waitingPlayers2.shift();
-
-            const roomId = 'room_2_' + Date.now();
-
-            p1.socket.join(roomId);
-            p2.socket.join(roomId);
-
-            console.log('2 kişilik oda oluşturuldu:', roomId);
-
-            io.to(roomId).emit('match_found', {
-                roomId: roomId,
-                players: [p1.data, p2.data]
+                io.to(o.id).emit('match_found', { 
+                    roomId: roomId, 
+                    oyuncuIndex: index,
+                    oyuncular: oyuncular 
+                });
             });
         }
     });
 
-    // ==========================================
-    // 4 KİŞİLİK EŞLEŞTİRME
-    // ==========================================
-    socket.on('find_match_4', (playerData) => {
-        console.log('4 kişilik eşleştirme isteği:', socket.id);
-
-        waitingPlayers4.push({
-            socket: socket,
-            id: socket.id,
-            data: playerData
-        });
-
-        console.log('4 kişilik bekleyen oyuncu:', waitingPlayers4.length);
-
-        if (waitingPlayers4.length >= 4) {
-            const roomPlayers = waitingPlayers4.splice(0, 4);
-            const roomId = 'room_4_' + Date.now();
-
-            roomPlayers.forEach((player) => {
-                player.socket.join(roomId);
-            });
-
-            console.log('4 kişilik oda oluşturuldu:', roomId);
-
-            io.to(roomId).emit('match_found', {
-                roomId: roomId,
-                players: roomPlayers.map(player => player.data)
-            });
-        }
-    });
-
-    // ==========================================
-    // OYUNCU HAMLELERİ / ETKİNLİKLER
-    // ==========================================
+    // Çember atıldığında diğer oyunculara ilet
     socket.on('player_action', (data) => {
-        if (!data || !data.roomId) {
-            console.log('Geçersiz player_action:', data);
-            return;
-        }
-
         socket.to(data.roomId).emit('update_game', data);
     });
 
-    // ==========================================
-    // EŞLEŞTİRME İPTAL
-    // ==========================================
-    socket.on('cancel_match', () => {
-        waitingPlayers2 = waitingPlayers2.filter(
-            player => player.id !== socket.id
-        );
-
-        waitingPlayers4 = waitingPlayers4.filter(
-            player => player.id !== socket.id
-        );
-
-        console.log('Eşleştirme iptal edildi:', socket.id);
-    });
-
-    // ==========================================
-    // OYUNCU BAĞLANTISI KESİLİRSE
-    // ==========================================
+    // Oyuncu ayrılırsa listeden çıkar
     socket.on('disconnect', () => {
-        console.log('Oyuncu ayrıldı:', socket.id);
-
-        waitingPlayers2 = waitingPlayers2.filter(
-            player => player.id !== socket.id
-        );
-
-        waitingPlayers4 = waitingPlayers4.filter(
-            player => player.id !== socket.id
-        );
+        for (let mode in beklemeOdalari) {
+            beklemeOdalari[mode] = beklemeOdalari[mode].filter(o => o.id !== socket.id);
+        }
     });
 });
 
-// ==========================================
-// SUNUCUYU BAŞLAT
-// ==========================================
-server.listen(3000, () => {
+http.listen(3000, () => {
     console.log('Sunucu 3000 portunda çalışıyor...');
 });
