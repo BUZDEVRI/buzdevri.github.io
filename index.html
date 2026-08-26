@@ -1688,17 +1688,17 @@ window.odaAramayiBaslat = function(secilenMod) {
     const aramaMetni = document.getElementById("arama-durum-metni");
 
     if (modSecimi) modSecimi.style.display = "none";
-    if (aramaEkrani) aramaEkrani.style.display = "flex";
+    if (aramaEkrani) aramaEkrani.style.display = "block";
     if (aramaMetni) aramaMetni.innerText = `${secilenMod} Kişilik Oda Aranıyor...`;
 
-    // Sunucuya arama isteği gönder
-    if (typeof socket !== "undefined" && socket) {
-        let oyuncuAdi = window.oyuncuVerisi?.isim || "Oyuncu";
-        socket.emit("find_match", { mode: secilenMod, isim: oyuncuAdi });
+    if (socket) {
+        let benimIsmim = window.kullaniciAdi || "Oyuncu " + Math.floor(Math.random() * 100);
+        socket.emit("find_match", { mode: secilenMod, isim: benimIsmim });
     } else {
-        console.error("Socket bağlantısı kurulamadı!");
+        alert("Sunucuya bağlanılamadı!");
     }
 };
+        
 
 // Aramayı İptal Et Butonu
 window.eslesmeyiIptalEt = function() {
@@ -1708,9 +1708,7 @@ window.eslesmeyiIptalEt = function() {
     if (aramaEkrani) aramaEkrani.style.display = "none";
     if (modSecimi) modSecimi.style.display = "flex";
 
-    if (typeof socket !== "undefined" && socket) {
-        socket.emit("cancel_match");
-    }
+    if (socket) socket.emit("cancel_match");
 };
 function cemberiSunucuyaBildir(hedefSiseIndex) {
     if (socket && currentRoomId) {
@@ -1728,7 +1726,7 @@ function cemberiSunucuyaBildir(hedefSiseIndex) {
 // ==========================================
 if (socket) {
     socket.on('match_found', (data) => {
-        currentRoomId = data.roomId;
+        window.currentRoomId = data.roomId;
         window.kendiIndexim = data.oyuncuIndex;
 
         if (data.oyuncular) {
@@ -1738,13 +1736,22 @@ if (socket) {
         const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
         if (aramaEkrani) aramaEkrani.style.display = "none";
 
-        window.etkinlikOyununuBaslat();
+        // Oyun ekranına geç
+        if (typeof window.ekranGoster === "function") {
+            window.ekranGoster('etkinlik-cember-ekrani');
+        }
+        
+        if (typeof window.etkinlikOyununuBaslat === "function") {
+            window.etkinlikOyununuBaslat();
+        }
     });
 
     socket.on('update_game', (data) => {
         if (data.oyuncuIndex !== undefined && data.siselerData) {
             window.oyuncuSiseDurumlari[data.oyuncuIndex] = data.siselerData;
-            window.etkinlikArayuzuGuncelle();
+            if (typeof window.etkinlikArayuzuGuncelle === "function") {
+                window.etkinlikArayuzuGuncelle();
+            }
         }
     });
         }
