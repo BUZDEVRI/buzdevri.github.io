@@ -4,63 +4,56 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
+const io = new Server(server);
 
-// CORS izinleriyle birlikte io'yu sadece bir kez tanımlıyoruz
-const io = new Server(server, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-    }
-});
+app.use(express.static('public')); // Oyun dosyalarınız burada duracak
 
-app.use(express.static('public')); // Frontend dosyalarının olduğu klasör
-app.use(express.static(__dirname));
-
-let oyuncular = [];
-let beklemeSirasi = [];
+let waitingPlayers2 = []; // 2 kişilik eşleştirme kuyruğu
+let waitingPlayers4 = []; // 4 kişilik eşleştirme kuyruğu
 
 io.on('connection', (socket) => {
-    console.log('Bir oyuncu bağlandı, ID:', socket.id);
+    console.log('Bir oyuncu bağlandı:', socket.id);
 
-    oyuncular.push({ id: socket.id });
+    // 2 Kişilik Eşleştirme
+    socket.on('find_match_2', (playerData) => {
+        waitingPlayers2.push({ id: socket.id, data: playerData });
+        if (waitingPlayers2.length >= 2) {
+            let p1 = waitingPlayers2.shift();
+            let p2 = waitingPlayers2.shift();
+            let roomId = 'room_2_' + Date.now();
 
-    // WebRTC Ses Sinyalleşmesi
-    socket.on('sesSinyali', (veri) => {
-        io.to(veri.hedefID).emit('sesSinyali', {
-            gonderenID: socket.id,
-            sinyal: veri.sinyal
-        });
-    });
+            p1.socket.join(roomId);
+            p2.socket.join(roomId);
 
-    // Oyuncu rakip aradığında
-    socket.on('rakipAra', () => {
-        console.log('Rakip arayan oyuncu:', socket.id);
-
-        if (!beklemeSirasi.includes(socket.id)) {
-            beklemeSirasi.push(socket.id);
-        }
-
-        if (beklemeSirasi.length >= 2) {
-            const oyuncu1 = beklemeSirasi.shift();
-            const oyuncu2 = beklemeSirasi.shift();
-
-            io.to(oyuncu1).emit('oyunBasliyor', { rakip: oyuncu2, oyuncular: [oyuncu1, oyuncu2] });
-            io.to(oyuncu2).emit('oyunBasliyor', { rakip: oyuncu1, oyuncular: [oyuncu1, oyuncu2] });
-
-            console.log(`Eşleşme sağlandı: ${oyuncu1} vs ${oyuncu2}`);
-        } else {
-            socket.emit('bekle', 'Rakip aranıyor, lütfen bekleyin...');
+            io.to(roomId).emit('match_found', { roomId, players: [p1, p2] });
         }
     });
 
-    // Bağlantı koptuğunda
+    // 4 Kişilik Eşleştirme
+    socket.on('find_match_4', (playerData) => {
+        waitingPlayers4.push({ id: socket.id, data: playerData });
+        if (waitingPlayers4.length >= 4) {
+            let roomPlayers = waitingPlayers4.splice(0, 4);
+            let roomId = 'room_4_' + Date.now();
+
+            roomPlayers.forEach(p => p.socket.join(roomId));
+            io.to(roomId).emit('match_found', { roomId, players: roomPlayers });
+        }
+    });
+
+    // Hamleleri Senkronize Etme (Çember Atma vb.)
+    socket.on('player_action', (data) => {
+        socket.to(data.roomId).emit('update_game', data);
+    });
+
     socket.on('disconnect', () => {
         console.log('Oyuncu ayrıldı:', socket.id);
-        oyuncular = oyuncular.filter(p => p.id !== socket.id);
-        beklemeSirasi = beklemeSirasi.filter(id => id !== socket.id);
+        waitingPlayers2 = waitingPlayers2.filter(p => p.id !== socket.id);
+        waitingPlayers4 = waitingPlayers4.filter(p => p.id !== socket.id);
     });
 });
 
 server.listen(3000, () => {
     console.log('Sunucu 3000 portunda çalışıyor...');
 });
+      
