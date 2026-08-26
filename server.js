@@ -13,6 +13,9 @@ io.on('connection', (socket) => {
     socket.on('find_match', (data) => {
         const mode = Number(data.mode) || 2;
         
+        // Zaten listedeyse tekrar ekleme
+        beklemeOdalari[mode] = beklemeOdalari[mode].filter(o => o.id !== socket.id);
+        
         // Oyuncuyu bekleme listesine ekle
         beklemeOdalari[mode].push({ id: socket.id, isim: data.isim || "Oyuncu" });
 
@@ -24,7 +27,9 @@ io.on('connection', (socket) => {
             // Odadaki her oyuncuya maçın başladığını bildir
             oyuncular.forEach((o, index) => {
                 const playerSocket = io.sockets.sockets.get(o.id);
-                if (playerSocket) playerSocket.join(roomId);
+                if (playerSocket) {
+                    playerSocket.join(roomId);
+                }
 
                 io.to(o.id).emit('match_found', { 
                     roomId: roomId, 
@@ -32,6 +37,13 @@ io.on('connection', (socket) => {
                     oyuncular: oyuncular 
                 });
             });
+        }
+    });
+
+    // İptal etme isteği
+    socket.on('cancel_match', () => {
+        for (let mode in beklemeOdalari) {
+            beklemeOdalari[mode] = beklemeOdalari[mode].filter(o => o.id !== socket.id);
         }
     });
 
@@ -48,6 +60,8 @@ io.on('connection', (socket) => {
     });
 });
 
-http.listen(3000, () => {
-    console.log('Sunucu 3000 portunda çalışıyor...');
+// CANLI SUNUCU PORT AYARI
+const PORT = process.env.PORT || 3000;
+http.listen(PORT, () => {
+    console.log(`Sunucu ${PORT} portunda başarıyla çalışıyor...`);
 });
