@@ -8,7 +8,7 @@
     <link rel="manifest" href="manifest.json">
 
     <!-- 1. Socket.io İstemci Kütüphanesi -->
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
     <!-- 2. PeerJS (Sesli Sohbet Kullanıyorsan Kalmalı) -->
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -1451,12 +1451,20 @@ window.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 // 1. OYUN VE ZAMANLAYICI DEĞİŞKENLERİ
 // ==========================================
-const socket = (typeof io !== "undefined") ? io(window.location.origin, {
+const socket = io({
     transports: ['websocket', 'polling'],
-    secure: true,
-    reconnection: true,
-    reconnectionAttempts: 5
-}) : null;
+    upgrade: true,
+    autoConnect: true
+});
+
+// Bağlantı durumunu takip etmek için dinleyiciler
+socket.on('connect', () => {
+    console.log('Sunucuya başarıyla bağlandı! Socket ID:', socket.id);
+});
+
+socket.on('connect_error', (err) => {
+    console.error('Socket bağlantı hatası:', err);
+});
 
 let currentRoomId = null;
 window.etkinlikTimer = null;
