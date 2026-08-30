@@ -1452,7 +1452,10 @@ window.addEventListener('DOMContentLoaded', () => {
 // 1. OYUN VE ZAMANLAYICI DEĞİŞKENLERİ
 // ==========================================
 const socket = (typeof io !== "undefined") ? io(window.location.origin, {
-    transports: ['websocket', 'polling']
+    transports: ['websocket', 'polling'],
+    secure: true,
+    reconnection: true,
+    reconnectionAttempts: 5
 }) : null;
 
 let currentRoomId = null;
@@ -1683,6 +1686,12 @@ window.kazananiBelirleVeBidir = function() {
 // 6. MULTIPLAYER VE EŞLEŞTİRME SİSTEMİ
 // ==========================================
 window.odaAramayiBaslat = function(secilenMod) {
+    // Socket yoksa veya henüz sunucuya bağlanamadıysa uyarı ver ve işlemi durdur
+    if (!socket || !socket.connected) {
+        alert("Sunucu bağlantısı kuruluyor, lütfen 2-3 saniye sonra tekrar deneyin!");
+        return;
+    }
+
     const modSecimi = document.getElementById("etkinlik-mod-secimi");
     const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
     const aramaMetni = document.getElementById("arama-durum-metni");
@@ -1691,14 +1700,9 @@ window.odaAramayiBaslat = function(secilenMod) {
     if (aramaEkrani) aramaEkrani.style.display = "block";
     if (aramaMetni) aramaMetni.innerText = `${secilenMod} Kişilik Oda Aranıyor...`;
 
-    if (socket) {
-        let benimIsmim = window.kullaniciAdi || "Oyuncu " + Math.floor(Math.random() * 100);
-        socket.emit("find_match", { mode: secilenMod, isim: benimIsmim });
-    } else {
-        alert("Sunucuya bağlanılamadı!");
-    }
+    let benimIsmim = window.kullaniciAdi || "Oyuncu " + Math.floor(Math.random() * 100);
+    socket.emit("find_match", { mode: secilenMod, isim: benimIsmim });
 };
-        
 
 // Aramayı İptal Et Butonu
 window.eslesmeyiIptalEt = function() {
