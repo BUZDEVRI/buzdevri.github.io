@@ -746,8 +746,8 @@
     <script>
      // OYUNUN UYGULAMA İÇİNDEKİ SÜRÜMÜ
 const MEVCUT_VERSIYON = "1.0.0";
-const VERSION_KONTROL_URL = "https://siteniz.com/version.json"; 
-
+const VERSION_KONTROL_URL = "https://meyvecokluoyunculu.com.tr/version.json"; 
+const socket = io("https://meyvecokluoyunculu.com.tr/", { ... });
 async function apkGuncellemeKontrol() {
     try {
         const res = await fetch(VERSION_KONTROL_URL + "?t=" + Date.now());
@@ -1451,11 +1451,22 @@ window.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 // 1. OYUN VE ZAMANLAYICI DEĞİŞKENLERİ
 // ==========================================
-const socket = io({
-    transports: ['websocket', 'polling'],
-    upgrade: true,
-    autoConnect: true
-});
+const socket = (typeof io !== "undefined") ? io(window.location.origin, {
+    transports: ['polling', 'websocket'], // Önce Polling ile bağlanıp sonra WebSocket'e yükseltir
+    secure: true,
+    reconnect: true,
+    rejectUnauthorized: false
+}) : null;
+
+if (socket) {
+    socket.on('connect', () => {
+        console.log("Socket.io Başarıyla Bağlandı! ID:", socket.id);
+    });
+
+    socket.on('connect_error', (error) => {
+        console.error("Socket Bağlantı Hatası:", error);
+    });
+        }
 
 // Bağlantı durumunu takip etmek için dinleyiciler
 socket.on('connect', () => {
@@ -1694,24 +1705,29 @@ window.kazananiBelirleVeBidir = function() {
 // 6. MULTIPLAYER VE EŞLEŞTİRME SİSTEMİ
 // ==========================================
 window.odaAramayiBaslat = function(secilenMod) {
-    // Socket yoksa veya henüz sunucuya bağlanamadıysa uyarı ver ve işlemi durdur
-    if (!socket || !socket.connected) {
-        alert("Sunucu bağlantısı kuruluyor, lütfen 2-3 saniye sonra tekrar deneyin!");
-        return;
-    }
-
     const modSecimi = document.getElementById("etkinlik-mod-secimi");
     const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
     const aramaMetni = document.getElementById("arama-durum-metni");
 
+    // Socket bağlantısı olmasa bile ekranın kilitlenmesini engelle
     if (modSecimi) modSecimi.style.display = "none";
     if (aramaEkrani) aramaEkrani.style.display = "block";
     if (aramaMetni) aramaMetni.innerText = `${secilenMod} Kişilik Oda Aranıyor...`;
 
     let benimIsmim = window.kullaniciAdi || "Oyuncu " + Math.floor(Math.random() * 100);
-    socket.emit("find_match", { mode: secilenMod, isim: benimIsmim });
-};
 
+    if (socket && socket.connected) {
+        socket.emit("find_match", { mode: secilenMod, isim: benimIsmim });
+    } else if (socket) {
+        // Bağlantı kopmuşsa tekrar bağlanmayı dene ve isteği gönder
+        socket.connect();
+        setTimeout(() => {
+            socket.emit("find_match", { mode: secilenMod, isim: benimIsmim });
+        }, 1000);
+    } else {
+        alert("Sunucu ile iletişim kurulamadı. Lütfen sayfayı yenileyiniz.");
+    }
+};
 // Aramayı İptal Et Butonu
 window.eslesmeyiIptalEt = function() {
     const modSecimi = document.getElementById("etkinlik-mod-secimi");
