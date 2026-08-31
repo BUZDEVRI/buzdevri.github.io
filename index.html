@@ -744,11 +744,33 @@
     <div class="savas-alani"></div>
 </div>
     <script>
-     // OYUNUN UYGULAMA İÇİNDEKİ SÜRÜMÜ
-const MEVCUT_VERSIYON = "1.0.0"; 
-const socket = io("https://meyvecokluoyunculu.com.tr/", { ... });
+     // ==========================================
+// 1. SÜRÜM VE SUNUCU BAĞLANTISI (SOCKET.IO)
+// ==========================================
+const MEVCUT_VERSIYON = "1.0.0";
+
+// Otomatik domain/port algılayan güvenli Socket bağlantısı
+const socket = (typeof io !== "undefined") ? io(window.location.origin, {
+    transports: ['polling', 'websocket'],
+    secure: true,
+    reconnect: true,
+    rejectUnauthorized: false
+}) : null;
+
+if (socket) {
+    socket.on('connect', () => {
+        console.log("Socket.io Başarıyla Bağlandı! ID:", socket.id);
+    });
+
+    socket.on('connect_error', (error) => {
+        console.error("Socket Bağlantı Hatası:", error);
+    });
+}
+
+// APK Güncelleme Kontrolü
 async function apkGuncellemeKontrol() {
     try {
+        if (typeof VERSION_KONTROL_URL === "undefined") return;
         const res = await fetch(VERSION_KONTROL_URL + "?t=" + Date.now());
         if (!res.ok) return;
         
@@ -762,11 +784,10 @@ async function apkGuncellemeKontrol() {
     } catch (err) {
         console.log("Güncelleme kontrolü yapılamadı:", err);
     }
-}
-
-window.addEventListener('DOMContentLoaded', apkGuncellemeKontrol);
-
-// GENEL OYUN DEĞİŞKENLERİ
+        }
+        // ==========================================
+// 2. GENEL OYUN DEĞİŞKENLERİ VE DEPO
+// ==========================================
 let peer = null;
 let myPeerId = null;
 let connectedPeers = [];
@@ -776,16 +797,27 @@ let myPlayerName = "Oyuncu";
 let localAudioStream = null;
 let mikrofonAcik = false;
 let audioCtx = null;
+let currentRoomId = null;
 
-// PAKET VE KART TEMALARI
+window.etkinlikTimer = null;
+window.etkinlikKalanSure = 60;
+window.oyuncuListesi = [];
+window.kendiIndexim = 0;
+
+window.oyuncuSiseDurumlari = [
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0]
+];
+
 window.PAKETLER = {
     meyveler: { icerik: ['🍎', '🍌', '🍇', '🍓', '🍒', '🍍', '🥝', '🍉'] },
     tatlilar: { icerik: ['🧁', '🍩', '🎂', '🍫', '🍦', '🍪', '🍰', '🍭'] },
     hayvanlar: { icerik: ['🦁', '🦊', '🐼', '🐨', '🐸', '🐰', '🐯', '🐵'] }
 };
-
-// OYUNCU VERİSİ
-window.oyuncuVerisi = {
+        window.oyuncuVerisi = {
     isim: "Oyuncu",
     bakiye: 0,
     resim: "",
@@ -793,13 +825,13 @@ window.oyuncuVerisi = {
     sahipOlunanlar: ["meyveler"]
 };
 
-// VERİLERİ KAYDET / YÜKLE
 window.verileriKaydet = function() {
     localStorage.setItem('seker_oyuncu_verisi', JSON.stringify(window.oyuncuVerisi));
     const bakiyeEl = document.getElementById('kullanici-bakiye');
     if (bakiyeEl) bakiyeEl.innerText = window.oyuncuVerisi.bakiye;
 };
-        function profilYukle() {
+
+function profilYukle() {
     const kayitliVeri = localStorage.getItem('seker_oyuncu_verisi');
     if (kayitliVeri) {
         window.oyuncuVerisi = JSON.parse(kayitliVeri);
@@ -822,9 +854,10 @@ window.verileriKaydet = function() {
     }
 
     window.verileriKaydet();
-}
-
-// SES EFEKTLERİ (WEB AUDIO API)
+        }
+        // ==========================================
+// 3. SES EFEKTLERİ (WEB AUDIO API)
+// ==========================================
 function initAudio() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -863,7 +896,9 @@ window.SESLER = {
         });
     }
 };
-    // EKRAN VE SEKMELERİ YÖNETME
+       // ==========================================
+// 4. EKRAN VE NAVİGASYON YÖNETİMİ
+// ==========================================
 window.ekranGoster = function(ekranId) {
     const paneller = [
         'ana-lobi', 'oyunlarim-ekrani', 'magaza-ekrani', 
@@ -876,15 +911,12 @@ window.ekranGoster = function(ekranId) {
     paneller.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
-            // Tam ekran flex olması gerekenler flex, diğerleri block yapılır
             const flexEkranlar = ['game-screen', 'etkinlik-cember-ekrani'];
             el.style.display = (id === ekranId) ? (flexEkranlar.includes(id) ? 'flex' : 'block') : 'none';
         }
     });
 };
-        
 
-// 2. HEMEN ALTINA (DIŞINA) BU FONKSİYONLARI EKLE:
 window.etkinlikEkraniniAc = function() {
     window.ekranGoster('etkinlik-cember-ekrani');
     if (typeof window.etkinlikOyununuBaslat === "function") {
@@ -895,8 +927,7 @@ window.etkinlikEkraniniAc = function() {
 window.etkinliktenCik = function() {
     window.ekranGoster('ana-lobi');
 };
-
-window.sekmeDegistir = function(ekranId, btnEl) {
+       window.sekmeDegistir = function(ekranId, btnEl) {
     window.ekranGoster(ekranId);
     if (btnEl) {
         const btns = document.querySelectorAll('.nav-btn');
@@ -906,17 +937,20 @@ window.sekmeDegistir = function(ekranId, btnEl) {
 };
 
 window.magazaKategoriAc = function(kategoriId) {
-    document.getElementById('guc-kategori').style.display = (kategoriId === 'guc-kategori') ? 'flex' : 'none';
-    document.getElementById('tema-kategori').style.display = (kategoriId === 'tema-kategori') ? 'flex' : 'none';
+    const guc = document.getElementById('guc-kategori');
+    const tema = document.getElementById('tema-kategori');
+    if (guc) guc.style.display = (kategoriId === 'guc-kategori') ? 'flex' : 'none';
+    if (tema) tema.style.display = (kategoriId === 'tema-kategori') ? 'flex' : 'none';
 };
-
-// OYUNU BAŞLATMA VE KART DAĞITIM FONKSİYONU
+    // ==========================================
+// 5. MEYVE EŞLEŞTİRME OYUNU MANTIĞI
+// ==========================================
 window.oyunuBaslatMeyveleriDagit = function(toplamOyuncu = 4) {
     window.ekranGoster('game-screen');
     const savasAlani = document.querySelector('.savas-alani') || document.getElementById('game-screen');
     if (!savasAlani) return;
 
-    savasAlani.innerHTML = ''; // Temizle
+    savasAlani.innerHTML = '';
 
     const aktifSkin = window.oyuncuVerisi.aktifSkin || 'meyveler';
     const aktifPaket = window.PAKETLER[aktifSkin] || window.PAKETLER['meyveler'];
@@ -978,21 +1012,20 @@ window.kartTikla = function(pIndex, index, meyve) {
         meyve: meyve
     });
 };
-
-// PEERJS & NETWORK (ODA İŞLEMLERİ)
+      // ==========================================
+// 6. PEERJS & MİKROFON İŞLEMLERİ
+// ==========================================
 function tumOyuncularaGonder(data) {
     connectedPeers.forEach(conn => {
         if (conn && conn.open) conn.send(data);
     });
 }
 
-// ODA OLUŞTURMA (HOST)
 window.odaOlustur = function() {
     isHost = true;
     myPlayerIndex = 0;
     connectedPeers = [];
 
-    // Rastgele 6 haneli oda kodu
     const odaKodu = Math.floor(100000 + Math.random() * 900000).toString();
     
     if (peer) peer.destroy();
@@ -1003,33 +1036,25 @@ window.odaOlustur = function() {
         const odaKoduDisplay = document.getElementById('oda-kodu-display');
         if (odaKoduDisplay) odaKoduDisplay.innerText = id;
         
-        // Host (Oda Kurucusu) bilgilerini odaya ilk oyuncu olarak ekle
         window.odaOyuncuListesiniGuncelle();
         window.ekranGoster('oda-ici-ekran');
     });
 
-    // Misafir bağlantılarını dinle
     peer.on('connection', (conn) => {
-        if (connectedPeers.length >= 3) { // Maks 4 kişi
+        if (connectedPeers.length >= 3) {
             conn.close();
             return;
         }
 
         conn.on('open', () => {
-            // Yeni katılan misafir bilgisini diziye ekle
             connectedPeers.push(conn);
             const yeniOyuncuIndex = connectedPeers.length;
-            
-            // Misafire kendi index'ini bildir
             conn.send({ type: "ASSIGN_INDEX", index: yeniOyuncuIndex });
-            
-            // Mevcut tüm oyuncu listesini yeni gelene gönder
             window.odaOyuncuListesiniGuncelle();
         });
 
         conn.on('data', (data) => window.sinyalIsle(data, conn));
 
-        // Kullanıcı pencereyi kapattığında veya odadan çıktığında listeden düşür
         conn.on('close', () => {
             connectedPeers = connectedPeers.filter(c => c.peer !== conn.peer);
             window.odaOyuncuListesiniGuncelle();
@@ -1041,17 +1066,13 @@ window.odaOlustur = function() {
         sesAkisiniDinle(call);
     });
 };
-
-// ODA OYUNCU LİSTESİNİ GÜNCELLEME VE ARAYÜZE YANSITMA
-// KURUCU EKRANINDA OYUNCU LİSTESİNİ GÜNCELLEME
-window.odaOyuncuListesiniGuncelle = function() {
+     window.odaOyuncuListesiniGuncelle = function() {
     const kurucuKonteyner = document.getElementById('kurucu-oyuncu-listesi');
     const sayiEl = document.getElementById('oyuncu-sayisi-display');
     
     const toplamOyuncu = connectedPeers.length + 1;
     if (sayiEl) sayiEl.innerText = toplamOyuncu;
 
-    // 1. Kurucu Bilgisi (Siz)
     let htmlContent = `
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 8px; background: rgba(255,255,255,0.15); border-radius: 8px;">
             <div style="display: flex; align-items: center; gap: 8px;">
@@ -1064,7 +1085,6 @@ window.odaOyuncuListesiniGuncelle = function() {
         </div>
     `;
 
-    // 2. Katılan Misafirler
     connectedPeers.forEach((conn, idx) => {
         const oyuncuAdi = conn.playerInfo ? conn.playerInfo.name : `Oyuncu ${idx + 2}`;
         const oyuncuResim = conn.playerInfo ? conn.playerInfo.img : 'https://via.placeholder.com/40';
@@ -1080,10 +1100,8 @@ window.odaOyuncuListesiniGuncelle = function() {
             </div>
         `;
     });
+        if (kurucuKonteyner) kurucuKonteyner.innerHTML = htmlContent;
 
-    if (kurucuKonteyner) kurucuKonteyner.innerHTML = htmlContent;
-
-    // Listeyi diğer oyunculara senkronize et
     if (isHost) {
         const tumListe = [
             { name: window.oyuncuVerisi.isim, img: window.oyuncuVerisi.resim, isHost: true, micOpen: mikrofonAcik },
@@ -1100,9 +1118,8 @@ window.odaOyuncuListesiniGuncelle = function() {
             oyuncular: tumListe
         });
     }
-}; 
-        
-// ODAYA BAGLAN (MİSAFİR)
+};
+
 window.odayaBaglanTikla = function() {
     const inputEl = document.getElementById('oda-kodu-input');
     const kod = inputEl ? inputEl.value.trim() : '';
@@ -1118,18 +1135,14 @@ window.odayaBaglanTikla = function() {
 
         conn.on('open', () => {
             connectedPeers = [conn];
-            
-            // Bağlanır bağlanmaz profil ve mikrofon bilgilerini Kurucuya yolla
             conn.send({ 
                 type: "PROFILE_INFO", 
                 name: window.oyuncuVerisi.isim || "Oyuncu",
                 img: window.oyuncuVerisi.resim || "",
                 micOpen: mikrofonAcik
             });
-
             window.ekranGoster('misafir-bekleme-ekrani');
         });
-
         conn.on('data', (data) => window.sinyalIsle(data, conn));
 
         conn.on('close', () => {
@@ -1138,8 +1151,7 @@ window.odayaBaglanTikla = function() {
         });
     });
 };
-        
-        
+
 window.odadanCik = function() {
     if (peer) peer.destroy();
     connectedPeers = [];
@@ -1147,20 +1159,13 @@ window.odadanCik = function() {
     window.ekranGoster('ana-lobi');
 };
 
-// SİNYAL İŞLEYİCİ
 window.sinyalIsle = function(data, senderConn) {
     if (!data) return;
 
-    // KURUCU TARAFINDA: Misafirden profil bilgisi geldi
     if (data.type === "PROFILE_INFO") {
-        senderConn.playerInfo = {
-            name: data.name,
-            img: data.img
-        };
-        // Kurucu kendi ekranını ve bağlanan tüm misafirlerin ekranını günceller
+        senderConn.playerInfo = { name: data.name, img: data.img, micOpen: data.micOpen };
         window.odaOyuncuListesiniGuncelle();
     } 
-    // MİSAFİR TARAFINDA: Kurucudan güncel oyuncu listesi geldi
     else if (data.type === "LISTE_GUNCELLE") {
         window.misafirOdaListesiniYazdir(data.oyuncular);
     }
@@ -1171,9 +1176,7 @@ window.sinyalIsle = function(data, senderConn) {
         window.oyunuBaslatMeyveleriDagit(data.toplamOyuncu || 4);
     }
 };
-
-// MİSAFİR EKRANINDA LİSTEYİ BASTIRMA
-window.misafirOdaListesiniYazdir = function(oyuncular) {
+    window.misafirOdaListesiniYazdir = function(oyuncular) {
     const konteyner = document.getElementById('misafir-oyuncu-listesi');
     if (!konteyner) return;
 
@@ -1200,43 +1203,11 @@ window.misafirOdaListesiniYazdir = function(oyuncular) {
         `;
     }).join('');
 };
-
-// CANLI CHAT & MİKROFON
-window.chatEkranaEkle = function(gonderen, mesaj, isMe = false) {
-    const konteyner = document.getElementById('chat-mesajlar');
-    if (!konteyner) return;
-
-    const msgEl = document.createElement('div');
-    msgEl.style.cssText = `color: ${isMe ? '#ff75c3' : '#74b9ff'}; font-weight: bold;`;
-    msgEl.innerHTML = `<span style="opacity: 0.8;">${gonderen}:</span> <span style="color: #fff; font-weight: normal;">${mesaj}</span>`;
-    
-    konteyner.appendChild(msgEl);
-    konteyner.scrollTop = konteyner.scrollHeight;
-};
-
-window.chatMesajGonder = function() {
-    const input = document.getElementById('chat-input');
-    const mesaj = input.value.trim();
-    if (!mesaj) return;
-
-    const gonderen = window.oyuncuVerisi.isim || "Oyuncu";
-    window.chatEkranaEkle(gonderen, mesaj, true);
-
-    tumOyuncularaGonder({
-        type: "CHAT_MESAJ",
-        gonderen: gonderen,
-        mesaj: mesaj
-    });
-
-    input.value = '';
-};
-// MİKROFONU İLK DEFA BAŞLATMA VE SES AKIŞINI BAĞLAMA
-async function mikrofonuBaslat() {
+      async function mikrofonuBaslat() {
     try {
         localAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         mikrofonAcik = true;
 
-        // Odadaki diğer kişilere ses akışını (Call) gönder
         connectedPeers.forEach(conn => {
             if (peer) {
                 const call = peer.call(conn.peer, localAudioStream);
@@ -1244,7 +1215,6 @@ async function mikrofonuBaslat() {
             }
         });
 
-        // Durumu odadaki herkese bildir
         tumOyuncularaGonder({
             type: "PROFILE_INFO",
             name: window.oyuncuVerisi.isim,
@@ -1258,10 +1228,8 @@ async function mikrofonuBaslat() {
         console.error("Mikrofon izni alınamadı:", err);
         alert("⚠️ Mikrofon izni verilemedi veya cihaz bulunamadı!");
     }
-}
-
-// MİKROFON AÇ / KAPAT (MUTE)
-window.mikrofonDurumDegistir = function() {
+        }
+        window.mikrofonDurumDegistir = function() {
     if (!localAudioStream) {
         mikrofonuBaslat();
         return;
@@ -1270,7 +1238,6 @@ window.mikrofonDurumDegistir = function() {
     mikrofonAcik = !mikrofonAcik;
     localAudioStream.getAudioTracks()[0].enabled = mikrofonAcik;
 
-    // Yeni durumu odadaki herkese bildir
     tumOyuncularaGonder({
         type: "PROFILE_INFO",
         name: window.oyuncuVerisi.isim,
@@ -1278,12 +1245,9 @@ window.mikrofonDurumDegistir = function() {
         micOpen: mikrofonAcik
     });
 
-    if (isHost) {
-        window.odaOyuncuListesiniGuncelle();
-    }
+    if (isHost) window.odaOyuncuListesiniGuncelle();
 };
 
-// GELEN SES AKIŞINI DİNLEME VE ÇALMA
 function sesAkisiniDinle(call) {
     call.on('stream', (remoteStream) => {
         let audioEl = document.getElementById(`audio-${call.peer}`);
@@ -1297,8 +1261,9 @@ function sesAkisiniDinle(call) {
         audioEl.srcObject = remoteStream;
     });
         }
-        
-// PROFİL İŞLEMLERİ
+       // ==========================================
+// 7. PROFİL VE MAĞAZA İŞLEMLERİ
+// ==========================================
 window.profilFotografiSec = function(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -1330,9 +1295,7 @@ window.profilIsimKaydet = function() {
         alert("✅ Profil başarıyla güncellendi!");
     }
 };
-
-// GÜNLÜK ÖDÜL MANTIĞI
-window.gunlukOdulAl = function() {
+      window.gunlukOdulAl = function() {
     const bugun = new Date().toDateString();
     const sonAlinanTarih = localStorage.getItem('son_gunluk_odul_tarihi');
 
@@ -1357,7 +1320,8 @@ window.gunlukOdulAl = function() {
         btn.disabled = true;
     }
 };
-  function gunlukOdulButonKontrol() {
+
+function gunlukOdulButonKontrol() {
     const bugun = new Date().toDateString();
     const sonAlinanTarih = localStorage.getItem('son_gunluk_odul_tarihi');
     const btn = document.getElementById('btn-gunluk-odul');
@@ -1367,38 +1331,12 @@ window.gunlukOdulAl = function() {
         btn.style.background = "#57606f";
         btn.disabled = true;
     }
-}
-
-// PARTNER VE ÖDÜL KODLARI
-window.partnerSekmeAc = function(sekmeId) {
-    document.getElementById('basvuru-formu').style.display = (sekmeId === 'basvuru-formu') ? 'block' : 'none';
-    document.getElementById('kod-bozdur').style.display = (sekmeId === 'kod-bozdur') ? 'block' : 'none';
-};
-
-window.partnerBasvuruGonder = function() {
-    const kanal = document.getElementById('partner-kanal-link').value.trim();
-    const iletisim = document.getElementById('partner-iletisim').value.trim();
-
-    if (!kanal || !iletisim) {
-        alert("⚠️ Lütfen kanal linkinizi ve iletişim adresinizi eksiksiz girin!");
-        return;
-    }
-
-    alert("✅ Başvurunuz başarıyla alındı! İnceleme sonrası " + iletisim + " adresi üzerinden sizinle iletişime geçilecektir.");
-    document.getElementById('partner-kanal-link').value = '';
-    document.getElementById('partner-iletisim').value = '';
-};
-
-window.kodKullan = function() {
+        } 
+        window.kodKullan = function() {
     const input = document.getElementById('promosyon-kodu-input');
-    const kod = input.value.trim().toUpperCase();
+    const kod = input ? input.value.trim().toUpperCase() : '';
 
-    const KODLAR = {
-        'SEKER2026': 100,
-        'HOSGELDIN': 50,
-        'PARTNER': 200
-    };
-
+    const KODLAR = { 'SEKER2026': 100, 'HOSGELDIN': 50, 'PARTNER': 200 };
     let kullanilanKodlar = JSON.parse(localStorage.getItem('kullanilan_kodlar') || '[]');
 
     if (kullanilanKodlar.includes(kod)) {
@@ -1416,13 +1354,13 @@ window.kodKullan = function() {
         window.verileriKaydet();
         window.SESLER.zafer();
         alert(`🎉 Tebrikler! "${kod}" koduyla ${kazanilanSeker} 🍬 Şeker kazandınız!`);
-        input.value = '';
+        if (input) input.value = '';
     } else {
         window.SESLER.eslesmeHata();
         alert("❌ Geçersiz veya süresi dolmuş kod!");
     }
 };
-  window.temaSatinAl = function(temaAdi, fiyat) {
+    window.temaSatinAl = function(temaAdi, fiyat) {
     if (window.oyuncuVerisi.sahipOlunanlar.includes(temaAdi)) {
         window.oyuncuVerisi.aktifSkin = temaAdi;
         alert(`🎨 ${temaAdi.toUpperCase()} teması aktif edildi!`);
@@ -1441,58 +1379,12 @@ window.kodKullan = function() {
         alert("❌ Yetersiz Şeker Puanı!");
     }
 };
-
-// SAYFA YÜKLENDİĞİNDE BAŞLATILACAKLAR
-window.addEventListener('DOMContentLoaded', () => {
-    profilYukle();
-    gunlukOdulButonKontrol();
-});
+    // ==========================================
+// 8. ETKİNLİK (ÇEMBER ATMA) VE SOCKET MANTIĞI
 // ==========================================
-// 1. OYUN VE ZAMANLAYICI DEĞİŞKENLERİ
-// ==========================================
-const socket = (typeof io !== "undefined") ? io(window.location.origin, {
-    transports: ['polling', 'websocket'], // Önce Polling ile bağlanıp sonra WebSocket'e yükseltir
-    secure: true,
-    reconnect: true,
-    rejectUnauthorized: false
-}) : null;
-
-if (socket) {
-    socket.on('connect', () => {
-        console.log("Socket.io Başarıyla Bağlandı! ID:", socket.id);
-    });
-
-    socket.on('connect_error', (error) => {
-        console.error("Socket Bağlantı Hatası:", error);
-    });
-        }
-
-// Bağlantı durumunu takip etmek için dinleyiciler
-socket.on('connect', () => {
-    console.log('Sunucuya başarıyla bağlandı! Socket ID:', socket.id);
-});
-
-socket.on('connect_error', (err) => {
-    console.error('Socket bağlantı hatası:', err);
-});
-
-let currentRoomId = null;
-window.etkinlikTimer = null;
-window.etkinlikKalanSure = 60;
-
-window.oyuncuSiseDurumlari = [
-    [0,0,0,0,0,0,0,0,0,0], // Siz (10 Şişe)
-    [0,0,0,0,0,0,0,0,0,0], // Ali / Rakip 1
-    [0,0,0,0,0,0,0,0,0,0], // Ayşe / Rakip 2
-    [0,0,0,0,0,0,0,0,0,0], // Mehmet / Rakip 3
-    [0,0,0,0,0,0,0,0,0,0]  // Zeynep
-];
-
-// Socket.io Bağlantısı (Tek Bir Defa Tanımlandı)
 window.etkinlikOyununuBaslat = function() {
     window.etkinlikKalanSure = 60;
     
-    // Ekranı Görünür Yap
     const oyunEkrani = document.getElementById('etkinlik-cember-ekrani');
     if (oyunEkrani) oyunEkrani.style.display = 'flex';
 
@@ -1508,7 +1400,6 @@ window.etkinlikOyununuBaslat = function() {
         const sEl = document.getElementById('etkinlik-sure');
         if (sEl) sEl.innerText = window.etkinlikKalanSure;
 
-        // Yalnızca Oda Yoksa (Singleplayer ise) Botlar Atış Yapar
         if (!currentRoomId) {
             for (let i = 1; i < 5; i++) {
                 if (Math.random() > 0.45) {
@@ -1523,14 +1414,10 @@ window.etkinlikOyununuBaslat = function() {
         }
     }, 1000);
 };
-// ==========================================
-// ARAYÜZDE DİĞER OYUNCULARI GÖSTERME
-// ==========================================
-window.etkinlikArayuzuGuncelle = function() {
+       window.etkinlikArayuzuGuncelle = function() {
     const alan = document.getElementById('cember-oyuncular-alani');
     if (!alan) return;
 
-    // Eğer sunucudan gerçek oyuncu listesi geldiyse onu kullan, yoksa varsayılan isimleri koy
     let varsayilanIsimler = ["Siz", "Ali", "Ayşe", "Mehmet", "Zeynep"];
     let isimler = window.oyuncuListesi && window.oyuncuListesi.length > 0 ? window.oyuncuListesi : varsayilanIsimler;
 
@@ -1556,7 +1443,7 @@ window.etkinlikArayuzuGuncelle = function() {
                 </div>
             `;
         };
-        
+
         let benMiyim = (window.kendiIndexim !== undefined) ? (oIdx === window.kendiIndexim) : (oIdx === 0);
 
         return `
@@ -1591,13 +1478,11 @@ window.etkinlikArayuzuGuncelle = function() {
     html += `</div>`;
     alan.innerHTML = html;
 };
-// ==========================================
-// 4. ÇEMBER FIRLATMA VE ANİMASYON
-// ==========================================
-window.cemberiFirlat = function() {
+       window.cemberiFirlat = function() {
     if (window.etkinlikKalanSure <= 0) return;
     
-    let siseler = window.oyuncuSiseDurumlari[0];
+    let benimIndex = window.kendiIndexim !== undefined ? window.kendiIndexim : 0;
+    let siseler = window.oyuncuSiseDurumlari[benimIndex];
     let hedefSiseIndex = -1;
 
     for (let i = 0; i < 10; i++) {
@@ -1619,18 +1504,15 @@ window.cemberiFirlat = function() {
         }
 
         window.etkinlikArayuzuGuncelle();
-
-        // Atışı multiplayer sunucusuna ilet
         cemberiSunucuyaBildir(hedefSiseIndex);
 
         if (toplam >= 90) {
             clearInterval(window.etkinlikTimer);
-            window.oyunBittiKazanan(0);
+            window.oyunBittiKazanan(benimIndex);
         }
     });
 };
-
-window.cemberUcurAnimasyonu = function(siseIndex, callback) {
+        window.cemberUcurAnimasyonu = function(siseIndex, callback) {
     const firlatButon = document.querySelector("#etkinlik-cember-ekrani button[onclick*='cemberiFirlat']");
     const hedefSiseEl = document.querySelectorAll(".benim-kulvar .soda-sise")[siseIndex];
 
@@ -1660,12 +1542,9 @@ window.cemberUcurAnimasyonu = function(siseIndex, callback) {
         callback();
     }, 350);
 };
-
-// ==========================================
-// 5. BOTLAR VE OYUN BİTİŞİ
-// ==========================================
-window.botaCemberEkle = function(botIndex) {
+       window.botaCemberEkle = function(botIndex) {
     let siseler = window.oyuncuSiseDurumlari[botIndex];
+    if (!siseler) return;
     for (let i = 0; i < 10; i++) {
         if (siseler[i] < 9) {
             siseler[i]++;
@@ -1676,15 +1555,16 @@ window.botaCemberEkle = function(botIndex) {
 };
 
 window.oyunBittiKazanan = function(kazananIndex) {
-    let isimler = [window.oyuncuVerisi?.isim || "Siz", "Ali", "Ayşe", "Mehmet", "Zeynep"];
-    let kazananIsim = isimler[kazananIndex];
+    let varsayilanIsimler = ["Siz", "Ali", "Ayşe", "Mehmet", "Zeynep"];
+    let isimler = window.oyuncuListesi && window.oyuncuListesi.length > 0 ? window.oyuncuListesi : varsayilanIsimler;
+    let kazananIsim = isimler[kazananIndex] || "Oyuncu";
 
     const mesajEl = document.getElementById('etkinlik-durum-mesajlari');
     if (mesajEl) {
         mesajEl.innerText = `🏆 KAZANAN: ${kazananIsim.toUpperCase()}!`;
         mesajEl.style.color = "#2ecc71";
     }
-    alert(`🎉 ETKİNLİK SONA ERDİ!\n\n🏆 Şişeleri tamamlayan kazanan: ${kazananIsim}`);
+    alert(`🎉 ETKİNLİK SONA ERDİ!\n\n🏆 Kazanan: ${kazananIsim}`);
 };
 
 window.kazananiBelirleVeBidir = function() {
@@ -1699,26 +1579,20 @@ window.kazananiBelirleVeBidir = function() {
     });
     window.oyunBittiKazanan(kazananIndex);
 };
-
-// ==========================================
-// 6. MULTIPLAYER VE EŞLEŞTİRME SİSTEMİ
-// ==========================================
-window.odaAramayiBaslat = function(secilenMod) {
+       window.odaAramayiBaslat = function(secilenMod) {
     const modSecimi = document.getElementById("etkinlik-mod-secimi");
     const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
     const aramaMetni = document.getElementById("arama-durum-metni");
 
-    // Socket bağlantısı olmasa bile ekranın kilitlenmesini engelle
     if (modSecimi) modSecimi.style.display = "none";
     if (aramaEkrani) aramaEkrani.style.display = "block";
     if (aramaMetni) aramaMetni.innerText = `${secilenMod} Kişilik Oda Aranıyor...`;
 
-    let benimIsmim = window.kullaniciAdi || "Oyuncu " + Math.floor(Math.random() * 100);
+    let benimIsmim = window.oyuncuVerisi.isim || "Oyuncu " + Math.floor(Math.random() * 100);
 
     if (socket && socket.connected) {
         socket.emit("find_match", { mode: secilenMod, isim: benimIsmim });
     } else if (socket) {
-        // Bağlantı kopmuşsa tekrar bağlanmayı dene ve isteği gönder
         socket.connect();
         setTimeout(() => {
             socket.emit("find_match", { mode: secilenMod, isim: benimIsmim });
@@ -1727,7 +1601,7 @@ window.odaAramayiBaslat = function(secilenMod) {
         alert("Sunucu ile iletişim kurulamadı. Lütfen sayfayı yenileyiniz.");
     }
 };
-// Aramayı İptal Et Butonu
+
 window.eslesmeyiIptalEt = function() {
     const modSecimi = document.getElementById("etkinlik-mod-secimi");
     const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
@@ -1737,7 +1611,7 @@ window.eslesmeyiIptalEt = function() {
 
     if (socket) socket.emit("cancel_match");
 };
-function cemberiSunucuyaBildir(hedefSiseIndex) {
+      function cemberiSunucuyaBildir(hedefSiseIndex) {
     if (socket && currentRoomId) {
         let benimIndexim = window.kendiIndexim !== undefined ? window.kendiIndexim : 0;
         
@@ -1747,13 +1621,13 @@ function cemberiSunucuyaBildir(hedefSiseIndex) {
             siselerData: window.oyuncuSiseDurumlari[benimIndexim]
         });
     }
-}
-// ==========================================
-// SOCKET DİNLEYİCİLERİ
+        }
+        // ==========================================
+// 9. SOCKET EVENT DİNLEYİCİLERİ
 // ==========================================
 if (socket) {
     socket.on('match_found', (data) => {
-        window.currentRoomId = data.roomId;
+        currentRoomId = data.roomId;
         window.kendiIndexim = data.oyuncuIndex;
 
         if (data.oyuncular) {
@@ -1763,7 +1637,6 @@ if (socket) {
         const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
         if (aramaEkrani) aramaEkrani.style.display = "none";
 
-        // Oyun ekranına geç
         if (typeof window.ekranGoster === "function") {
             window.ekranGoster('etkinlik-cember-ekrani');
         }
@@ -1782,4 +1655,12 @@ if (socket) {
         }
     });
         }
+        // ==========================================
+// 10. SAYFA YÜKLENDİĞİNDE ÇALIŞACAKLAR
+// ==========================================
+window.addEventListener('DOMContentLoaded', () => {
+    profilYukle();
+    gunlukOdulButonKontrol();
+    apkGuncellemeKontrol();
+});
     </script>
