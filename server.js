@@ -3,7 +3,6 @@ const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 
-app.use(express.static('public'));
 // 2 ve 5 Kişilik Bekleme Odaları
 let beklemeOdalari = { 2: [], 5: [] };
 
@@ -12,9 +11,15 @@ io.on('connection', (socket) => {
 
     // Etkinlikler kısmından eşleşme arama
     socket.on('find_match', (data) => {
+        // data.mode BURADA sayıya dönüştürülür
         const mode = Number(data.mode) || 2;
         
-        // Oyuncuyu listede daha önceden varsa temizle
+        // Yanlış mod gönderildiyse varsayılan 2 yap veya listede yoksa oluştur
+        if (!beklemeOdalari[mode]) {
+            beklemeOdalari[mode] = [];
+        }
+
+        // Oyuncu listede daha önceden varsa temizle
         beklemeOdalari[mode] = beklemeOdalari[mode].filter(o => o.id !== socket.id);
         
         // Yeni oyuncuyu ekle
@@ -51,7 +56,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Oyuncu Bağlantıyı Kestiğinde (Sayfayı kapatırsa/yenilerse)
+    // Sayfa kapandığında oyuncuyu havuzdan çıkar
     socket.on('disconnect', () => {
         for (let mode in beklemeOdalari) {
             beklemeOdalari[mode] = beklemeOdalari[mode].filter(o => o.id !== socket.id);
@@ -59,21 +64,8 @@ io.on('connection', (socket) => {
     });
 });
 
-    // Oyun İçi Çember Atma Hamlesini Diğer Oyunculara İletme
-    socket.on('player_action', (data) => {
-        socket.to(data.roomId).emit('update_game', data);
-    });
-
-    // Oyuncu Bağlantıyı Keserse Listeden Çıkar
-    socket.on('disconnect', () => {
-        for (let mode in beklemeOdalari) {
-            beklemeOdalari[mode] = beklemeOdalari[mode].filter(o => o.id !== socket.id);
-        }
-    });
+// Port dinleme (Örnek: 3000)
+http.listen(3000, () => {
+    console.log('Sunucu 3000 portunda çalışıyor');
 });
-
-const PORT = process.env.PORT || 3000;
-http.listen(PORT, () => {
-    console.log(`Sunucu ${PORT} portunda aktif!`);
-});
-                    
+        
