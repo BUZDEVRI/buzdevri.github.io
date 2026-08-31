@@ -743,28 +743,33 @@
     <!-- 4 KİŞİLİK SAVAŞ ALANI -->
     <div class="savas-alani"></div>
 </div>
-    <script>
+    <script>      
        // ==========================================
 // 1. SÜRÜM VE SUNUCU BAĞLANTISI (SOCKET.IO)
 // ==========================================
 const MEVCUT_VERSIYON = "1.0.0";
 
-// Otomatik domain/port algılayan güvenli Socket bağlantısı
-const socket = (typeof io !== "undefined") ? io(window.location.origin, {
-    transports: ['polling', 'websocket'],
-    secure: true,
-    reconnect: true,
-    rejectUnauthorized: false
-}) : null;
+// Otomatik domain/port algılayan güvenli Socket bağlantısı (Sayfayı kilitlememesi için güvenli başlatma)
+let socket = null;
+if (typeof io !== "undefined") {
+    try {
+        socket = io(window.location.origin, {
+            transports: ['polling', 'websocket'],
+            secure: true,
+            reconnect: true,
+            rejectUnauthorized: false
+        });
 
-if (socket) {
-    socket.on('connect', () => {
-        console.log("Socket.io Başarıyla Bağlandı! ID:", socket.id);
-    });
+        socket.on('connect', () => {
+            console.log("Socket.io Başarıyla Bağlandı! ID:", socket.id);
+        });
 
-    socket.on('connect_error', (error) => {
-        console.error("Socket Bağlantı Hatası:", error);
-    });
+        socket.on('connect_error', (error) => {
+            console.warn("Socket Bağlantı Uyarısı:", error);
+        });
+    } catch (e) {
+        console.warn("Socket.io başlatılamadı:", e);
+    }
         }
         // APK Güncelleme Kontrolü
 async function apkGuncellemeKontrol() {
@@ -776,7 +781,7 @@ async function apkGuncellemeKontrol() {
         const data = await res.json();
         if (data.version && data.version !== MEVCUT_VERSIYON) {
             const onay = confirm(`🎉 Yeni Güncelleme Bulundu (v${data.version})!\n\n${data.notes || ''}\n\nYeni APK'yı indirmek ister misiniz?`);
-            if (onay) {
+            if (onay && data.downloadUrl) {
                 window.location.href = data.downloadUrl;
             }
         }
@@ -816,25 +821,28 @@ window.PAKETLER = {
     tatlilar: { icerik: ['🧁', '🍩', '🎂', '🍫', '🍦', '🍪', '🍰', '🍭'] },
     hayvanlar: { icerik: ['🦁', '🦊', '🐼', '🐨', '🐸', '🐰', '🐯', '🐵'] }
 };
-
-window.oyuncuVerisi = {
+    window.oyuncuVerisi = {
     isim: "Oyuncu",
     bakiye: 0,
     resim: "",
     aktifSkin: "meyveler",
     sahipOlunanlar: ["meyveler"]
 };
-      window.verileriKaydet = function() {
+
+window.verileriKaydet = function() {
     localStorage.setItem('seker_oyuncu_verisi', JSON.stringify(window.oyuncuVerisi));
     const bakiyeEl = document.getElementById('kullanici-bakiye');
     if (bakiyeEl) bakiyeEl.innerText = window.oyuncuVerisi.bakiye;
 };
-
-function profilYukle() {
-    const kayitliVeri = localStorage.getItem('seker_oyuncu_verisi');
+    function profilYukle() {
+    const kayitliVeri = localStorage.setItem ? localStorage.getItem('seker_oyuncu_verisi') : null;
     if (kayitliVeri) {
-        window.oyuncuVerisi = JSON.parse(kayitliVeri);
-        myPlayerName = window.oyuncuVerisi.isim || "Oyuncu";
+        try {
+            window.oyuncuVerisi = JSON.parse(kayitliVeri);
+            myPlayerName = window.oyuncuVerisi.isim || "Oyuncu";
+        } catch(e) {
+            console.error("Profil verisi okunamadı", e);
+        }
     }
     
     const kayitliResim = localStorage.getItem('seker_oyuncu_resim') || window.oyuncuVerisi.resim;
@@ -859,7 +867,10 @@ function profilYukle() {
 // ==========================================
 function initAudio() {
     if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+            audioCtx = new AudioContextClass();
+        }
     }
 }
 
@@ -867,35 +878,39 @@ window.SESLER = {
     eslesmeHata: function() {
         initAudio();
         if (!audioCtx) return;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(220, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.25);
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.25);
+        } catch(e){}
     },
     zafer: function() {
         initAudio();
         if (!audioCtx) return;
-        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.12);
-            gain.gain.setValueAtTime(0.15, audioCtx.currentTime + idx * 0.12);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + idx * 0.12 + 0.3);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(audioCtx.currentTime + idx * 0.12);
-            osc.stop(audioCtx.currentTime + idx * 0.12 + 0.3);
-        });
+        try {
+            [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.12);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime + idx * 0.12);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + idx * 0.12 + 0.3);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(audioCtx.currentTime + idx * 0.12);
+                osc.stop(audioCtx.currentTime + idx * 0.12 + 0.3);
+            });
+        } catch(e){}
     }
 };
-      // ==========================================
+       // ==========================================
 // 4. EKRAN VE NAVİGASYON YÖNETİMİ
 // ==========================================
 window.ekranGoster = function(ekranId) {
@@ -926,7 +941,8 @@ window.etkinlikEkraniniAc = function() {
 window.etkinliktenCik = function() {
     window.ekranGoster('ana-lobi');
 };
-    window.sekmeDegistir = function(ekranId, btnEl) {
+
+window.sekmeDegistir = function(ekranId, btnEl) {
     window.ekranGoster(ekranId);
     if (btnEl) {
         const btns = document.querySelectorAll('.nav-btn');
@@ -941,7 +957,7 @@ window.magazaKategoriAc = function(kategoriId) {
     if (guc) guc.style.display = (kategoriId === 'guc-kategori') ? 'flex' : 'none';
     if (tema) tema.style.display = (kategoriId === 'tema-kategori') ? 'flex' : 'none';
 };
-     // ==========================================
+      // ==========================================
 // 5. MEYVE EŞLEŞTİRME OYUNU MANTIĞI
 // ==========================================
 window.oyunuBaslatMeyveleriDagit = function(toplamOyuncu = 4) {
@@ -985,7 +1001,7 @@ window.oyunuBaslatMeyveleriDagit = function(toplamOyuncu = 4) {
         savasAlani.appendChild(oyuncuKutusu);
     }
 };
-    window.odaOyunuBaslat = function() {
+     window.odaOyunuBaslat = function() {
     if (!isHost) return;
     const toplamOyuncu = connectedPeers.length + 1;
     
@@ -1021,6 +1037,11 @@ function tumOyuncularaGonder(data) {
 }
 
 window.odaOlustur = function() {
+    if (typeof Peer === "undefined") {
+        alert("PeerJS kütüphanesi yüklenemedi!");
+        return;
+    }
+
     isHost = true;
     myPlayerIndex = 0;
     connectedPeers = [];
@@ -1065,7 +1086,7 @@ window.odaOlustur = function() {
         sesAkisiniDinle(call);
     });
 };
-    window.odaOyuncuListesiniGuncelle = function() {
+        window.odaOyuncuListesiniGuncelle = function() {
     const kurucuKonteyner = document.getElementById('kurucu-oyuncu-listesi');
     const sayiEl = document.getElementById('oyuncu-sayisi-display');
     
@@ -1120,6 +1141,11 @@ window.odaOlustur = function() {
     }
 };
     window.odayaBaglanTikla = function() {
+    if (typeof Peer === "undefined") {
+        alert("PeerJS kütüphanesi yüklenemedi!");
+        return;
+    }
+
     const inputEl = document.getElementById('oda-kodu-input');
     const kod = inputEl ? inputEl.value.trim() : '';
     if (!kod) return alert("Lütfen geçerli bir oda kodu girin!");
@@ -1156,8 +1182,8 @@ window.odadanCik = function() {
     connectedPeers = [];
     isHost = false;
     window.ekranGoster('ana-lobi');
-}; 
-    window.sinyalIsle = function(data, senderConn) {
+};
+       window.sinyalIsle = function(data, senderConn) {
     if (!data) return;
 
     if (data.type === "PROFILE_INFO") {
@@ -1204,6 +1230,10 @@ window.misafirOdaListesiniYazdir = function(oyuncular) {
 };
     async function mikrofonuBaslat() {
     try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert("⚠️ Tarayıcınız ses kaydını desteklemiyor.");
+            return;
+        }
         localAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         mikrofonAcik = true;
 
@@ -1227,16 +1257,17 @@ window.misafirOdaListesiniYazdir = function(oyuncular) {
         console.error("Mikrofon izni alınamadı:", err);
         alert("⚠️ Mikrofon izni verilemedi veya cihaz bulunamadı!");
     }
-}
-
-window.mikrofonDurumDegistir = function() {
+        }
+        window.mikrofonDurumDegistir = function() {
     if (!localAudioStream) {
         mikrofonuBaslat();
         return;
     }
 
     mikrofonAcik = !mikrofonAcik;
-    localAudioStream.getAudioTracks()[0].enabled = mikrofonAcik;
+    if (localAudioStream.getAudioTracks().length > 0) {
+        localAudioStream.getAudioTracks()[0].enabled = mikrofonAcik;
+    }
 
     tumOyuncularaGonder({
         type: "PROFILE_INFO",
@@ -1247,7 +1278,8 @@ window.mikrofonDurumDegistir = function() {
 
     if (isHost) window.odaOyuncuListesiniGuncelle();
 };
-      function sesAkisiniDinle(call) {
+
+function sesAkisiniDinle(call) {
     call.on('stream', (remoteStream) => {
         let audioEl = document.getElementById(`audio-${call.peer}`);
         if (!audioEl) {
@@ -1294,7 +1326,7 @@ window.profilIsimKaydet = function() {
         alert("✅ Profil başarıyla güncellendi!");
     }
 };
-     window.gunlukOdulAl = function() {
+        window.gunlukOdulAl = function() {
     const bugun = new Date().toDateString();
     const sonAlinanTarih = localStorage.getItem('son_gunluk_odul_tarihi');
 
@@ -1319,7 +1351,8 @@ window.profilIsimKaydet = function() {
         btn.disabled = true;
     }
 };
-    function gunlukOdulButonKontrol() {
+
+function gunlukOdulButonKontrol() {
     const bugun = new Date().toDateString();
     const sonAlinanTarih = localStorage.getItem('son_gunluk_odul_tarihi');
     const btn = document.getElementById('btn-gunluk-odul');
@@ -1329,9 +1362,8 @@ window.profilIsimKaydet = function() {
         btn.style.background = "#57606f";
         btn.disabled = true;
     }
-}
-
-window.kodKullan = function() {
+        }
+        window.kodKullan = function() {
     const input = document.getElementById('promosyon-kodu-input');
     const kod = input ? input.value.trim().toUpperCase() : '';
 
@@ -1359,7 +1391,8 @@ window.kodKullan = function() {
         alert("❌ Geçersiz veya süresi dolmuş kod!");
     }
 };
-     window.temaSatinAl = function(temaAdi, fiyat) {
+
+window.temaSatinAl = function(temaAdi, fiyat) {
     if (window.oyuncuVerisi.sahipOlunanlar.includes(temaAdi)) {
         window.oyuncuVerisi.aktifSkin = temaAdi;
         alert(`🎨 ${temaAdi.toUpperCase()} teması aktif edildi!`);
@@ -1378,7 +1411,7 @@ window.kodKullan = function() {
         alert("❌ Yetersiz Şeker Puanı!");
     }
 };
-    // ==========================================
+        // ==========================================
 // 8. ETKİNLİK (ÇEMBER ATMA) VE SOCKET MANTIĞI
 // ==========================================
 window.etkinlikOyununuBaslat = function() {
@@ -1413,7 +1446,7 @@ window.etkinlikOyununuBaslat = function() {
         }
     }, 1000);
 };
-    window.etkinlikArayuzuGuncelle = function() {
+       window.etkinlikArayuzuGuncelle = function() {
     const alan = document.getElementById('cember-oyuncular-alani');
     if (!alan) return;
 
@@ -1477,7 +1510,7 @@ window.etkinlikOyununuBaslat = function() {
     html += `</div>`;
     alan.innerHTML = html;
 };
-    window.cemberiFirlat = function() {
+        window.cemberiFirlat = function() {
     if (window.etkinlikKalanSure <= 0) return;
     
     let benimIndex = window.kendiIndexim !== undefined ? window.kendiIndexim : 0;
@@ -1511,7 +1544,7 @@ window.etkinlikOyununuBaslat = function() {
         }
     });
 };
-    window.cemberUcurAnimasyonu = function(siseIndex, callback) {
+        window.cemberUcurAnimasyonu = function(siseIndex, callback) {
     const firlatButon = document.querySelector("#etkinlik-cember-ekrani button[onclick*='cemberiFirlat']");
     const hedefSiseEl = document.querySelectorAll(".benim-kulvar .soda-sise")[siseIndex];
 
@@ -1541,7 +1574,7 @@ window.etkinlikOyununuBaslat = function() {
         callback();
     }, 350);
 };
-    window.botaCemberEkle = function(botIndex) {
+        window.botaCemberEkle = function(botIndex) {
     let siseler = window.oyuncuSiseDurumlari[botIndex];
     if (!siseler) return;
     for (let i = 0; i < 10; i++) {
@@ -1565,7 +1598,8 @@ window.oyunBittiKazanan = function(kazananIndex) {
     }
     alert(`🎉 ETKİNLİK SONA ERDİ!\n\n🏆 Kazanan: ${kazananIsim}`);
 };
-       window.kazananiBelirleVeBidir = function() {
+
+window.kazananiBelirleVeBidir = function() {
     let maxPuan = -1;
     let kazananIndex = 0;
     window.oyuncuSiseDurumlari.forEach((siseler, idx) => {
@@ -1577,8 +1611,7 @@ window.oyunBittiKazanan = function(kazananIndex) {
     });
     window.oyunBittiKazanan(kazananIndex);
 };
-
-window.odaAramayiBaslat = function(secilenMod) {
+        window.odaAramayiBaslat = function(secilenMod) {
     const modSecimi = document.getElementById("etkinlik-mod-secimi");
     const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
     const aramaMetni = document.getElementById("arama-durum-metni");
@@ -1592,18 +1625,20 @@ window.odaAramayiBaslat = function(secilenMod) {
 
     let benimIsmim = (window.oyuncuVerisi && window.oyuncuVerisi.isim) ? window.oyuncuVerisi.isim : "Oyuncu " + Math.floor(Math.random() * 100);
 
-    if (typeof socket !== "undefined" && socket.connected) {
+    if (socket && socket.connected) {
         socket.emit("find_match", { mode: Number(secilenMod), isim: benimIsmim });
-    } else if (typeof socket !== "undefined") {
+    } else if (socket) {
         socket.connect();
         setTimeout(() => {
-            socket.emit("find_match", { mode: Number(secilenMod), isim: benimIsmim });
+            if(socket.connected) {
+                socket.emit("find_match", { mode: Number(secilenMod), isim: benimIsmim });
+            }
         }, 500);
     } else {
-        console.error("Socket nesnesi bulunamadı!");
+        console.warn("Socket.io bağlı değil, simülasyonda kalınıyor.");
     }
 };
-    window.eslesmeyiIptalEt = function() {
+        window.eslesmeyiIptalEt = function() {
     const modSecimi = document.getElementById("etkinlik-mod-secimi");
     const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
 
@@ -1628,7 +1663,6 @@ function cemberiSunucuyaBildir(hedefSiseIndex) {
 // 9. SOCKET EVENT DİNLEYİCİLERİ
 // ==========================================
 if (socket) {
-    // Eşleşme bulunduğunda çalışacak tekil dinleyici
     socket.on('match_found', (data) => {
         currentRoomId = data.roomId;
         window.kendiIndexim = data.oyuncuIndex;
@@ -1649,7 +1683,6 @@ if (socket) {
         }
     });
 
-    // Oyun içi hamle ve durum güncellemelerini alacak dinleyici
     socket.on('update_game', (data) => {
         if (data.oyuncuIndex !== undefined && data.siselerData) {
             window.oyuncuSiseDurumlari[data.oyuncuIndex] = data.siselerData;
@@ -1658,7 +1691,8 @@ if (socket) {
             }
         }
     });
-    / ==========================================
+        }
+        // ==========================================
 // 10. SAYFA YÜKLENDİĞİNDE ÇALIŞACAKLAR
 // ==========================================
 window.addEventListener('DOMContentLoaded', () => {
