@@ -747,17 +747,16 @@
        // ==========================================
 // 1. SÜRÜM VE SUNUCU BAĞLANTISI (SOCKET.IO)
 // ==========================================
-const MEVCUT_VERSIYON = "1.0.0";
+const RENDER_SERVER_URL = "https://meyvecokluoyunculu.com.tr/"; 
 
-// Otomatik domain/port algılayan güvenli Socket bağlantısı (Sayfayı kilitlememesi için güvenli başlatma)
 let socket = null;
+
 if (typeof io !== "undefined") {
     try {
-        socket = io(window.location.origin, {
-            transports: ['polling', 'websocket'],
+        socket = io(RENDER_SERVER_URL, {
+            transports: ['websocket', 'polling'],
             secure: true,
-            reconnect: true,
-            rejectUnauthorized: false
+            reconnect: true
         });
 
         socket.on('connect', () => {
@@ -765,11 +764,13 @@ if (typeof io !== "undefined") {
         });
 
         socket.on('connect_error', (error) => {
-            console.warn("Socket Bağlantı Uyarısı:", error);
+            console.warn("Socket Bağlantı Hatası:", error);
         });
     } catch (e) {
         console.warn("Socket.io başlatılamadı:", e);
     }
+} else {
+    console.error("Socket.io kütüphanesi (CDN) yüklenemedi!");
         }
         // APK Güncelleme Kontrolü
 async function apkGuncellemeKontrol() {
