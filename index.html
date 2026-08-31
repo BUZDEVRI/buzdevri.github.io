@@ -744,7 +744,7 @@
     <div class="savas-alani"></div>
 </div>
     <script>
-     // ==========================================
+       // ==========================================
 // 1. SÜRÜM VE SUNUCU BAĞLANTISI (SOCKET.IO)
 // ==========================================
 const MEVCUT_VERSIYON = "1.0.0";
@@ -765,8 +765,8 @@ if (socket) {
     socket.on('connect_error', (error) => {
         console.error("Socket Bağlantı Hatası:", error);
     });
-}
-
+ }
+        
 // APK Güncelleme Kontrolü
 async function apkGuncellemeKontrol() {
     try {
@@ -1587,29 +1587,24 @@ window.kazananiBelirleVeBidir = function() {
     if (modSecimi) modSecimi.style.display = "none";
     if (aramaEkrani) aramaEkrani.style.display = "block";
     
-    // 2 Kişilik ise "Rakip Aranıyor...", 5 kişilik ise "5 Kişilik Oda Aranıyor..." yazar
     if (aramaMetni) {
-        if (secilenMod === 2 || secilenMod === "2") {
-            aramaMetni.innerText = "Rakip Aranıyor...";
-        } else {
-            aramaMetni.innerText = `${secilenMod} Kişilik Oda Aranıyor...`;
-        }
+        aramaMetni.innerText = (secilenMod == 2) ? "Rakip Aranıyor..." : `${secilenMod} Kişilik Oda Aranıyor...`;
     }
 
-    let benimIsmim = window.oyuncuVerisi.isim || "Oyuncu " + Math.floor(Math.random() * 100);
+    let benimIsmim = (window.oyuncuVerisi && window.oyuncuVerisi.isim) ? window.oyuncuVerisi.isim : "Oyuncu " + Math.floor(Math.random() * 100);
 
-    if (socket && socket.connected) {
-        socket.emit("find_match", { mode: secilenMod, isim: benimIsmim });
-    } else if (socket) {
+    // Socket bağlantısı açık mı kontrol et ve emin olarak emit gönder
+    if (typeof socket !== "undefined" && socket.connected) {
+        socket.emit("find_match", { mode: Number(secilenMod), isim: benimIsmim });
+    } else if (typeof socket !== "undefined") {
         socket.connect();
         setTimeout(() => {
-            socket.emit("find_match", { mode: secilenMod, isim: benimIsmim });
-        }, 1000);
+            socket.emit("find_match", { mode: Number(secilenMod), isim: benimIsmim });
+        }, 500);
     } else {
-        alert("Sunucu ile iletişim kurulamadı. Lütfen sayfayı yenileyiniz.");
+        console.error("Socket nesnesi bulunamadı!");
     }
 };
-        
         
 window.eslesmeyiIptalEt = function() {
     const modSecimi = document.getElementById("etkinlik-mod-secimi");
@@ -1655,15 +1650,37 @@ if (socket) {
         }
     });
 
-    socket.on('update_game', (data) => {
-        if (data.oyuncuIndex !== undefined && data.siselerData) {
-            window.oyuncuSiseDurumlari[data.oyuncuIndex] = data.siselerData;
-            if (typeof window.etkinlikArayuzuGuncelle === "function") {
-                window.etkinlikArayuzuGuncelle();
-            }
+    // Eşleşme bulunduğunda çalışacak kod
+socket.on('match_found', (data) => {
+    currentRoomId = data.roomId;
+    window.kendiIndexim = data.oyuncuIndex;
+
+    if (data.oyuncular) {
+        window.oyuncuListesi = data.oyuncular.map(o => o.isim);
+    }
+
+    const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
+    if (aramaEkrani) aramaEkrani.style.display = "none";
+
+    if (typeof window.ekranGoster === "function") {
+        window.ekranGoster('etkinlik-cember-ekrani');
+    }
+    
+    if (typeof window.etkinlikOyununuBaslat === "function") {
+        window.etkinlikOyununuBaslat();
+    }
+});
+
+// Oyun içindeki hamle ve durum güncellemelerini alacak kod
+socket.on('update_game', (data) => {
+    if (data.oyuncuIndex !== undefined && data.siselerData) {
+        window.oyuncuSiseDurumlari[data.oyuncuIndex] = data.siselerData;
+        if (typeof window.etkinlikArayuzuGuncelle === "function") {
+            window.etkinlikArayuzuGuncelle();
         }
-    });
-        }
+    }
+});
+        
         // ==========================================
 // 10. SAYFA YÜKLENDİĞİNDE ÇALIŞACAKLAR
 // ==========================================
