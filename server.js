@@ -4,7 +4,6 @@ const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 
 app.use(express.static('public'));
-
 // 2 ve 5 Kişilik Bekleme Odaları
 let beklemeOdalari = { 2: [], 5: [] };
 
@@ -51,6 +50,14 @@ io.on('connection', (socket) => {
             beklemeOdalari[mode] = beklemeOdalari[mode].filter(o => o.id !== socket.id);
         }
     });
+
+    // Oyuncu Bağlantıyı Kestiğinde (Sayfayı kapatırsa/yenilerse)
+    socket.on('disconnect', () => {
+        for (let mode in beklemeOdalari) {
+            beklemeOdalari[mode] = beklemeOdalari[mode].filter(o => o.id !== socket.id);
+        }
+    });
+});
 
     // Oyun İçi Çember Atma Hamlesini Diğer Oyunculara İletme
     socket.on('player_action', (data) => {
