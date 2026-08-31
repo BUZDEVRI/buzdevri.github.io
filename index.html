@@ -1579,14 +1579,22 @@ window.kazananiBelirleVeBidir = function() {
     });
     window.oyunBittiKazanan(kazananIndex);
 };
-       window.odaAramayiBaslat = function(secilenMod) {
+    window.odaAramayiBaslat = function(secilenMod) {
     const modSecimi = document.getElementById("etkinlik-mod-secimi");
     const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
     const aramaMetni = document.getElementById("arama-durum-metni");
 
     if (modSecimi) modSecimi.style.display = "none";
     if (aramaEkrani) aramaEkrani.style.display = "block";
-    if (aramaMetni) aramaMetni.innerText = `${secilenMod} Kişilik Oda Aranıyor...`;
+    
+    // 2 Kişilik ise "Rakip Aranıyor...", 5 kişilik ise "5 Kişilik Oda Aranıyor..." yazar
+    if (aramaMetni) {
+        if (secilenMod === 2 || secilenMod === "2") {
+            aramaMetni.innerText = "Rakip Aranıyor...";
+        } else {
+            aramaMetni.innerText = `${secilenMod} Kişilik Oda Aranıyor...`;
+        }
+    }
 
     let benimIsmim = window.oyuncuVerisi.isim || "Oyuncu " + Math.floor(Math.random() * 100);
 
@@ -1601,7 +1609,8 @@ window.kazananiBelirleVeBidir = function() {
         alert("Sunucu ile iletişim kurulamadı. Lütfen sayfayı yenileyiniz.");
     }
 };
-
+        
+        
 window.eslesmeyiIptalEt = function() {
     const modSecimi = document.getElementById("etkinlik-mod-secimi");
     const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
