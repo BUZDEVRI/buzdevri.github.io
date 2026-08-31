@@ -1,71 +1,92 @@
 const express = require('express');
-const app = express();
-const http = require('http').createServer(app);
-const io = require('socket.io')(http);
+const http = require('http');
+const { Server } = require('socket.io');
 
-// 2 ve 5 Kişilik Bekleme Odaları
-let beklemeOdalari = { 2: [], 5: [] };
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
+
+// Bekleme havuzları (2'li, 3'lü vb. modlar için)
+let waitingPlayers = {}; 
 
 io.on('connection', (socket) => {
     console.log('Yeni oyuncu bağlandı:', socket.id);
 
-    // Etkinlikler kısmından eşleşme arama
+    // Eşleşme Arama
     socket.on('find_match', (data) => {
-        // data.mode BURADA sayıya dönüştürülür
-        const mode = Number(data.mode) || 2;
-        
-        // Yanlış mod gönderildiyse varsayılan 2 yap veya listede yoksa oluştur
-        if (!beklemeOdalari[mode]) {
-            beklemeOdalari[mode] = [];
+        const mode = data.mode || 2; // Kaç kişilik mod olduğu
+        const playerName = data.isim || "Oyuncu";
+
+        // Oyuncu verisini hazırla
+        const player = {
+            socketId: socket.id,
+            isim: playerName
+        };
+
+        if (!waitingPlayers[mode]) {
+            waitingPlayers[mode] = [];
         }
 
-        // Oyuncu listede daha önceden varsa temizle
-        beklemeOdalari[mode] = beklemeOdalari[mode].filter(o => o.id !== socket.id);
-        
-        // Yeni oyuncuyu ekle
-        beklemeOdalari[mode].push({ 
-            id: socket.id, 
-            isim: data.isim || "Oyuncu" 
-        });
+        // Oyucunun daha önce listede olmadığından emin ol
+        waitingPlayers[mode] = waitingPlayers[mode].filter(p => p.socketId !== socket.id);
+        waitingPlayers[mode].push(player);
 
-        console.log(`${mode} kişilik moda yeni biri katıldı. Toplam: ${beklemeOdalari[mode].length}`);
+        console.log(`[Mod ${mode}] Kuyruktaki oyuncu sayısı: ${waitingPlayers[mode].length}`);
 
-        // Yeterli sayıya ulaşıldıysa maçı kur
-        if (beklemeOdalari[mode].length >= mode) {
-            const roomId = "oda_" + Date.now();
-            const oyuncular = beklemeOdalari[mode].splice(0, mode);
+        // Odadaki oyuncu sayısı mod kapasitesine ulaştı mı?
+        if (waitingPlayers[mode].length >= mode) {
+            const roomPlayers = waitingPlayers[mode].splice(0, mode);
+            const roomId = "room_" + Date.now();
 
-            // Odadaki tüm arkadaşları odaya al ve maçı başlat
-            oyuncular.forEach((o, index) => {
-                const playerSocket = io.sockets.sockets.get(o.id);
-                if (playerSocket) playerSocket.join(roomId);
-
-                io.to(o.id).emit('match_found', { 
-                    roomId: roomId, 
-                    oyuncuIndex: index,
-                    oyuncular: oyuncular 
-                });
+            // Tüm giren oyuncuları aynı odaya al ve bilgilendir
+            roomPlayers.forEach((p, index) => {
+                const clientSocket = io.sockets.sockets.get(p.socketId);
+                if (clientSocket) {
+                    clientSocket.join(roomId);
+                    clientSocket.emit('match_found', {
+                        roomId: roomId,
+                        oyuncuIndex: index,
+                        oyuncular: roomPlayers
+                    });
+                }
             });
+
+            console.log(`🎉 Eşleşme Tamamlandı! Oda ID: ${roomId}`);
         }
     });
 
-    // Aramayı İptal Etme
+    // Oyuncu Çember Atma veya Şişe Güncelleme Hamlesi Yaparsa
+    socket.on('player_action', (data) => {
+        if (data.roomId) {
+            // Hamleyi odadaki diğer oyunculara ilet
+            socket.to(data.roomId).emit('update_game', data);
+        }
+    });
+
+    // Eşleşmeyi İptal Etme
     socket.on('cancel_match', () => {
-        for (let mode in beklemeOdalari) {
-            beklemeOdalari[mode] = beklemeOdalari[mode].filter(o => o.id !== socket.id);
+        for (let mode in waitingPlayers) {
+            waitingPlayers[mode] = waitingPlayers[mode].filter(p => p.socketId !== socket.id);
         }
+        console.log('Eşleşme iptal edildi:', socket.id);
     });
 
-    // Sayfa kapandığında oyuncuyu havuzdan çıkar
+    // Bağlantı Kopması
     socket.on('disconnect', () => {
-        for (let mode in beklemeOdalari) {
-            beklemeOdalari[mode] = beklemeOdalari[mode].filter(o => o.id !== socket.id);
+        for (let mode in waitingPlayers) {
+            waitingPlayers[mode] = waitingPlayers[mode].filter(p => p.socketId !== socket.id);
         }
+        console.log('Oyuncu ayrıldı:', socket.id);
     });
 });
 
-// Port dinleme (Örnek: 3000)
-http.listen(3000, () => {
-    console.log('Sunucu 3000 portunda çalışıyor');
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Sunucu ${PORT} portunda aktif!`);
 });
-        
+             
