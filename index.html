@@ -795,8 +795,8 @@
     <!-- 4 KİŞİLİK SAVAŞ ALANI -->
     <div class="savas-alani"></div>
 </div>
-    <script>      
-       // ==========================================
+    <script>                                 
+     // ==========================================
 // 1. SÜRÜM VE SUNUCU BAĞLANTISI (SOCKET.IO)
 // ==========================================
 const RENDER_SERVER_URL = "https://meyvecokluoyunculu.com.tr/"; 
@@ -887,8 +887,7 @@ window.verileriKaydet = function() {
     const bakiyeEl = document.getElementById('kullanici-bakiye');
     if (bakiyeEl) bakiyeEl.innerText = window.oyuncuVerisi.bakiye;
 };
-
-function profilYukle() {
+     function profilYukle() {
     const kayitliVeri = localStorage.getItem ? localStorage.getItem('seker_oyuncu_verisi') : null;
     if (kayitliVeri) {
         try {
@@ -916,7 +915,7 @@ function profilYukle() {
 
     window.verileriKaydet();
         }
-       // ==========================================
+        // ==========================================
 // 3. SES EFEKTLERİ (WEB AUDIO API)
 // ==========================================
 function initAudio() {
@@ -964,7 +963,7 @@ window.SESLER = {
         } catch(e){}
     }
 };
-    // ==========================================
+      // ==========================================
 // 4. EKRAN VE NAVİGASYON YÖNETİMİ
 // ==========================================
 window.ekranGoster = function(ekranId) {
@@ -984,8 +983,7 @@ window.ekranGoster = function(ekranId) {
         }
     });
 };
-
-window.etkinlikEkraniniAc = function() {
+     window.etkinlikEkraniniAc = function() {
     window.ekranGoster('etkinlik-cember-ekrani');
     if (typeof window.etkinlikOyununuBaslat === "function") {
         window.etkinlikOyununuBaslat();
@@ -995,7 +993,8 @@ window.etkinlikEkraniniAc = function() {
 window.etkinliktenCik = function() {
     window.ekranGoster('ana-lobi');
 };
-    window.sekmeDegistir = function(ekranId, btnEl) {
+
+window.sekmeDegistir = function(ekranId, btnEl) {
     window.ekranGoster(ekranId);
     if (btnEl) {
         const btns = document.querySelectorAll('.nav-btn');
@@ -1003,14 +1002,13 @@ window.etkinliktenCik = function() {
         btnEl.classList.add('active');
     }
 };
-
-window.magazaKategoriDegistir = function(kategoriId) {
+      window.magazaKategoriDegistir = function(kategoriId) {
     const guc = document.getElementById('guc-kategori');
     const tema = document.getElementById('tema-kategori');
     if (guc) guc.style.display = (kategoriId === 'guc-kategori') ? 'flex' : 'none';
     if (tema) tema.style.display = (kategoriId === 'tema-kategori') ? 'flex' : 'none';
 };
-    // ==========================================
+       // ==========================================
 // 5. MEYVE EŞLEŞTİRME OYUNU MANTIĞI
 // ==========================================
 window.oyunuBaslatMeyveleriDagit = function(toplamOyuncu = 4) {
@@ -1054,7 +1052,7 @@ window.oyunuBaslatMeyveleriDagit = function(toplamOyuncu = 4) {
         savasAlani.appendChild(oyuncuKutusu);
     }
 };
-     window.odaOyunuBaslat = function() {
+       window.odaOyunuBaslat = function() {
     if (!isHost) return;
     const toplamOyuncu = connectedPeers.length + 1;
     
@@ -1139,7 +1137,7 @@ window.odaOlustur = function() {
         sesAkisiniDinle(call);
     });
 };
-     window.odaOyuncuListesiniGuncelle = function() {
+        window.odaOyuncuListesiniGuncelle = function() {
     const kurucuKonteyner = document.getElementById('kurucu-oyuncu-listesi');
     const sayiEl = document.getElementById('oyuncu-sayisi-display');
     
@@ -1193,7 +1191,7 @@ window.odaOlustur = function() {
         });
     }
 };
-     window.odayaBaglanTikla = function() {
+      window.odayaBaglanTikla = function() {
     if (typeof Peer === "undefined") {
         alert("PeerJS kütüphanesi yüklenemedi!");
         return;
@@ -1253,7 +1251,7 @@ window.sinyalIsle = function(data, senderConn) {
         window.oyunuBaslatMeyveleriDagit(data.toplamOyuncu || 4);
     }
 };
-    window.misafirOdaListesiniYazdir = function(oyuncular) {
+        window.misafirOdaListesiniYazdir = function(oyuncular) {
     const konteyner = document.getElementById('misafir-oyuncu-listesi');
     if (!konteyner) return;
 
@@ -1280,8 +1278,7 @@ window.sinyalIsle = function(data, senderConn) {
         `;
     }).join('');
 };
-
-async function mikrofonuBaslat() {
+       async function mikrofonuBaslat() {
     try {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             alert("⚠️ Tarayıcınız ses kaydını desteklemiyor.");
@@ -1307,6 +1304,32 @@ async function mikrofonuBaslat() {
         if (isHost) window.odaOyuncuListesiniGuncelle();
 
     } catch (err) {
+        console.error("Mikrofon izni alınamadı:", err);
+        alert("⚠️ Mikrofon izni verilemedi veya cihaz bulunamadı!");
+    }
+}
+
+window.mikrofonDurumDegistir = function() {
+    if (!localAudioStream) {
+        mikrofonuBaslat();
+        return;
+    }
+
+    mikrofonAcik = !mikrofonAcik;
+    if (localAudioStream.getAudioTracks().length > 0) {
+        localAudioStream.getAudioTracks()[0].enabled = mikrofonAcik;
+    }
+
+    tumOyuncularaGonder({
+        type: "PROFILE_INFO",
+        name: window.oyuncuVerisi.isim,
+        img: window.oyuncuVerisi.resim,
+        micOpen: mikrofonAcik
+    });
+
+    if (isHost) window.odaOyuncuListesiniGuncelle();
+};
+      } catch (err) {
         console.error("Mikrofon izni alınamadı:", err);
         alert("⚠️ Mikrofon izni verilemedi veya cihaz bulunamadı!");
     }
@@ -1378,7 +1401,7 @@ window.profilIsimKaydet = function() {
         alert("✅ Profil başarıyla güncellendi!");
     }
 };
-        window.gunlukOdulAl = function() {
+    window.gunlukOdulAl = function() {
     const bugun = new Date().toDateString();
     const sonAlinanTarih = localStorage.getItem('son_gunluk_odul_tarihi');
 
@@ -1461,7 +1484,8 @@ function gunlukOdulButonKontrol() {
         window.SESLER.eslesmeHata();
         alert("❌ Yetersiz Şeker Puanı!");
     }
-       // ==========================================
+};
+    // ==========================================
 // 8. ETKİNLİK (ÇEMBER ATMA) OYUN MANTIĞI
 // ==========================================
 window.etkinlikOyununuBaslat = function() {
@@ -1496,7 +1520,7 @@ window.etkinlikOyununuBaslat = function() {
         }
     }, 1000);
 };
-          window.etkinlikArayuzuGuncelle = function() {
+    window.etkinlikArayuzuGuncelle = function() {
     const alan = document.getElementById('cember-oyuncular-alani');
     if (!alan) return;
 
@@ -1560,7 +1584,7 @@ window.etkinlikOyununuBaslat = function() {
     html += `</div>`;
     alan.innerHTML = html;
 };
-     window.cemberiFirlat = function() {
+       window.cemberiFirlat = function() {
     if (window.etkinlikKalanSure <= 0) return;
     
     let benimIndex = window.kendiIndexim !== undefined ? window.kendiIndexim : 0;
@@ -1575,7 +1599,7 @@ window.etkinlikOyununuBaslat = function() {
     }
 
     if (hedefSiseIndex === -1) return;
-       window.cemberUcurAnimasyonu(hedefSiseIndex, () => {
+        window.cemberUcurAnimasyonu(hedefSiseIndex, () => {
         siseler[hedefSiseIndex]++;
         let toplam = siseler.reduce((a, b) => a + b, 0);
 
@@ -1593,7 +1617,8 @@ window.etkinlikOyununuBaslat = function() {
         }
     });
 };
-    window.cemberUcurAnimasyonu = function(siseIndex, callback) {
+
+window.cemberUcurAnimasyonu = function(siseIndex, callback) {
     const firlatButon = document.querySelector("#etkinlik-cember-ekrani button[onclick*='cemberiFirlat']");
     const hedefSiseEl = document.querySelectorAll(".benim-kulvar .soda-sise")[siseIndex];
 
@@ -1623,18 +1648,7 @@ window.etkinlikOyununuBaslat = function() {
         callback();
     }, 350);
 };
-       window.botaCemberEkle = function(botIndex) {
-    let siseler = window.oyuncuSiseDurumlari[botIndex];
-    if (!siseler) return;
-    for (let i = 0; i < 10; i++) {
-        if (siseler[i] < 9) {
-            siseler[i]++;
-            break;
-        }
-    }
-    window.etkinlikArayuzuGuncelle();
-};
-    window.oyunBittiKazanan = function(kazananIndex) {
+      window.oyunBittiKazanan = function(kazananIndex) {
     let varsayilanIsimler = ["Siz", "Ali", "Ayşe", "Mehmet", "Zeynep"];
     let isimler = window.oyuncuListesi && window.oyuncuListesi.length > 0 ? window.oyuncuListesi : varsayilanIsimler;
     let kazananIsim = isimler[kazananIndex] || "Oyuncu";
@@ -1646,7 +1660,8 @@ window.etkinlikOyununuBaslat = function() {
     }
     alert(`🎉 ETKİNLİK SONA ERDİ!\n\n🏆 Kazanan: ${kazananIsim}`);
 };
-    window.kazananiBelirleVeBidir = function() {
+
+window.kazananiBelirleVeBidir = function() {
     let maxPuan = -1;
     let kazananIndex = 0;
     window.oyuncuSiseDurumlari.forEach((siseler, idx) => {
@@ -1658,9 +1673,8 @@ window.etkinlikOyununuBaslat = function() {
     });
     window.oyunBittiKazanan(kazananIndex);
 };
-       // ==========================================
-// YENİ VS EŞLEŞTİRME VEYA BOT SİSTEMİ MANTIĞI (1v1 & 4v4)
-// (Eski PeerJS oda kurma fonksiyonlarının yerine geçer)
+    // ==========================================
+// VS EŞLEŞTİRME VE DÜELLO MANTIĞI (1v1 & 4v4)
 // ==========================================
 let eslesmeAramaTimer = null;
 let eslesmeModu = 1; 
@@ -1703,7 +1717,7 @@ window.odaAramayiBaslat = function(secilenMod) {
         }, 1000);
     }
 };
-      function slotlariOlustur(elementId, mod, isMe) {
+        function slotlariOlustur(elementId, mod, isMe) {
     const el = document.getElementById(elementId);
     if (!el) return;
     el.innerHTML = "";
@@ -1720,8 +1734,9 @@ window.odaAramayiBaslat = function(secilenMod) {
             </div>
         `;
     }
-        }
-            window.vsRakipBulunduSimulasyon = function(rakipVeri) {
+}
+
+window.vsRakipBulunduSimulasyon = function(rakipVeri) {
     const rakipIsim = rakipVeri ? rakipVeri.isim : ("Oyuncu_" + Math.floor(100 + Math.random() * 900));
     const rakipImg = rakipVeri ? rakipVeri.resim : "https://via.placeholder.com/100";
 
@@ -1757,7 +1772,7 @@ window.odaAramayiBaslat = function(secilenMod) {
         }
     }, 1000);
 };
-         window.eslesmeyiIptalEt = function() {
+        window.eslesmeyiIptalEt = function() {
     if (eslesmeAramaTimer) clearInterval(eslesmeAramaTimer);
     if (typeof socket !== "undefined" && socket && socket.connected) socket.emit("cancel_match");
 
@@ -1781,7 +1796,7 @@ function cemberiSunucuyaBildir(hedefSiseIndex) {
         });
     }
         }
-         // ==========================================
+        // ==========================================
 // 9. SOCKET EVENT DİNLEYİCİLERİ
 // ==========================================
 if (typeof socket !== "undefined" && socket) {
