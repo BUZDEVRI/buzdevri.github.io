@@ -471,6 +471,63 @@
     max-width: 45%; /* Yan yana iki kutu sığacak şekilde */
     transform: scale(0.9); /* Taşmayı önlemek için hafif küçültme */
 }
+        /* 1. ÜST MENÜ DÜZELTME (Menünün panelleri sıkıştırmasını engeller) */
+.header-bar, .nav-container, header {
+    position: relative;
+    z-index: 100;
+    width: 100%;
+    display: flex;
+    overflow-x: auto;
+    white-space: nowrap;
+    background: rgba(20, 10, 35, 0.9);
+    padding: 8px 5px;
+}
+
+/* 2. ORTADAKİ BOŞ KUTU DÜZELTME (İçeriği zorunlu görünür yapar) */
+#etkinlik-cember-ekrani, 
+#etkinlik-mod-secimi, 
+#etkinliker-ekrani {
+    width: 90% !important;
+    max-width: 500px;
+    margin: 20px auto;
+    min-height: 200px !important; /* Yüksekliğin sıfırlanmasını engeller */
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(30, 15, 45, 0.95);
+    border: 2px solid #ff79c6;
+    border-radius: 16px;
+    padding: 15px;
+    box-sizing: border-box;
+}
+
+/* 3. MOD SEÇİM BUTONLARININ SIKIŞMASINI ÖNLEME */
+.mod-kart-kapsayici {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 15px;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.mod-kart {
+    flex: 1;
+    min-width: 120px;
+    max-width: 180px;
+    height: 120px;
+    background: #ff4757;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+}
+        
     </style>
 </head>
   <body>
@@ -667,9 +724,15 @@
         <p style="color: #ffeaa7; font-size: 13px; font-weight: 600; margin: 0;">Mod seçin ve diğer oyuncularla eşleşin!</p>
     </div>
 
-    <!-- EŞLEŞTİRME MODLARI -->
-    <div id="etkinlik-mod-secimi" style="display: flex; flex-direction: column; gap: 14px;">
-        <!-- Günlük Ödül Kutu -->
+    <div id="etkinlik-mod-secimi">
+    <h3 style="color: #fff; margin-bottom: 10px;">ETKİNLİK MODU SEÇİN</h3>
+    <div class="mod-kart-kapsayici">
+        <div class="mod-kart" onclick="window.odaAramayiBaslat(1)">1 v 1 Düello</div>
+        <div class="mod-kart" onclick="window.odaAramayiBaslat(4)">4 v 4 Takım</div>
+    </div>
+    </div>
+    
+    <!-- Günlük Ödül Kutu -->
         <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #ff9f43; border-radius: 18px; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
             <div style="font-size: 32px;">🎁</div>
             <div style="flex: 1; text-align: left;">
