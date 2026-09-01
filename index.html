@@ -424,7 +424,53 @@
         opacity: 1;
     }
         }
-    
+     /* Menü kapsayıcısı için yatay kaydırma ve sıkışmayı önleme */
+.nav-container, nav, header {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    white-space: nowrap;
+    align-items: center;
+    padding: 5px;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Buton boyutlarını küçültme ve sıfırlama */
+.nav-btn {
+    flex-shrink: 0;
+    font-size: 12px;
+    padding: 6px 10px;
+    margin-right: 4px;
+        }
+        /* Ana ekran kapsayıcısı */
+#etkinlik-cember-ekrani, 
+#etkinlik-mod-secimi, 
+.game-screen {
+    width: 100%;
+    max-width: 100vw;
+    min-height: 100vh;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 60px; /* Üst menünün altında kalmaması için */
+    overflow-y: auto; /* Ekran küçükse dikey kaydırmaya izin ver */
+}
+
+/* Mod Seçim Kartları (4v4 ve 1v1 kutuları) */
+#etkinlik-mod-secimi {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+#etkinlik-mod-secimi > div {
+    max-width: 45%; /* Yan yana iki kutu sığacak şekilde */
+    transform: scale(0.9); /* Taşmayı önlemek için hafif küçültme */
+}
     </style>
 </head>
   <body>
