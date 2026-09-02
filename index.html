@@ -1932,4 +1932,52 @@ window.addEventListener('DOMContentLoaded', () => {
     if (typeof gunlukOdulButonKontrol === "function") gunlukOdulButonKontrol();
     if (typeof apkGuncellemeKontrol === "function") apkGuncellemeKontrol();
 });
+        // Eşleşme arama ve oyunu başlatma simülasyonu
+    function eslesmeyiBaslat() {
+        const rakipIsimEl = document.querySelector('.modal-icerik h3, [style*="Rakip Aranıyor"]');
+        const rakipResimEl = document.querySelector('.modal-icerik [style*="🔍"], img[src*="rakip"]');
+        
+        let saniye = 3;
+        
+        // Geri sayım sayacı
+        const sayac = setInterval(() => {
+            if (rakipIsimEl) {
+                rakipIsimEl.innerText = `Rakip Aranıyor... (${saniye}sn)`;
+            }
+            saniye--;
+
+            if (saniye < 0) {
+                clearInterval(sayac);
+                rakipBulundu();
+            }
+        }, 1000);
+    }
+
+    // Rakip bulunduğunda çalışacak fonksiyon
+    function rakipBulundu() {
+        const rakipIsimEl = document.querySelectorAll('h3, div');
+        
+        // Ekrana rakip bilgilerini yazdır
+        alert("Eşleşme Sağlandı! Rakip: Oyuncu_99");
+
+        // Modal veya eşleşme ekranını kapatıp oyun alanını görünür yap
+        const modal = document.getElementById('rakip-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+
+        // Oyun başlangıç fonksiyonunu tetikle
+        oyunuBaslat();
+    }
+
+    // Oyunu başlatan temel fonksiyon
+    function oyunuBaslat() {
+        console.log("Oyun başladı!");
+        // Oyun içi çember fırlatma veya etkileşim mantıklarınızı buraya ekleyebilirsiniz
+    }
+
+    // Sayfa yüklendiğinde eşleşmeyi otomatik başlatmak için:
+    window.onload = function() {
+        eslesmeyiBaslat();
+    };
     </script>
