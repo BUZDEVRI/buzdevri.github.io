@@ -1777,53 +1777,84 @@ window.kazananiBelirleVeBidir = function() {
 let eslesmeAramaTimer = null;
 let eslesmeModu = 1; 
 
-window.odaAramayiBaslat = function(secilenMod) {
-    eslesmeModu = secilenMod;
-    
-    const modSecimi = document.getElementById("etkinlik-mod-secimi");
-    const vsSahnesi = document.getElementById("vs-eslesme-sahnesi");
-    const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
+ // 2. FIREBASE BAGLANTI AYARLARI (Kendi Firebase bilgilerinizle değiştirin)
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
 
-    if (aramaEkrani) aramaEkrani.style.display = "block";
-    if (modSecimi) modSecimi.style.display = "none";
-    if (vsSahnesi) vsSahnesi.style.display = "block";
-
-    const baslikEl = document.getElementById("vs-mod-baslik");
-    if (baslikEl) baslikEl.innerText = (secilenMod === 1) ? "Sıralı - Düello (1v1)" : "Takım Savaşı (4v4)";
-
-    const maviIsim = document.getElementById("mavi-oyuncu-isim");
-    if (maviIsim) maviIsim.innerText = window.oyuncuVerisi.isim || "Oyuncu";
-    
-    const maviImg = document.getElementById("mavi-oyuncu-img");
-    if (maviImg) maviImg.src = window.oyuncuVerisi.resim || "https://via.placeholder.com/100";
-
-    const kirmiziIsim = document.getElementById("kirmizi-oyuncu-isim");
-    if (kirmiziIsim) kirmiziIsim.innerText = "Rakip Aranıyor...";
-
-    const kirmiziImg = document.getElementById("kirmizi-oyuncu-img");
-    if (kirmiziImg) kirmiziImg.src = "https://via.placeholder.com/100";
-
-    const vsCd = document.getElementById("vs-geri-sayim");
-    if (vsCd) vsCd.innerText = "";
-
-    slotlariOlustur("mavi-takim-slotlari", secilenMod, true);
-    slotlariOlustur("kirmizi-takim-slotlari", secilenMod, false);
-
-    if (typeof socket !== "undefined" && socket && socket.connected) {
-        socket.emit("find_match", { mod: secilenMod, oyuncu: window.oyuncuVerisi });
-    } else {
-        let sayac = 0;
-        if (eslesmeAramaTimer) clearInterval(eslesmeAramaTimer);
-        
-        eslesmeAramaTimer = setInterval(() => {
-            sayac++;
-            if (sayac >= 3) {
-                clearInterval(eslesmeAramaTimer);
-                window.vsRakipBulunduSimulasyon();
-            }
-        }, 1000);
+    // Firebase'i Başlat
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
     }
-};
+    const db = firebase.database();
+
+    // Rastgele Oyuncu Kimliği Oluştur
+    const oyuncuId = "Oyuncu_" + Math.floor(1000 + Math.random() * 9000);
+    let aktifOdaKey = null;
+    let odaDinleyici = null;
+
+    // 3. EŞLEŞME ARAMA FONKSİYONU (Butonlara basılınca bu çalışır)
+    function odaAramayiBaslat(mod) {
+        const modal = document.getElementById('rakip-modal');
+        if (modal) modal.style.display = 'block';
+
+        const modalBaslik = document.querySelector('#rakip-modal h3');
+        const modalAciklama = document.querySelector('#rakip-modal p');
+        
+        if (modalBaslik) modalBaslik.innerText = "Gerçek Rakip Aranıyor...";
+        if (modalAciklama) modalAciklama.innerText = "Lütfen diğer oyuncunun girmesi bekleniyor.";
+
+        const bekleyenlerRef = db.ref('eslesme_havuzu/' + mod + 'v' + mod);
+
+        // Havuzda bekleyen var mı bak
+        bekleyenlerRef.once('value').then((snapshot) => {
+            const bekleyenler = snapshot.val();
+
+            if (bekleyenler) {
+                // Bekleyen biri var, onunla odayı kur
+                const bekleyenOyuncuKey = Object.keys(bekleyenler)[0];
+                const rakipData = bekleyenler[bekleyenOyuncuKey];
+
+                const yeniOdaRef = db.ref('odalar').push();
+                aktifOdaKey = yeniOdaRef.key;
+
+                yeniOdaRef.set({
+                    oyuncu1: rakipData.oyuncuId,
+                    oyuncu2: oyuncuId,
+                    durum: "basladi"
+                });
+
+                // Havuzdan sil
+                bekleyenlerRef.child(bekleyenOyuncuKey).remove();
+
+            } else {
+                // Kimse yoksa havuza eklen ve bekle
+                const yeniBekleyenRef = bekleyenlerRef.push();
+                yeniBekleyenRef.set({
+                    oyuncuId: oyuncuId,
+                    zaman: Date.now()
+                });
+
+                // Sayfadan ayrılırsa havuzdan otomatik silinsin
+                yeniBekleyenRef.onDisconnect().remove();
+
+                // Odalar tablosunda kendi adımız çıkacak mı dinle
+                odaDinleyici = db.ref('odalar').on('child_added', (snapshot) => {
+                    const oda = snapshot.val();
+                    if (oda && (oda.oyuncu1 === oyuncuId || oda.oyuncu2 === oyuncuId)) {
+                        aktifOdaKey = snapshot.key;
+                        eslesmeTamamlandi(oda);
+                    }
+                });
+            }
+        });
+        }
        function slotlariOlustur(elementId, mod, isMe) {
     const el = document.getElementById(elementId);
     if (!el) return;
@@ -1954,27 +1985,27 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // Rakip bulunduğunda çalışacak fonksiyon
-    function rakipBulundu() {
-        const rakipIsimEl = document.querySelectorAll('h3, div');
+    function eslesmeTamamlandi(odaData) {
+        const rakipAdi = odaData.oyuncu1 === oyuncuId ? odaData.oyuncu2 : odaData.oyuncu1;
         
-        // Ekrana rakip bilgilerini yazdır
-        alert("Eşleşme Sağlandı! Rakip: Oyuncu_99");
+        const modalBaslik = document.querySelector('#rakip-modal h3');
+        const modalAciklama = document.querySelector('#rakip-modal p');
 
-        // Modal veya eşleşme ekranını kapatıp oyun alanını görünür yap
-        const modal = document.getElementById('rakip-modal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
+        if (modalBaslik) modalBaslik.innerText = "Eşleşme Sağlandı!";
+        if (modalAciklama) modalAciklama.innerText = "Rakibiniz: " + rakipAdi;
 
-        // Oyun başlangıç fonksiyonunu tetikle
-        oyunuBaslat();
+        // 2 Saniye sonra ekranı kapatıp oyunu başlat
+        setTimeout(() => {
+            const modal = document.getElementById('rakip-modal');
+            if (modal) modal.style.display = 'none';
+            oyunuBaslat();
+        }, 2000);
     }
 
-    // Oyunu başlatan temel fonksiyon
+    // 5. OYUNU BAŞLATAN FONKSİYON
     function oyunuBaslat() {
-        console.log("Oyun başladı!");
-        // Oyun içi çember fırlatma veya etkileşim mantıklarınızı buraya ekleyebilirsiniz
-    }
+        console.log("Gerçek Zamanlı Oyun Başladı! Oda ID:", aktifOdaKey);
+        }
 
     // Sayfa yüklendiğinde eşleşmeyi otomatik başlatmak için:
     window.onload = function() {
