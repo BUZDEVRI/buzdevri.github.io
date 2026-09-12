@@ -1800,61 +1800,159 @@ let eslesmeModu = 1;
     let odaDinleyici = null;
 
     // 3. EŞLEŞME ARAMA FONKSİYONU (Butonlara basılınca bu çalışır)
-    function odaAramayiBaslat(mod) {
-        const modal = document.getElementById('rakip-modal');
-        if (modal) modal.style.display = 'block';
+    window.odaAramayiBaslat = function(mod) {
 
-        const modalBaslik = document.querySelector('#rakip-modal h3');
-        const modalAciklama = document.querySelector('#rakip-modal p');
-        
-        if (modalBaslik) modalBaslik.innerText = "Gerçek Rakip Aranıyor...";
-        if (modalAciklama) modalAciklama.innerText = "Lütfen diğer oyuncunun girmesi bekleniyor.";
+    console.log("Eşleşme başlatıldı. Mod:", mod);
 
-        const bekleyenlerRef = db.ref('eslesme_havuzu/' + mod + 'v' + mod);
+    // Eşleşme ekranını aç
+    const aramaEkrani = document.getElementById('etkinlik-arama-ekrani');
 
-        // Havuzda bekleyen var mı bak
-        bekleyenlerRef.once('value').then((snapshot) => {
+    if (aramaEkrani) {
+        aramaEkrani.style.display = 'block';
+    } else {
+        console.error("etkinlik-arama-ekrani bulunamadı!");
+        alert("Eşleşme ekranı bulunamadı!");
+        return;
+    }
+
+    // Mod seçimini gizle
+    const modSecimi = document.getElementById('etkinlik-mod-secimi');
+
+    if (modSecimi) {
+        modSecimi.style.display = 'none';
+    }
+
+    // Firebase bağlantısını kontrol et
+    if (typeof db === "undefined") {
+        console.error("Firebase db bulunamadı!");
+        alert("Firebase bağlantısı bulunamadı!");
+        return;
+    }
+
+    // Oyuncu ID kontrolü
+    if (typeof oyuncuId === "undefined" || !oyuncuId) {
+        console.error("oyuncuId bulunamadı!");
+        alert("Oyuncu ID bulunamadı!");
+        return;
+    }
+
+    // 1v1 veya 4v4
+    const havuzAdi = mod + "v" + mod;
+
+    console.log("Firebase havuzu:", havuzAdi);
+
+    const bekleyenlerRef = db.ref(
+        'eslesme_havuzu/' + havuzAdi
+    );
+
+    // Önce bekleyen oyuncuları kontrol et
+    bekleyenlerRef.once('value')
+        .then((snapshot) => {
+
             const bekleyenler = snapshot.val();
 
+            console.log("Firebase havuzu:", bekleyenler);
+
             if (bekleyenler) {
-                // Bekleyen biri var, onunla odayı kur
-                const bekleyenOyuncuKey = Object.keys(bekleyenler)[0];
-                const rakipData = bekleyenler[bekleyenOyuncuKey];
 
-                const yeniOdaRef = db.ref('odalar').push();
-                aktifOdaKey = yeniOdaRef.key;
+                // Kendimizi rakip olarak seçme
+                const keys = Object.keys(bekleyenler);
 
-                yeniOdaRef.set({
-                    oyuncu1: rakipData.oyuncuId,
-                    oyuncu2: oyuncuId,
-                    durum: "basladi"
+                const rakipKey = keys.find(key => {
+                    return bekleyenler[key].oyuncuId !== oyuncuId;
                 });
 
-                // Havuzdan sil
-                bekleyenlerRef.child(bekleyenOyuncuKey).remove();
+                if (rakipKey) {
 
-            } else {
-                // Kimse yoksa havuza eklen ve bekle
-                const yeniBekleyenRef = bekleyenlerRef.push();
-                yeniBekleyenRef.set({
-                    oyuncuId: oyuncuId,
-                    zaman: Date.now()
-                });
+                    const rakip = bekleyenler[rakipKey];
 
-                // Sayfadan ayrılırsa havuzdan otomatik silinsin
+                    console.log("Rakip bulundu:", rakip);
+
+                    // Yeni oda oluştur
+                    const yeniOdaRef = db.ref('odalar').push();
+
+                    aktifOdaKey = yeniOdaRef.key;
+
+                    return yeniOdaRef.set({
+                        oyuncu1: rakip.oyuncuId,
+                        oyuncu2: oyuncuId,
+                        mod: mod,
+                        durum: "basladi",
+                        zaman: Date.now()
+                    }).then(() => {
+
+                        // Rakibi havuzdan çıkar
+                        return bekleyenlerRef
+                            .child(rakipKey)
+                            .remove();
+
+                    }).then(() => {
+
+                        // Kendi ekranımızda eşleşmeyi göster
+                        eslesmeTamamlandi({
+                            oyuncu1: rakip.oyuncuId,
+                            oyuncu2: oyuncuId,
+                            mod: mod,
+                            durum: "basladi"
+                        });
+
+                    });
+
+                }
+            }
+
+            // Rakip bulunamadıysa kendimizi sıraya al
+            const yeniBekleyenRef = bekleyenlerRef.push();
+
+            return yeniBekleyenRef.set({
+                oyuncuId: oyuncuId,
+                zaman: Date.now()
+            }).then(() => {
+
+                console.log("Eşleşme havuzuna girdim:", yeniBekleyenRef.key);
+
+                // Sayfadan çıkarsa otomatik sil
                 yeniBekleyenRef.onDisconnect().remove();
 
-                // Odalar tablosunda kendi adımız çıkacak mı dinle
-                odaDinleyici = db.ref('odalar').on('child_added', (snapshot) => {
-                    const oda = snapshot.val();
-                    if (oda && (oda.oyuncu1 === oyuncuId || oda.oyuncu2 === oyuncuId)) {
-                        aktifOdaKey = snapshot.key;
-                        eslesmeTamamlandi(oda);
-                    }
-                });
-            }
+                // Eşleşme bekle
+                odaDinleyici = db.ref('odalar')
+                    .on('child_added', (snapshot) => {
+
+                        const oda = snapshot.val();
+
+                        if (!oda) return;
+
+                        if (
+                            oda.oyuncu1 === oyuncuId ||
+                            oda.oyuncu2 === oyuncuId
+                        ) {
+
+                            console.log(
+                                "🎉 EŞLEŞME BULUNDU!",
+                                oda
+                            );
+
+                            aktifOdaKey = snapshot.key;
+
+                            eslesmeTamamlandi(oda);
+                        }
+                    });
+            });
+
+        })
+        .catch((error) => {
+
+            console.error(
+                "Firebase eşleşme hatası:",
+                error
+            );
+
+            alert(
+                "Eşleşme sırasında Firebase hatası oluştu: " +
+                error.message
+            );
         });
-        }
+};
        function slotlariOlustur(elementId, mod, isMe) {
     const el = document.getElementById(elementId);
     if (!el) return;
@@ -1986,21 +2084,67 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Rakip bulunduğunda çalışacak fonksiyon
     function eslesmeTamamlandi(odaData) {
-        const rakipAdi = odaData.oyuncu1 === oyuncuId ? odaData.oyuncu2 : odaData.oyuncu1;
-        
-        const modalBaslik = document.querySelector('#rakip-modal h3');
-        const modalAciklama = document.querySelector('#rakip-modal p');
 
-        if (modalBaslik) modalBaslik.innerText = "Eşleşme Sağlandı!";
-        if (modalAciklama) modalAciklama.innerText = "Rakibiniz: " + rakipAdi;
+    console.log("Eşleşme tamamlandı:", odaData);
 
-        // 2 Saniye sonra ekranı kapatıp oyunu başlat
-        setTimeout(() => {
-            const modal = document.getElementById('rakip-modal');
-            if (modal) modal.style.display = 'none';
-            oyunuBaslat();
-        }, 2000);
+    const rakipId =
+        odaData.oyuncu1 === oyuncuId
+            ? odaData.oyuncu2
+            : odaData.oyuncu1;
+
+    const aramaEkrani =
+        document.getElementById('etkinlik-arama-ekrani');
+
+    if (aramaEkrani) {
+
+        aramaEkrani.style.display = 'block';
+
+        aramaEkrani.innerHTML = `
+            <div style="
+                display:flex;
+                flex-direction:column;
+                align-items:center;
+                justify-content:center;
+                height:100%;
+                color:white;
+                text-align:center;
+            ">
+
+                <div style="font-size:70px;">⚔️</div>
+
+                <h2 style="color:#feca57;">
+                    EŞLEŞME SAĞLANDI!
+                </h2>
+
+                <p style="font-size:18px;">
+                    Rakip bulundu!
+                </p>
+
+                <p style="
+                    color:#74b9ff;
+                    font-size:14px;
+                ">
+                    Rakip ID: ${rakipId}
+                </p>
+
+                <p>
+                    Oyun başlatılıyor...
+                </p>
+
+            </div>
+        `;
     }
+
+    setTimeout(() => {
+
+        if (aramaEkrani) {
+            aramaEkrani.style.display = 'none';
+        }
+
+        oyunuBaslat();
+
+    }, 2000);
+        }
 
     // 5. OYUNU BAŞLATAN FONKSİYON
     function oyunuBaslat() {
