@@ -1,27 +1,46 @@
 <!DOCTYPE html>
-<lang="tr">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meyve & Şeker Odası - Çok Oyunculu</title>
     
     <link rel="manifest" href="manifest.json">
+    <!-- CSS Dosyalarınız Varsa Buraya Ekleyin -->
+</head>
+<body>
 
-    <!-- 1. Socket.io İstemci Kütüphanesi -->
+    <!-- ARAYÜZ VE BUTONLARINIZ (HTML İÇERİĞİ) BURADA YER ALACAK -->
+    <div id="etkinlik-mod-secimi">
+        <button onclick="window.vs1v1ModuBaslat()">1v1 Düello</button>
+        <button onclick="window.vs4v4ModuBaslat()">4v4 Düello</button>
+    </div>
+
+    <!-- Eşleşme Ekranı HTML Kodlarınız -->
+    <div id="vs-otomatik-arama-ekrani" style="display: none;">
+        <!-- Eşleşme HTML içeriği... -->
+    </div>
+
+
+    <!-- =================================================== -->
+    <!-- SCRIPT'LERİ BODY EN ALTINA VE BU SIRAYLA YERLEŞTİRİN -->
+    <!-- =================================================== -->
+
+    <!-- 1. Dış Kütüphaneler -->
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-
-    <!-- 2. PeerJS (Sesli Sohbet Kullanıyorsan Kalmalı) -->
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-     <!-- Yeni Eşleşme Sisteminiz -->
-<script src="vs-eslesme.js"></script>
-
-<!-- Ana Oyun Kodlarınız -->
-<script src="oyun.js"></script>
-    <!-- 3. Firebase (Sadece Veritabanında Kullanıcı Verisi Tutuyorsan Dursun, Eşleşmeyi Socket.io Yapıyor) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-</head>
-    
+
+    <!-- 2. Sizin Eşleşme Kodunuz (PeerJS yüklendikten sonra çalışmalı) -->
+    <script src="vs-eslesme.js"></script>
+
+    <!-- 3. Ana Oyun Kodlarınız (En son yüklenecek) -->
+    <script src="oyun.js"></script>
+
+</body>
+</html>
+
     <style>
         body {
             background-image: url("seker_temali_tekli_hareketli_arka_plan.gif");
