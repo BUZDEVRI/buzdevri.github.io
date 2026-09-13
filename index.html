@@ -1826,6 +1826,16 @@ let odaDinleyici = null;
 // ==========================================
 
 // 1. "1v1 Düello" Butonuna Basıldığında
+// Global Değişkenler
+window.peer = window.peer || null;
+window.myPeerId = window.myPeerId || null;
+window.connectedPeers = window.connectedPeers || [];
+window.isHost = window.isHost || false;
+window.eslesmeModu = window.eslesmeModu || 1;
+window.odaListesi4v4 = window.odaListesi4v4 || [];
+window.myPlayerName = window.myPlayerName || "Oyuncu_" + Math.floor(100 + Math.random() * 900);
+
+// 1. "1v1 Düello" Butonuna Basıldığında
 window.vs1v1ModuBaslat = function() {
     window.otomatikEslesmeBaslat(1, 2); // 1v1, 2 oyuncu
 };
@@ -1837,11 +1847,11 @@ window.vs4v4ModuBaslat = function() {
 
 // Ortak Eşleşme Başlatıcı
 window.otomatikEslesmeBaslat = function(mod, hedefOyuncuSayisi) {
-    eslesmeModu = mod;
-    odaListesi4v4 = [];
+    window.eslesmeModu = mod;
+    window.odaListesi4v4 = [];
 
     const modSecimi = document.getElementById('etkinlik-mod-secimi');
-    const aramaEkrani = document.getElementById('vs-otomatik-arama-ekrani');
+    const aramaEkrani = document.getElementById('vs-otomatik-arama-ekrani') || document.getElementById('etkinlik-arama-ekrani');
     const baslik = document.getElementById('vs-arama-baslik');
     const durum = document.getElementById('vs-arama-durum');
     const bulunanEl = document.getElementById('vs-bulunan-oyuncu');
@@ -1860,24 +1870,24 @@ window.otomatikEslesmeBaslat = function(mod, hedefOyuncuSayisi) {
 
 // Otomatik Havuz Arama
 window.havuzAramasiYap = function(odaIndex, hedefOyuncu) {
-    if (peer) peer.destroy();
+    if (window.peer) window.peer.destroy();
 
-    const sabitOdaId = `VS_AUTO_ROOM_${eslesmeModu}V${eslesmeModu}_ODANUM_${odaIndex}`;
-    peer = new Peer();
+    const sabitOdaId = `VS_AUTO_ROOM_${window.eslesmeModu}V${window.eslesmeModu}_ODANUM_${odaIndex}`;
+    window.peer = new Peer();
 
-    peer.on('open', (id) => {
-        myPeerId = id;
-        let conn = peer.connect(sabitOdaId);
+    window.peer.on('open', (id) => {
+        window.myPeerId = id;
+        let conn = window.peer.connect(sabitOdaId);
         let baglandi = false;
 
         conn.on('open', () => {
             baglandi = true;
-            isHost = false;
-            connectedPeers = [conn];
+            window.isHost = false;
+            window.connectedPeers = [conn];
 
             conn.send({
                 type: "HAVUZ_KATILDI",
-                name: myPlayerName || "Oyuncu",
+                name: window.myPlayerName,
                 img: ""
             });
         });
@@ -1894,45 +1904,41 @@ window.havuzAramasiYap = function(odaIndex, hedefOyuncu) {
 
 // Kurucu (Host) Olma
 window.havuzHostOl = function(sabitOdaId, odaIndex, hedefOyuncu) {
-    if (peer) peer.destroy();
+    if (window.peer) window.peer.destroy();
 
-    peer = new Peer(sabitOdaId);
-    isHost = true;
-    connectedPeers = [];
+    window.peer = new Peer(sabitOdaId);
+    window.isHost = true;
+    window.connectedPeers = [];
 
-    odaListesi4v4 = [{
-        name: myPlayerName || "Siz",
+    window.odaListesi4v4 = [{
+        name: window.myPlayerName,
         img: ""
     }];
 
-    kendiIndexim = 0;
-    myPlayerIndex = 0;
-
-    peer.on('open', (id) => {
-        myPeerId = id;
-        currentRoomId = sabitOdaId;
+    window.peer.on('open', (id) => {
+        window.myPeerId = id;
         console.log(`[Eşleşme] Havuz Kuruldu: ${sabitOdaId}`);
     });
 
-    peer.on('connection', (conn) => {
-        if (odaListesi4v4.length >= hedefOyuncu) {
+    window.peer.on('connection', (conn) => {
+        if (window.odaListesi4v4.length >= hedefOyuncu) {
             conn.close();
             return;
         }
 
         conn.on('data', (data) => {
             if (data.type === "HAVUZ_KATILDI") {
-                connectedPeers.push(conn);
-                odaListesi4v4.push({ name: data.name, img: data.img });
+                window.connectedPeers.push(conn);
+                window.odaListesi4v4.push({ name: data.name, img: data.img });
 
                 window.otomatikYayinla({
                     type: "SAYI_GUNCELLE",
-                    oyuncular: odaListesi4v4
+                    oyuncular: window.odaListesi4v4
                 });
 
-                window.aramaEkraniGuncelle(odaListesi4v4.length, hedefOyuncu);
+                window.aramaEkraniGuncelle(window.odaListesi4v4.length, hedefOyuncu);
 
-                if (odaListesi4v4.length === hedefOyuncu) {
+                if (window.odaListesi4v4.length === hedefOyuncu) {
                     setTimeout(() => {
                         window.otomatikYayinla({ type: "OTOMATIK_OYUN_BASLA" });
                         window.otomatikOyunuBaslat();
@@ -1944,7 +1950,7 @@ window.havuzHostOl = function(sabitOdaId, odaIndex, hedefOyuncu) {
         });
     });
 
-    peer.on('error', (err) => {
+    window.peer.on('error', (err) => {
         if (err.type === 'unavailable-id') {
             window.havuzAramasiYap(odaIndex + 1, hedefOyuncu);
         }
@@ -1956,10 +1962,8 @@ window.otomatikSinyalIsle = function(data) {
     if (!data) return;
 
     if (data.type === "SAYI_GUNCELLE") {
-        odaListesi4v4 = data.oyuncular;
-        kendiIndexim = odaListesi4v4.findIndex(p => p.name === myPlayerName);
-        myPlayerIndex = kendiIndexim;
-        window.aramaEkraniGuncelle(odaListesi4v4.length, odaListesi4v4.length > 2 ? 8 : 2);
+        window.odaListesi4v4 = data.oyuncular;
+        window.aramaEkraniGuncelle(window.odaListesi4v4.length, window.odaListesi4v4.length > 2 ? 8 : 2);
     }
     else if (data.type === "OTOMATIK_OYUN_BASLA") {
         window.otomatikOyunuBaslat();
@@ -1967,7 +1971,7 @@ window.otomatikSinyalIsle = function(data) {
 };
 
 window.otomatikYayinla = function(data) {
-    connectedPeers.forEach(conn => {
+    window.connectedPeers.forEach(conn => {
         if (conn && conn.open) conn.send(data);
     });
 };
@@ -1977,38 +1981,8 @@ window.aramaEkraniGuncelle = function(mevcut, hedef) {
     if (bulunanEl) bulunanEl.innerText = mevcut;
 };
 
-// Oyuna Geçiş Yapma
-window.otomatikOyunuBaslat = function() {
-    const aramaEkrani = document.getElementById('vs-otomatik-arama-ekrani');
-    if (aramaEkrani) aramaEkrani.style.display = 'none';
-
-    window.oyuncuListesi = odaListesi4v4.map(p => p.name);
-
-    // ⚠️ DİKKAT: Projenizde oyunu/meyve atma sahnesini başlatan fonksiyon adı 
-    // "etkinlikOyununuBaslat" değilse aşağıdaki ismi kendi fonksiyonunuzla değiştirin!
-    if (typeof window.etkinlikOyununuBaslat === "function") {
-        window.etkinlikOyununuBaslat();
-    } else if (typeof window.oyunuBaslat === "function") {
-        window.oyunuBaslat();
-    } else {
-        console.log("Eşleşme tamamlandı! Oyunu başlatacak fonksiyon bulunamadı.");
-    }
-};
-
-// İptal
-window.eslesmeyiIptalEt = function() {
-    if (peer) peer.destroy();
-    connectedPeers = [];
-    isHost = false;
-
-    const modSecimi = document.getElementById('etkinlik-mod-secimi');
-    const aramaEkrani = document.getElementById('vs-otomatik-arama-ekrani');
-
-    if (aramaEkrani) aramaEkrani.style.display = 'none';
-    if (modSecimi) modSecimi.style.display = 'flex';
-};
-        
-      function slotlariOlustur(elementId, mod, isMe) {
+// Slot Oluşturma Yardımcısı
+function slotlariOlustur(elementId, mod, isMe) {
     const el = document.getElementById(elementId);
     if (!el) return;
     el.innerHTML = "";
@@ -2027,59 +2001,40 @@ window.eslesmeyiIptalEt = function() {
     }
 }
 
-window.vsRakipBulunduSimulasyon = function(rakipVeri) {
-    const rakipIsim = rakipVeri ? rakipVeri.isim : ("Oyuncu_" + Math.floor(100 + Math.random() * 900));
-    const rakipImg = rakipVeri ? rakipVeri.resim : "https://via.placeholder.com/100";
+// Oyuna Geçiş Yapma
+window.otomatikOyunuBaslat = function() {
+    const aramaEkrani = document.getElementById('vs-otomatik-arama-ekrani') || document.getElementById('etkinlik-arama-ekrani');
+    if (aramaEkrani) aramaEkrani.style.display = 'none';
 
-    const kIsim = document.getElementById("kirmizi-oyuncu-isim");
-    if (kIsim) kIsim.innerText = rakipIsim;
+    window.oyuncuListesi = window.odaListesi4v4.map(p => p.name);
 
-    const kImg = document.getElementById("kirmizi-oyuncu-img");
-    if (kImg) kImg.src = rakipImg;
-
-    slotlariOlustur("kirmizi-takim-slotlari", eslesmeModu, true);
-
-    let geriSayim = 3;
-    const geriSayimEl = document.getElementById("vs-geri-sayim");
-    if (geriSayimEl) geriSayimEl.innerText = geriSayim + "s";
-
-    if (window.SESLER && window.SESLER.zafer) window.SESLER.zafer();
-
-    const cdTimer = setInterval(() => {
-        geriSayim--;
-        if (geriSayim > 0) {
-            if (geriSayimEl) geriSayimEl.innerText = geriSayim + "s";
-        } else {
-            clearInterval(cdTimer);
-            const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
-            if (aramaEkrani) aramaEkrani.style.display = "none";
-            
-            if (eslesmeModu === 1) {
-                window.oyuncuListesi = [window.oyuncuVerisi.isim || "Siz", rakipIsim];
-            } else {
-                window.oyuncuListesi = [
-                    window.oyuncuVerisi.isim || "Siz", "Mavi 2", "Mavi 3", "Mavi 4",
-                    rakipIsim, "Kırmızı 2", "Kırmızı 3", "Kırmızı 4"
-                ];
-            }
-            
-            window.etkinlikOyununuBaslat();
-        }
-    }, 1000);
+    if (typeof window.etkinlikOyununuBaslat === "function") {
+        window.etkinlikOyununuBaslat();
+    } else if (typeof window.oyunuBaslat === "function") {
+        window.oyunuBaslat();
+    } else {
+        console.log("Eşleşme tamamlandı! Oyunu başlatacak fonksiyon bulunamadı.");
+    }
 };
-    window.eslesmeyiIptalEt = function() {
-    if (eslesmeAramaTimer) clearInterval(eslesmeAramaTimer);
-    if (typeof socket !== "undefined" && socket && socket.connected) socket.emit("cancel_match");
+
+// İPTAL ET (TEK VE TEMİZLENMİŞ FONKSİYON)
+window.eslesmeyiIptalEt = function() {
+    if (window.peer) window.peer.destroy();
+    window.connectedPeers = [];
+    window.isHost = false;
+
+    if (typeof socket !== "undefined" && socket && socket.connected) {
+        socket.emit("cancel_match");
+    }
 
     const vsSahnesi = document.getElementById("vs-eslesme-sahnesi");
     const modSecimi = document.getElementById("etkinlik-mod-secimi");
-    const aramaEkrani = document.getElementById("etkinlik-arama-ekrani");
+    const aramaEkrani = document.getElementById('vs-otomatik-arama-ekrani') || document.getElementById('etkinlik-arama-ekrani');
 
     if (vsSahnesi) vsSahnesi.style.display = "none";
-    if (modSecimi) modSecimi.style.display = "flex";
     if (aramaEkrani) aramaEkrani.style.display = "none";
+    if (modSecimi) modSecimi.style.display = "flex";
 };
-
 function cemberiSunucuyaBildir(hedefSiseIndex) {
     if (typeof socket !== "undefined" && socket && currentRoomId) {
         let benimIndexim = window.kendiIndexim !== undefined ? window.kendiIndexim : 0;
