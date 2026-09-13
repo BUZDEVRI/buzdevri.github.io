@@ -1801,21 +1801,17 @@ let eslesmeModu = 1;
 
     // 3. EŞLEŞME ARAMA FONKSİYONU (Butonlara basılınca bu çalışır)
     window.odaAramayiBaslat = function(mod) {
+    console.log("Eşleşme butonuna basıldı:", mod);
 
-    console.log("Eşleşme başlatıldı. Mod:", mod);
-
-    // Eşleşme ekranını aç
     const aramaEkrani = document.getElementById('etkinlik-arama-ekrani');
 
-    if (aramaEkrani) {
-        aramaEkrani.style.display = 'block';
-    } else {
-        console.error("etkinlik-arama-ekrani bulunamadı!");
+    if (!aramaEkrani) {
         alert("Eşleşme ekranı bulunamadı!");
         return;
     }
 
-    // Mod seçimini gizle
+    aramaEkrani.style.display = 'block';
+
     const modSecimi = document.getElementById('etkinlik-mod-secimi');
 
     if (modSecimi) {
@@ -1824,135 +1820,33 @@ let eslesmeModu = 1;
 
     // Firebase bağlantısını kontrol et
     if (typeof db === "undefined") {
-        console.error("Firebase db bulunamadı!");
         alert("Firebase bağlantısı bulunamadı!");
+        console.error("db değişkeni tanımlı değil.");
         return;
     }
 
-    // Oyuncu ID kontrolü
     if (typeof oyuncuId === "undefined" || !oyuncuId) {
-        console.error("oyuncuId bulunamadı!");
         alert("Oyuncu ID bulunamadı!");
+        console.error("oyuncuId tanımlı değil.");
         return;
     }
 
-    // 1v1 veya 4v4
-    const havuzAdi = mod + "v" + mod;
+    const bekleyenlerRef = db.ref('eslesme_havuzu/' + mod + 'v' + mod);
 
-    console.log("Firebase havuzu:", havuzAdi);
+    bekleyenlerRef.once('value').then((snapshot) => {
+        const bekleyenler = snapshot.val();
 
-    const bekleyenlerRef = db.ref(
-        'eslesme_havuzu/' + havuzAdi
-    );
-
-    // Önce bekleyen oyuncuları kontrol et
-    bekleyenlerRef.once('value')
-        .then((snapshot) => {
-
-            const bekleyenler = snapshot.val();
-
-            console.log("Firebase havuzu:", bekleyenler);
-
-            if (bekleyenler) {
-
-                // Kendimizi rakip olarak seçme
-                const keys = Object.keys(bekleyenler);
-
-                const rakipKey = keys.find(key => {
-                    return bekleyenler[key].oyuncuId !== oyuncuId;
-                });
-
-                if (rakipKey) {
-
-                    const rakip = bekleyenler[rakipKey];
-
-                    console.log("Rakip bulundu:", rakip);
-
-                    // Yeni oda oluştur
-                    const yeniOdaRef = db.ref('odalar').push();
-
-                    aktifOdaKey = yeniOdaRef.key;
-
-                    return yeniOdaRef.set({
-                        oyuncu1: rakip.oyuncuId,
-                        oyuncu2: oyuncuId,
-                        mod: mod,
-                        durum: "basladi",
-                        zaman: Date.now()
-                    }).then(() => {
-
-                        // Rakibi havuzdan çıkar
-                        return bekleyenlerRef
-                            .child(rakipKey)
-                            .remove();
-
-                    }).then(() => {
-
-                        // Kendi ekranımızda eşleşmeyi göster
-                        eslesmeTamamlandi({
-                            oyuncu1: rakip.oyuncuId,
-                            oyuncu2: oyuncuId,
-                            mod: mod,
-                            durum: "basladi"
-                        });
-
-                    });
-
-                }
-            }
-
-            // Rakip bulunamadıysa kendimizi sıraya al
-            const yeniBekleyenRef = bekleyenlerRef.push();
-
-            return yeniBekleyenRef.set({
-                oyuncuId: oyuncuId,
-                zaman: Date.now()
-            }).then(() => {
-
-                console.log("Eşleşme havuzuna girdim:", yeniBekleyenRef.key);
-
-                // Sayfadan çıkarsa otomatik sil
-                yeniBekleyenRef.onDisconnect().remove();
-
-                // Eşleşme bekle
-                odaDinleyici = db.ref('odalar')
-                    .on('child_added', (snapshot) => {
-
-                        const oda = snapshot.val();
-
-                        if (!oda) return;
-
-                        if (
-                            oda.oyuncu1 === oyuncuId ||
-                            oda.oyuncu2 === oyuncuId
-                        ) {
-
-                            console.log(
-                                "🎉 EŞLEŞME BULUNDU!",
-                                oda
-                            );
-
-                            aktifOdaKey = snapshot.key;
-
-                            eslesmeTamamlandi(oda);
-                        }
-                    });
-            });
-
-        })
-        .catch((error) => {
-
-            console.error(
-                "Firebase eşleşme hatası:",
-                error
-            );
-
-            alert(
-                "Eşleşme sırasında Firebase hatası oluştu: " +
-                error.message
-            );
-        });
+        if (bekleyenler) {
+            console.log("Bekleyen oyuncu bulundu.");
+        } else {
+            console.log("Oyuncu eşleşme havuzuna giriyor.");
+        }
+    }).catch((error) => {
+        console.error("Firebase eşleşme hatası:", error);
+    });
 };
+
+
        function slotlariOlustur(elementId, mod, isMe) {
     const el = document.getElementById(elementId);
     if (!el) return;
@@ -2025,9 +1919,11 @@ let eslesmeModu = 1;
 };
 
 function cemberiSunucuyaBildir(hedefSiseIndex) {
-    if (typeof socket !== "undefined" && socket && typeof currentRoomId !== "undefined" && currentRoomId) {
-        let benimIndexim = window.kendiIndexim !== undefined ? window.kendiIndexim : 0;
-        
+    if (typeof socket !== "undefined" && socket && currentRoomId) {
+        let benimIndexim = window.kendiIndexim !== undefined
+            ? window.kendiIndexim
+            : 0;
+
         socket.emit('player_action', {
             roomId: currentRoomId,
             oyuncuIndex: benimIndexim,
