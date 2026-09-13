@@ -12,7 +12,11 @@
 
     <!-- 2. PeerJS (Sesli Sohbet Kullanıyorsan Kalmalı) -->
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+     <!-- Yeni Eşleşme Sisteminiz -->
+<script src="vs-eslesme.js"></script>
 
+<!-- Ana Oyun Kodlarınız -->
+<script src="oyun.js"></script>
     <!-- 3. Firebase (Sadece Veritabanında Kullanıcı Verisi Tutuyorsan Dursun, Eşleşmeyi Socket.io Yapıyor) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -763,6 +767,26 @@
 </div>
       <!-- MAÇ ARANIYOR BEKLEME EKRANI (Varsayılan Olarak Gizli) -->
 <div id="etkinlik-arama-ekrani" style="display: none; position: fixed; inset: 0; z-index: 9999; background: #0f172a; font-family: 'Arial Black', sans-serif; overflow: hidden;">
+    <h3>🎮 1v1 Arkadaş Düellosu</h3>
+    
+    <!-- Oda Kuran Kişi İçin -->
+    <div id="oda-kur-alan">
+        <p>Oda Kodunuz:</p>
+        <h1 id="vs-oda-kodu-display" style="color: #f1c40f; letter-spacing: 2px;">------</h1>
+        <p style="font-size: 12px; color: #aaa;">Bu kodu arkadaşınıza gönderin.</p>
+    </div>
+
+    <hr style="border: 1px solid rgba(255,255,255,0.1); margin: 15px 0;">
+
+    <!-- Odaya Katılmak İsteyen Kişi İçin -->
+    <div id="oda-katil-alan">
+        <input type="text" id="vs-oda-kodu-input" placeholder="Oda Kodunu Girin" maxlength="6" style="padding: 8px; text-align: center; font-size: 16px; border-radius: 8px; border: none; width: 150px;">
+        <button onclick="window.vsOdayaKatil()" style="padding: 8px 15px; background: #2ed573; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Katıl</button>
+    </div>
+
+    <br>
+    <button onclick="window.eslesmeyiIptalEt()" style="margin-top: 10px; background: #ff4757; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;">İptal</button>
+</div>
     <!-- VS ARAMA VE EŞLEŞME EKRANI -->
     <div id="vs-eslesme-sahnesi" style="width: 100%; height: 100%; position: relative;">
         
@@ -940,7 +964,10 @@ let localAudioStream = null;
 let mikrofonAcik = false;
 let audioCtx = null;
 let currentRoomId = null;
-
+let eslesmeModu = 1;
+let kendiIndexim = 0;
+let odaListesi4v4 = [];
+        
 window.etkinlikTimer = null;
 window.etkinlikKalanSure = 60;
 window.oyuncuListesi = [];
@@ -1777,45 +1804,132 @@ let aktifOdaKey = null;
 let odaDinleyici = null;
 
 // EŞLEŞME ARAMA FONKSİYONU
-window.odaAramayiBaslat = function(mod) {
-    eslesmeModu = mod;
-    const aramaEkrani = document.getElementById('etkinlik-arama-ekrani');
+// ==========================================
+// 1v1 ARKADAŞ İLE DÜELLO MANTIĞI (PEERJS)
+// ==========================================
+
+// 1. "1v1 Düello" Butonuna Basıldığında Çalışır
+window.vs1v1ModuBaslat = function() {
+    eslesmeModu = 1;
+    
+    // Ekran düzenlemeleri
     const modSecimi = document.getElementById('etkinlik-mod-secimi');
+    const aramaEkrani = document.getElementById('etkinlik-arama-ekrani');
+    const arkadasEkrani = document.getElementById('vs-arkadas-odalari');
 
-    if (!aramaEkrani) {
-        alert("Eşleşme ekranı bulunamadı!");
-        return;
-    }
+    if (modSecimi) modSecimi.style.display = 'none';
+    if (aramaEkrani) aramaEkrani.style.display = 'block';
+    if (arkadasEkrani) arkadasEkrani.style.display = 'block';
 
-    aramaEkrani.style.display = 'block';
+    // Rastgele 6 haneli oda kodu oluştur (Host için)
+    const olusturulanOdaKodu = Math.floor(100000 + Math.random() * 900000).toString();
+    const kodDisplay = document.getElementById('vs-oda-kodu-display');
+    if (kodDisplay) kodDisplay.innerText = olusturulanOdaKodu;
 
-    if (modSecimi) {
-        modSecimi.style.display = 'none';
-    }
+    // PeerJS Odasını Kur (Host Ol)
+    if (peer) peer.destroy();
+    peer = new Peer("VS1V1_" + olusturulanOdaKodu);
 
-    // Firebase bağlantısını kontrol et
-    if (!db) {
-        console.warn("Firebase bağlantısı bulunamadı! Simülasyon başlatılıyor.");
-        setTimeout(() => window.vsRakipBulunduSimulasyon(), 1500);
-        return;
-    }
+    isHost = true;
+    window.kendiIndexim = 0; // Host 1. oyuncu (Mavi Takım)
 
-    const bekleyenlerRef = db.ref('eslesme_havuzu/' + mod + 'v' + mod);
-
-    bekleyenlerRef.once('value').then((snapshot) => {
-        const bekleyenler = snapshot.val();
-
-        if (bekleyenler) {
-            console.log("Bekleyen oyuncu bulundu.");
-            window.vsRakipBulunduSimulasyon();
-        } else {
-            console.log("Oyuncu eşleşme havuzuna giriyor.");
-            setTimeout(() => window.vsRakipBulunduSimulasyon(), 2000);
-        }
-    }).catch((error) => {
-        console.error("Firebase eşleşme hatası:", error);
-        window.vsRakipBulunduSimulasyon();
+    peer.on('open', (id) => {
+        console.log("1v1 Oda Kuruldu! Kodu:", olusturulanOdaKodu);
     });
+
+    // Arkadaş odaya bağlandığında çalışacak olay
+    peer.on('connection', (conn) => {
+        connectedPeers = [conn];
+
+        conn.on('open', () => {
+            console.log("Arkadaş bağlandı! Oyun başlatılıyor...");
+            
+            // Arkadaşa veriyi gönder ve oyunu başlat
+            conn.send({
+                type: "VS_BASLADIS",
+                rakipIsim: window.oyuncuVerisi.isim || "Oyuncu 1",
+                rakipResim: window.oyuncuVerisi.resim || ""
+            });
+
+            // Host tarafında 1v1 sahnesini aç ve oyuna geç
+            window.oyuncuListesi = [
+                window.oyuncuVerisi.isim || "Siz", 
+                conn.playerInfo ? conn.playerInfo.name : "Arkadaşınız"
+            ];
+            
+            window.1v1OyunuBaslat();
+        });
+
+        conn.on('data', (data) => window.vsSinyalIsle(data, conn));
+    });
+};
+
+// 2. Arkadaşının Odasına Katıl Butonuna Basıldığında Çalışır
+window.vsOdayaKatil = function() {
+    const inputEl = document.getElementById('vs-oda-kodu-input');
+    const girilenKod = inputEl ? inputEl.value.trim() : '';
+
+    if (!girilenKod || girilenKod.length !== 6) {
+        alert("Lütfen 6 haneli geçerli bir Oda Kodu girin!");
+        return;
+    }
+
+    if (peer) peer.destroy();
+    peer = new Peer(); // Katılan için rastgele ID
+
+    isHost = false;
+    window.kendiIndexim = 1; // Misafir 2. oyuncu (Kırmızı Takım)
+
+    peer.on('open', () => {
+        const hedefOdaId = "VS1V1_" + girilenKod;
+        let conn = peer.connect(hedefOdaId);
+
+        conn.on('open', () => {
+            connectedPeers = [conn];
+            
+            // Host'a profil bilgilerini yolla
+            conn.send({
+                type: "VS_KATILDI",
+                name: window.oyuncuVerisi.isim || "Oyuncu 2",
+                img: window.oyuncuVerisi.resim || ""
+            });
+        });
+
+        conn.on('data', (data) => window.vsSinyalIsle(data, conn));
+
+        conn.on('error', (err) => {
+            alert("Odaya bağlanılamadı! Oda kodunu kontrol edin.");
+        });
+    });
+};
+
+// 3. 1v1 Özel Veri Sinyal İşleyicisi
+window.vsSinyalIsle = function(data, conn) {
+    if (!data) return;
+
+    if (data.type === "VS_KATILDI") {
+        conn.playerInfo = { name: data.name, img: data.img };
+    } 
+    else if (data.type === "VS_BASLADIS") {
+        // Misafir tarafında oyuncu listesini doldur ve başlat
+        window.oyuncuListesi = [
+            data.rakipIsim, 
+            window.oyuncuVerisi.isim || "Siz"
+        ];
+        window.1v1OyunuBaslat();
+    }
+};
+
+// 4. 1v1 Ekran Geçişi ve Oyunu Çalıştırma
+window.1v1OyunuBaslat = function() {
+    const aramaEkrani = document.getElementById('etkinlik-arama-ekrani');
+    const arkadasEkrani = document.getElementById('vs-arkadas-odalari');
+    
+    if (aramaEkrani) aramaEkrani.style.display = 'none';
+    if (arkadasEkrani) arkadasEkrani.style.display = 'none';
+
+    // Çember atma etkinliğini sadece 2 oyuncu ile başlatır
+    window.etkinlikOyununuBaslat();
 };
       function slotlariOlustur(elementId, mod, isMe) {
     const el = document.getElementById(elementId);
