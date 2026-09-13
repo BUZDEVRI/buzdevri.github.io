@@ -547,8 +547,7 @@
 
 <div id="seker-efekt-konteyner"></div>
 <div id="audio-container"></div>
-
-<!-- 1. ANA LOBİ EKRANI -->
+    <!-- 1. ANA LOBİ EKRANI -->
 <div id="ana-lobi" class="card-panel" style="display: block; max-width: 400px; margin: 20px auto; text-align: center; color: white;">
     <div class="bakiye-rozet">🍬 Bakiyeniz: <span id="kullanici-bakiye">0</span> Şeker</div>
     
@@ -557,7 +556,7 @@
         
         <!-- PROFİL FOTOĞRAFI ÖNİZLEME -->
         <div style="margin-bottom: 12px;">
-            <img id="profil-resim-onizleme" src="https://via.placeholder.com/80" style="width: 70px; height: 70px; border-radius: 50%; border: 3px solid #ff75c3; object-fit: cover; display: block; margin: 0 auto 8px auto;">
+            <img id="profil-resim-onizleme" src="https://via.placeholder.com/80" alt="Profil Fotoğrafı" style="width: 70px; height: 70px; border-radius: 50%; border: 3px solid #ff75c3; object-fit: cover; display: block; margin: 0 auto 8px auto;">
             <label for="profil-foto-input" style="padding: 6px 12px; background: #54a0ff; color: white; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-block;">
                 📷 Fotoğraf Seç
             </label>
@@ -566,28 +565,27 @@
 
         <input type="text" id="profil-isim-input" placeholder="Oyuncu Adınız..." style="padding: 10px; border-radius: 10px; border: none; width: 80%; margin-bottom: 10px; box-sizing: border-box;">
         <br>
-        <button onclick="window.profilIsimKaydet()" style="padding: 8px 16px; background: #2ed573; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;">Kaydet</button>
+        <button type="button" onclick="window.profilIsimKaydet()" style="padding: 8px 16px; background: #2ed573; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;">Kaydet</button>
 
         <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
 
-        <!-- ODA OLUŞTUR BUTONU (Sekme değişimi eklendi) -->
-        <button onclick="window.odaOlustur(); window.sekmeDegistir('oda-ici-ekran');" style="padding: 12px 20px; background: linear-gradient(180deg, #ff75c3 0%, #ff4757 100%); border: none; color: white; border-radius: 12px; font-weight: bold; font-size: 15px; cursor: pointer; width: 100%; margin-bottom: 12px;">Oda Oluştur 👑</button>
+        <!-- ODA OLUŞTUR BUTONU -->
+        <button type="button" onclick="window.odaOlustur(); window.sekmeDegistir('oda-ici-ekran');" style="padding: 12px 20px; background: linear-gradient(180deg, #ff75c3 0%, #ff4757 100%); border: none; color: white; border-radius: 12px; font-weight: bold; font-size: 15px; cursor: pointer; width: 100%; margin-bottom: 12px;">Oda Oluştur 👑</button>
         
         <div style="display: flex; gap: 8px;">
             <input type="text" id="oda-kodu-input" placeholder="Oda Kodu..." style="flex: 1; padding: 10px; border-radius: 10px; border: none;">
-            <button onclick="window.odayaBaglanTikla()" style="padding: 10px 15px; background: #54a0ff; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer;">Katıl 🚀</button>
+            <button type="button" onclick="window.odayaBaglanTikla()" style="padding: 10px 15px; background: #54a0ff; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer;">Katıl 🚀</button>
         </div>
     </div>
 </div>
-
-<!-- 2. OYUNLARIM EKRANI -->
+      <!-- 2. OYUNLARIM EKRANI -->
 <div id="oyunlarim-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff75c3; border-radius: 24px; padding: 25px; max-width: 450px; margin: 20px auto; color: #fff; text-align: center;">
     <h2 style="color: #fffa65;">🎮 Oyunlarım</h2>
     <p style="color: #ffeaa7; font-size: 13px;">Oynayabileceğiniz mevcut oyunlar:</p>
     <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #ff75c3; border-radius: 18px; padding: 15px; margin-top: 10px;">
         <h3 style="margin: 0; color: #ff70a6;">🍓 Meyve & Şeker Eşleştirme</h3>
         <p style="font-size: 12px; color: #a5b1c2;">4 Kişilik Çok Oyunculu Hafıza Oyunu</p>
-        <button onclick="window.ekranGoster('ana-lobi')">Anasayfa</button>
+        <button type="button" onclick="window.sekmeDegistir('ana-lobi')" style="padding: 8px 16px; background: #ff75c3; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;">Anasayfa</button>
     </div>
 </div>
 
@@ -620,14 +618,13 @@
         </div>
     </div>
 </div>
-
-<!-- 4. PARTNER EKRANI -->
+      <!-- 4. PARTNER EKRANI -->
 <div id="partner-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #facc15; border-radius: 24px; padding: 25px; max-width: 480px; margin: 20px auto; color: #fff;">
     <h2 style="color: #fffa65; text-shadow: 0 0 10px #ffa502; text-align: center; margin-top: 0;">🤝 Partner & Ödül Sistemi</h2>
     
     <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-        <button onclick="window.partnerSekmeAc('basvuru-formu')" style="flex: 1; padding: 10px; background: #ff75c3; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;">Partner Başvurusu</button>
-        <button onclick="window.partnerSekmeAc('kod-bozdur')" style="flex: 1; padding: 10px; background: #2ed573; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;">🎁 Kod Bozdur</button>
+        <button type="button" onclick="window.partnerSekmeAc('basvuru-formu')" style="flex: 1; padding: 10px; background: #ff75c3; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;">Partner Başvurusu</button>
+        <button type="button" onclick="window.partnerSekmeAc('kod-bozdur')" style="flex: 1; padding: 10px; background: #2ed573; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;">🎁 Kod Bozdur</button>
     </div>
 
     <div id="basvuru-formu" style="display: block; background: rgba(20, 10, 35, 0.7); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
@@ -637,7 +634,7 @@
         <input type="text" id="partner-kanal-link" placeholder="Kanal / Yayın Linkiniz (TikTok, YouTube vb.)" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ff75c3; margin-bottom: 10px; box-sizing: border-box; background: #1e0a1b; color: white;">
         <input type="text" id="partner-iletisim" placeholder="Discord / E-posta Adresiniz" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ff75c3; margin-bottom: 12px; box-sizing: border-box; background: #1e0a1b; color: white;">
         
-        <button onclick="window.partnerBasvuruGonder()" style="width: 100%; padding: 12px; background: linear-gradient(180deg, #facc15 0%, #eab308 100%); border: none; color: #1e1b4b; border-radius: 10px; font-weight: 900; cursor: pointer;">Başvuruyu Gönder 🚀</button>
+        <button type="button" onclick="window.partnerBasvuruGonder()" style="width: 100%; padding: 12px; background: linear-gradient(180deg, #facc15 0%, #eab308 100%); border: none; color: #1e1b4b; border-radius: 10px; font-weight: 900; cursor: pointer;">Başvuruyu Gönder 🚀</button>
     </div>
 
     <div id="kod-bozdur" style="display: none; background: rgba(20, 10, 35, 0.7); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
@@ -646,7 +643,7 @@
         
         <div style="display: flex; gap: 8px;">
             <input type="text" id="promosyon-kodu-input" placeholder="Örn: SEKER2026" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #2ed573; background: #1e0a1b; color: white; font-weight: bold; text-transform: uppercase;">
-            <button onclick="window.kodKullan()" style="padding: 10px 16px; background: #2ed573; border: none; color: white; border-radius: 8px; font-weight: bold; cursor: pointer;">Kullan</button>
+            <button type="button" onclick="window.kodKullan()" style="padding: 10px 16px; background: #2ed573; border: none; color: white; border-radius: 8px; font-weight: bold; cursor: pointer;">Kullan</button>
         </div>
     </div>
 </div>
@@ -660,8 +657,7 @@
         <p>🌐 <strong>Web:</strong> www.sekerodasi.com</p>
     </div>
 </div>
-
-<!-- 6. MAĞAZA EKRANI -->
+      <!-- 6. MAĞAZA EKRANI -->
 <div id="magaza-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff75c3; border-radius: 24px; box-shadow: 0 0 25px rgba(255, 117, 195, 0.4); padding: 25px; max-width: 480px; margin: 20px auto; color: #fff;">
     <div style="text-align: center; margin-bottom: 20px;">
         <h2 style="color: #fffa65; text-shadow: 0 0 10px #ffa502; font-weight: 900; margin: 0 0 8px 0;">🛒 Şeker & Büyü Mağazası</h2>
@@ -669,8 +665,8 @@
     </div>
 
     <div style="display: flex; gap: 8px; margin-bottom: 15px;">
-        <button onclick="window.magazaKategoriAc('guc-kategori')" style="flex: 1; padding: 8px; background: #ff75c3; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 12px;">⚡ Güçler</button>
-        <button onclick="window.magazaKategoriAc('tema-kategori')" style="flex: 1; padding: 8px; background: #54a0ff; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 12px;">🎨 Kart Temaları</button>
+        <button type="button" onclick="window.magazaKategoriAc('guc-kategori')" style="flex: 1; padding: 8px; background: #ff75c3; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 12px;">⚡ Güçler</button>
+        <button type="button" onclick="window.magazaKategoriAc('tema-kategori')" style="flex: 1; padding: 8px; background: #54a0ff; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 12px;">🎨 Kart Temaları</button>
     </div>
 
     <div id="guc-kategori" style="display: flex; flex-direction: column; gap: 12px;">
@@ -681,7 +677,7 @@
                 <p style="margin: 2px 0; color: #a5b1c2; font-size: 11px;">Tüm kartları otomatik eşleştirir.</p>
                 <div style="color: #fffa65; font-weight: bold; font-size: 12px;">150 🍬 Şeker</div>
             </div>
-            <button onclick="window.esyaSatinAl('cadi', 150)" style="background: #facc15; border: none; border-radius: 10px; color: #1e1b4b; font-weight: 900; padding: 8px 12px; cursor: pointer; font-size: 12px;">Satın Al</button>
+            <button type="button" onclick="window.esyaSatinAl('cadi', 150)" style="background: #facc15; border: none; border-radius: 10px; color: #1e1b4b; font-weight: 900; padding: 8px 12px; cursor: pointer; font-size: 12px;">Satın Al</button>
         </div>
 
         <div class="magaza-urun-kart" style="background: rgba(20, 10, 35, 0.7); border: 2px solid #2ed573; border-radius: 18px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
@@ -691,7 +687,7 @@
                 <p style="margin: 2px 0; color: #a5b1c2; font-size: 11px;">Tüm kartları 2 saniye açık gösterir.</p>
                 <div style="color: #fffa65; font-weight: bold; font-size: 12px;">75 🍬 Şeker</div>
             </div>
-            <button onclick="window.esyaSatinAl('kurbaga', 75)" style="background: #facc15; border: none; border-radius: 10px; color: #1e1b4b; font-weight: 900; padding: 8px 12px; cursor: pointer; font-size: 12px;">Satın Al</button>
+            <button type="button" onclick="window.esyaSatinAl('kurbaga', 75)" style="background: #facc15; border: none; border-radius: 10px; color: #1e1b4b; font-weight: 900; padding: 8px 12px; cursor: pointer; font-size: 12px;">Satın Al</button>
         </div>
     </div>
 
@@ -703,7 +699,7 @@
                 <p style="margin: 2px 0; color: #a5b1c2; font-size: 11px;">Kart simgelerini çikolata ve pastalara dönüştürür.</p>
                 <div style="color: #fffa65; font-weight: bold; font-size: 12px;">100 🍬 Şeker</div>
             </div>
-            <button onclick="window.temaSatinAl('tatlilar', 100)" style="background: #54a0ff; border: none; border-radius: 10px; color: white; font-weight: 900; padding: 8px 12px; cursor: pointer; font-size: 12px;">Kilidi Aç</button>
+            <button type="button" onclick="window.temaSatinAl('tatlilar', 100)" style="background: #54a0ff; border: none; border-radius: 10px; color: white; font-weight: 900; padding: 8px 12px; cursor: pointer; font-size: 12px;">Kilidi Aç</button>
         </div>
 
         <div class="magaza-urun-kart" style="background: rgba(20, 10, 35, 0.7); border: 2px solid #fdcb6e; border-radius: 18px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
@@ -713,33 +709,35 @@
                 <p style="margin: 2px 0; color: #a5b1c2; font-size: 11px;">Kart simgelerini sevimli hayvanlara dönüştürür.</p>
                 <div style="color: #fffa65; font-weight: bold; font-size: 12px;">120 🍬 Şeker</div>
             </div>
-            <button onclick="window.temaSatinAl('hayvanlar', 120)" style="background: #54a0ff; border: none; border-radius: 10px; color: white; font-weight: 900; padding: 8px 12px; cursor: pointer; font-size: 12px;">Kilidi Aç</button>
+            <button type="button" onclick="window.temaSatinAl('hayvanlar', 120)" style="background: #54a0ff; border: none; border-radius: 10px; color: white; font-weight: 900; padding: 8px 12px; cursor: pointer; font-size: 12px;">Kilidi Aç</button>
         </div>
     </div>
 </div>
-   <!-- ETKİNLİKLER VE EŞLEŞTİRME MENÜSÜ -->
-<div id="etkinlikler-ekrani" class="card-panel" style="display: block; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff9f43; border-radius: 24px; box-shadow: 0 0 25px rgba(255, 159, 67, 0.4); padding: 25px; max-width: 480px; margin: 20px auto; color: #fff;">
+      <!-- 7. ETKİNLİKLER VE EŞLEŞTİRME MENÜSÜ -->
+<div id="etkinlikler-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff9f43; border-radius: 24px; box-shadow: 0 0 25px rgba(255, 159, 67, 0.4); padding: 25px; max-width: 480px; margin: 20px auto; color: #fff;">
     <div style="text-align: center; margin-bottom: 20px;">
         <h2 style="color: #feca57; text-shadow: 0 0 10px #ff9f43; font-weight: 900; margin: 0 0 8px 0;">🎉 Özel Etkinlikler & Ödüller</h2>
         <p style="color: #ffeaa7; font-size: 13px; font-weight: 600; margin: 0;">Mod seçin ve diğer oyuncularla eşleşin!</p>
     </div>
 
-    <div id="etkinlik-mod-secimi">
-    <h3 style="color: #fff; margin-bottom: 10px;">ETKİNLİK MODU SEÇİN</h3>
-    <div class="mod-kart-kapsayici">
-        <div class="mod-kart" onclick="window.odaAramayiBaslat(1)">1 v 1 Düello</div>
-        <div class="mod-kart" onclick="window.odaAramayiBaslat(4)">4 v 4 Takım</div>
-    </div>
-    </div>
-    
-    <!-- Günlük Ödül Kutu -->
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+        <!-- Mod Seçimi Paneli -->
+        <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #ff75c3; border-radius: 18px; padding: 14px; text-align: center;">
+            <h3 style="color: #fff; margin: 0 0 10px 0; font-size: 15px;">ETKİNLİK MODU SEÇİN</h3>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" onclick="window.odaAramayiBaslat(1)" style="flex: 1; padding: 12px; background: linear-gradient(180deg, #ff4757, #ff6b81); border: none; color: white; border-radius: 12px; font-weight: bold; cursor: pointer;">1 v 1 Düello</button>
+                <button type="button" onclick="window.odaAramayiBaslat(4)" style="flex: 1; padding: 12px; background: linear-gradient(180deg, #2ed573, #1e90ff); border: none; color: white; border-radius: 12px; font-weight: bold; cursor: pointer;">4 v 4 Takım</button>
+            </div>
+        </div>
+
+        <!-- Günlük Ödül Kutusu -->
         <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #ff9f43; border-radius: 18px; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
             <div style="font-size: 32px;">🎁</div>
             <div style="flex: 1; text-align: left;">
                 <h3 style="margin: 0; color: #feca57; font-size: 15px; font-weight: bold;">Günlük Giriş Ödülü</h3>
                 <p style="margin: 2px 0 0 0; color: #a5b1c2; font-size: 11px;">Her gün 50 Şekerinizi alın!</p>
             </div>
-            <button onclick="window.gunlukOdulAl()" style="background: linear-gradient(180deg, #2ed573 0%, #26af5f 100%); border: none; border-radius: 12px; color: white; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">Ödülü Al</button>
+            <button type="button" onclick="window.gunlukOdulAl()" style="background: linear-gradient(180deg, #2ed573 0%, #26af5f 100%); border: none; border-radius: 12px; color: white; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">Ödülü Al</button>
         </div>
 
         <!-- 2 Kişilik Eşleşme Kartı -->
@@ -749,7 +747,7 @@
                 <h3 style="margin: 0; color: #f1c40f; font-size: 15px; font-weight: bold;">Çember Atma (1v1)</h3>
                 <p style="margin: 2px 0 0 0; color: #a5b1c2; font-size: 11px;">2 Kişilik Hızlı Eşleşme</p>
             </div>
-            <button onclick="window.odaAramayiBaslat(2)" style="background: linear-gradient(180deg, #f1c40f 0%, #d4ac0d 100%); border: none; border-radius: 12px; color: #000; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">2 Kişilik Oyna 💍</button>
+            <button type="button" onclick="window.odaAramayiBaslat(2)" style="background: linear-gradient(180deg, #f1c40f 0%, #d4ac0d 100%); border: none; border-radius: 12px; color: #000; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">2 Kişilik Oyna 💍</button>
         </div>
 
         <!-- 5 Kişilik Eşleşme Kartı -->
@@ -759,52 +757,25 @@
                 <h3 style="margin: 0; color: #e74c3c; font-size: 15px; font-weight: bold;">Çember Atma (5 Kişilik)</h3>
                 <p style="margin: 2px 0 0 0; color: #a5b1c2; font-size: 11px;">5 Kişilik Büyük Yarış</p>
             </div>
-            <button onclick="window.odaAramayiBaslat(5)" style="background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%); border: none; border-radius: 12px; color: #fff; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">5 Kişilik Oyna 💍</button>
+            <button type="button" onclick="window.odaAramayiBaslat(5)" style="background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%); border: none; border-radius: 12px; color: #fff; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">5 Kişilik Oyna 💍</button>
         </div>
     </div>
-
-    <!-- MAÇ ARANIYOR BEKLEME EKRANI (Varsayılan Olarak Gizli) -->
-    <div id="etkinlik-arama-ekrani" style="display: none; position: fixed; inset: 0; z-index: 9999; background: #0f172a; font-family: 'Arial Black', sans-serif; overflow: hidden;">
-    
-    <!-- MOD SEÇİM EKRANI (Arama Başlamadan Önce) -->
-    <div id="etkinlik-mod-secimi">
-    <h2>ETKİNLİK MODU SEÇİN</h2>
-
-    <button type="button" onclick="window.odaAramayiBaslat(1)">
-        1v1 Düello
-    </button>
-
-    <button type="button" onclick="window.odaAramayiBaslat(4)">
-        4v4 Takım
-    </button>
-    </div>
-
+</div>
+      <!-- MAÇ ARANIYOR BEKLEME EKRANI (Varsayılan Olarak Gizli) -->
+<div id="etkinlik-arama-ekrani" style="display: none; position: fixed; inset: 0; z-index: 9999; background: #0f172a; font-family: 'Arial Black', sans-serif; overflow: hidden;">
     <!-- VS ARAMA VE EŞLEŞME EKRANI -->
-    <div id="vs-eslesme-sahnesi" style="display: none; width: 100%; height: 100%; position: relative;">
+    <div id="vs-eslesme-sahnesi" style="width: 100%; height: 100%; position: relative;">
         
         <!-- Sol Taraf (Mavi Takım / Siz) -->
         <div class="vs-taraf vs-mavi" style="position: absolute; top: -20%; left: -20%; width: 75%; height: 140%; background: linear-gradient(135deg, #1e90ff, #00d2d3); transform: rotate(-12deg); display: flex; align-items: center; justify-content: center; box-shadow: 10px 0 30px rgba(0,0,0,0.5); z-index: 1;">
             <div class="vs-icerik" style="transform: rotate(12deg); display: flex; flex-direction: column; align-items: center; color: #fff; gap: 10px;">
                 <div style="position: relative;">
-                    <img id="mavi-oyuncu-img" src="https://via.placeholder.com/100" style="width: 100px; height: 100px; border-radius: 25px; border: 4px solid #fff; box-shadow: 0 6px 15px rgba(0,0,0,0.4); object-fit: cover;">
+                    <img id="mavi-oyuncu-img" src="https://via.placeholder.com/100" alt="Oyuncu Resmi" style="width: 100px; height: 100px; border-radius: 25px; border: 4px solid #fff; box-shadow: 0 6px 15px rgba(0,0,0,0.4); object-fit: cover;">
                 </div>
                 <div id="mavi-oyuncu-isim" style="font-size: 20px; font-weight: 900; text-shadow: 2px 2px 4px #000;">Oyuncu</div>
                 
                 <!-- 4v4 Slotlar / Karakter Kartları -->
                 <div id="mavi-takim-slotlari" style="display: flex; gap: 6px; background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 12px;"></div>
-            </div>
-        </div>
-
-        <!-- Sağ Taraf (Kırmızı Takım / Rakip) -->
-        <div class="vs-taraf vs-kirmizi" style="position: absolute; bottom: -20%; right: -20%; width: 75%; height: 140%; background: linear-gradient(135deg, #ff4757, #ff6b81); transform: rotate(-12deg); display: flex; align-items: center; justify-content: center; box-shadow: -10px 0 30px rgba(0,0,0,0.5); z-index: 1;">
-            <div class="vs-icerik" style="transform: rotate(12deg); display: flex; flex-direction: column; align-items: center; color: #fff; gap: 10px;">
-                <div style="position: relative;">
-                    <img id="kirmizi-oyuncu-img" src="https://via.placeholder.com/100" style="width: 100px; height: 100px; border-radius: 25px; border: 4px solid #fff; box-shadow: 0 6px 15px rgba(0,0,0,0.4); object-fit: cover;">
-                </div>
-                <div id="kirmizi-oyuncu-isim" style="font-size: 20px; font-weight: 900; text-shadow: 2px 2px 4px #000;">Aranıyor...</div>
-                
-                <!-- 4v4 Slotlar / Karakter Kartları -->
-                <div id="kirmizi-takim-slotlari" style="display: flex; gap: 6px; background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 12px;"></div>
             </div>
         </div>
 
@@ -822,18 +793,16 @@
 
         <!-- İPTAL BUTONU -->
         <div style="position: absolute; bottom: 30px; right: 30px; z-index: 10;">
-            <button onclick="window.eslesmeyiIptalEt()" style="padding: 12px 30px; background: #57606f; color: #fff; border: 3px solid #a4b0be; border-radius: 15px; font-weight: 900; font-size: 16px; cursor: pointer; box-shadow: 0 4px 0 #2f3542;">İptal et</button>
+            <button type="button" onclick="window.eslesmeyiIptalEt()" style="padding: 12px 30px; background: #57606f; color: #fff; border: 3px solid #a4b0be; border-radius: 15px; font-weight: 900; font-size: 16px; cursor: pointer; box-shadow: 0 4px 0 #2f3542;">İptal Et</button>
         </div>
-
     </div>
-    </div>
-      
-<!-- 8. ARKADAŞLAR EKRANI -->
+</div>
+      <!-- 8. ARKADAŞLAR EKRANI -->
 <div id="arkadaslar-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.9); backdrop-filter: blur(12px); border: 3px solid #ff75c3; border-radius: 24px; padding: 20px; max-width: 400px; margin: 20px auto; color: #fff;">
     <h2 style="color: #fffa65; text-shadow: 0 0 10px #ffa502; font-weight: 900; text-align: center; margin-top: 0;">👥 Şeker Arkadaşlarım</h2>
     <div style="margin: 15px 0; display: flex; gap: 10px; justify-content: center;">
         <input type="text" id="arkadas-id-input" placeholder="Arkadaşının Şeker İsmi..." style="padding: 8px; border-radius: 8px; border: 1px solid #ff69b4; flex: 1;">
-        <button onclick="window.arkadasEkle()" style="padding: 8px 15px; background: #ff69b4; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Ekle</button>
+        <button type="button" onclick="window.arkadasEkle()" style="padding: 8px 15px; background: #ff69b4; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Ekle</button>
     </div>
 
     <div style="background: rgba(255, 255, 255, 0.1); border: 2px dashed #ff75c3; border-radius: 16px; padding: 10px; text-align: center; margin-bottom: 15px;">
@@ -843,6 +812,8 @@
 
     <div id="arkadas-listesi" style="margin-bottom: 15px;"></div>
 </div>
+
+<!-- 9. ODA İÇİ EKRANI -->
 <div id="oda-ici-ekran" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff75c3; border-radius: 24px; padding: 25px; text-align: center; max-width: 400px; margin: 20px auto; color: #fff;">
     <h2 style="color: #fffa65; text-shadow: 0 0 10px #ffa502; font-weight: 900; margin-bottom: 15px;">👑 Şeker Oyun Odası</h2>
     <p style="margin: 15px 0; color: #74b9ff; font-weight: bold; font-size: 15px;">
@@ -855,33 +826,35 @@
     <div style="margin: 15px 0; color: #2ed573; font-weight: bold;">
         Katılan Oyuncu Sayısı: <span id="oyuncu-sayisi-display">1</span> / 4
     </div>
-     <div id="kurucu-oyuncu-listesi" style="margin: 20px 0; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 12px; max-width: 320px; width: 100%;">
+    
+    <div id="kurucu-oyuncu-listesi" style="margin: 20px 0; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 12px; max-width: 320px; width: 100%;">
         <!-- Katılan oyuncular ve kurucu buraya listelenecek -->
-     </div>
+    </div>
+    
     <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
-        <button onclick="window.oyunuBaslatButonunaBas()" style="background: linear-gradient(180deg, #facc15 0%, #eab308 100%); border: 2px solid #fffa65; border-radius: 16px; color: #1e1b4b; font-weight: 900; font-size: 16px; padding: 12px; cursor: pointer;">Oyunu Başlat 🚀</button>
-        <button onclick="window.odadanCik(); window.sekmeDegistir('ana-lobi');" style="background: linear-gradient(180deg, #ff4757 0%, #ff6b81 100%); border: 2px solid #ff70a6; border-radius: 16px; color: white; font-weight: 900; font-size: 15px; padding: 12px; cursor: pointer;">Odadan Çık 🚪</button>
+        <button type="button" onclick="window.oyunuBaslatButonunaBas()" style="background: linear-gradient(180deg, #facc15 0%, #eab308 100%); border: 2px solid #fffa65; border-radius: 16px; color: #1e1b4b; font-weight: 900; font-size: 16px; padding: 12px; cursor: pointer;">Oyunu Başlat 🚀</button>
+        <button type="button" onclick="window.odadanCik(); window.sekmeDegistir('ana-lobi');" style="background: linear-gradient(180deg, #ff4757 0%, #ff6b81 100%); border: 2px solid #ff70a6; border-radius: 16px; color: white; font-weight: 900; font-size: 15px; padding: 12px; cursor: pointer;">Odadan Çık 🚪</button>
     </div>
 </div>
-
-<!-- 10. MİSAFİR BEKLEME EKRANI -->
+      <!-- 10. MİSAFİR BEKLEME EKRANI -->
 <div id="misafir-bekleme-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #54a0ff; border-radius: 24px; padding: 25px; text-align: center; max-width: 400px; margin: 20px auto; color: #fff;">
     <h2 style="color: #74b9ff; text-shadow: 0 0 10px #54a0ff; font-weight: 900; margin-bottom: 15px;">⏳ Odadasınız</h2>
     <p style="color: #ffeaa7; margin: 15px 0; font-size: 14px; font-weight: 600;">Oda sahibi oyunu başlatınca ekranınız otomatik açılacaktır... 🍭</p>
     <div style="margin-top: 20px;">
         <div id="misafir-oyuncu-listesi" style="margin: 20px 0; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 12px;">
-        <!-- Oyuncular buraya dinamik dolacak -->
+            <!-- Oyuncular buraya dinamik dolacak -->
         </div>
-        <button onclick="window.odadanCik(); window.sekmeDegistir('ana-lobi');" style="background: linear-gradient(180deg, #ff4757 0%, #ff6b81 100%); border: 2px solid #ff70a6; border-radius: 16px; color: white; font-weight: 900; font-size: 15px; padding: 12px; cursor: pointer; width: 100%;">Odadan Çık 🚪</button>
+        <button type="button" onclick="window.odadanCik(); window.sekmeDegistir('ana-lobi');" style="background: linear-gradient(180deg, #ff4757 0%, #ff6b81 100%); border: 2px solid #ff70a6; border-radius: 16px; color: white; font-weight: 900; font-size: 15px; padding: 12px; cursor: pointer; width: 100%;">Odadan Çık 🚪</button>
     </div>
 </div>
-      <!-- 11. OYUN EKRANI -->
+
+<!-- 11. OYUN EKRANI -->
 <div id="game-screen" class="card-panel" style="display: none; flex-direction: column; gap: 15px; padding: 10px;">
-    <button id="btn-mikrofon" onclick="window.mikrofonDurumDegistir()" style="padding: 8px 16px; font-size: 13px; font-weight: bold; background: linear-gradient(180deg, #2ed573, #26af5f); border: 2px solid #ffffff; border-radius: 16px; color: white; cursor: pointer;">
+    <button id="btn-mikrofon" type="button" onclick="window.mikrofonDurumDegistir()" style="padding: 8px 16px; font-size: 13px; font-weight: bold; background: linear-gradient(180deg, #2ed573, #26af5f); border: 2px solid #ffffff; border-radius: 16px; color: white; cursor: pointer;">
         🎙️ Mikrofonu Aç
     </button>
     
-    <div id="envanter-modal" class="modal">
+    <div id="envanter-modal" class="modal" style="display: none;">
         <div class="modal-icerik">
             <span class="kapat" onclick="window.kapatEnvanter()">&times;</span>
             <h2 style="color: #fffa65;">🎒 Şeker Envanterim</h2>
@@ -895,16 +868,15 @@
         </div>
         <div style="display: flex; gap: 6px;">
             <input type="text" id="chat-input" placeholder="Mesaj yazın..." style="flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #ff75c3; background: #1e0a1b; color: white; font-size: 12px;">
-            <button onclick="window.chatMesajGonder()" style="padding: 8px 14px; background: #ff75c3; border: none; color: white; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;">Gönder</button>
+            <button type="button" onclick="window.chatMesajGonder()" style="padding: 8px 14px; background: #ff75c3; border: none; color: white; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;">Gönder</button>
         </div>
     </div>
     
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: rgba(25, 15, 40, 0.85); backdrop-filter: blur(10px); border-radius: 20px; border: 2px solid #ff75c3;">
-        <button onclick="window.sekmeDegistir('ana-lobi')" style="padding: 8px 16px; font-size: 13px; font-weight: bold; background: linear-gradient(180deg, #ff4757, #ff6b81); border: 2px solid #ff70a6; border-radius: 16px; color: white; cursor: pointer;">🏠 Lobiye Dön</button>
+        <button type="button" onclick="window.sekmeDegistir('ana-lobi')" style="padding: 8px 16px; font-size: 13px; font-weight: bold; background: linear-gradient(180deg, #ff4757, #ff6b81); border: 2px solid #ff70a6; border-radius: 16px; color: white; cursor: pointer;">🏠 Lobiye Dön</button>
         <div style="color: #fffa65; font-weight: bold; font-size: 16px;">Skorunuz: <span id="skor-siz">0</span></div>
-        <button onclick="window.odadanCik(); window.sekmeDegistir('ana-lobi');" style="padding: 8px 16px; font-size: 13px; font-weight: bold; background: linear-gradient(180deg, #ff4757, #ff6b81); border: 2px solid #ff70a6; border-radius: 16px; color: white; cursor: pointer;">Odadan Çık 🚪</button>
+        <button type="button" onclick="window.odadanCik(); window.sekmeDegistir('ana-lobi');" style="padding: 8px 16px; font-size: 13px; font-weight: bold; background: linear-gradient(180deg, #ff4757, #ff6b81); border: 2px solid #ff70a6; border-radius: 16px; color: white; cursor: pointer;">Odadan Çık 🚪</button>
     </div>
-
     <!-- 4 KİŞİLİK SAVAŞ ALANI -->
     <div class="savas-alani"></div>
 </div>
@@ -945,7 +917,7 @@ async function apkGuncellemeKontrol() {
         if (!res.ok) return;
         
         const data = await res.json();
-        if (data.version && data.version !== MEVCUT_VERSIYON) {
+        if (data.version && typeof MEVCUT_VERSIYON !== "undefined" && data.version !== MEVCUT_VERSIYON) {
             const onay = confirm(`🎉 Yeni Güncelleme Bulundu (v${data.version})!\n\n${data.notes || ''}\n\nYeni APK'yı indirmek ister misiniz?`);
             if (onay && data.downloadUrl) {
                 window.location.href = data.downloadUrl;
@@ -1029,7 +1001,7 @@ function profilYukle() {
 
     window.verileriKaydet();
         }
-        // ==========================================
+       // ==========================================
 // 3. SES EFEKTLERİ (WEB AUDIO API)
 // ==========================================
 function initAudio() {
@@ -1077,7 +1049,7 @@ window.SESLER = {
         } catch(e){}
     }
 };
-        // ==========================================
+       // ==========================================
 // 4. EKRAN VE NAVİGASYON YÖNETİMİ
 // ==========================================
 window.ekranGoster = function(ekranId) {
@@ -1108,7 +1080,7 @@ window.etkinlikEkraniniAc = function() {
 window.etkinliktenCik = function() {
     window.ekranGoster('ana-lobi');
 };
-        window.sekmeDegistir = function(ekranId, btnEl) {
+     window.sekmeDegistir = function(ekranId, btnEl) {
     window.ekranGoster(ekranId);
     if (btnEl) {
         const btns = document.querySelectorAll('.nav-btn');
@@ -1167,7 +1139,7 @@ window.oyunuBaslatMeyveleriDagit = function(toplamOyuncu = 4) {
         savasAlani.appendChild(oyuncuKutusu);
     }
 };
-      window.odaOyunuBaslat = function() {
+    window.odaOyunuBaslat = function() {
     if (!isHost) return;
     const toplamOyuncu = connectedPeers.length + 1;
     
@@ -1193,7 +1165,7 @@ window.kartTikla = function(pIndex, index, meyve) {
         meyve: meyve
     });
 }; 
-      // ==========================================
+    // ==========================================
 // 6. PEERJS & MİKROFON İŞLEMLERİ
 // ==========================================
 function tumOyuncularaGonder(data) {
@@ -1252,7 +1224,7 @@ window.odaOlustur = function() {
         sesAkisiniDinle(call);
     });
 };
-       window.odaOyuncuListesiniGuncelle = function() {
+    window.odaOyuncuListesiniGuncelle = function() {
     const kurucuKonteyner = document.getElementById('kurucu-oyuncu-listesi');
     const sayiEl = document.getElementById('oyuncu-sayisi-display');
     
@@ -1306,7 +1278,7 @@ window.odaOlustur = function() {
         });
     }
 };
-    window.odayaBaglanTikla = function() {
+      window.odayaBaglanTikla = function() {
     if (typeof Peer === "undefined") {
         alert("PeerJS kütüphanesi yüklenemedi!");
         return;
@@ -1366,7 +1338,7 @@ window.sinyalIsle = function(data, senderConn) {
         window.oyunuBaslatMeyveleriDagit(data.toplamOyuncu || 4);
     }
 };
-       window.misafirOdaListesiniYazdir = function(oyuncular) {
+        window.misafirOdaListesiniYazdir = function(oyuncular) {
     const konteyner = document.getElementById('misafir-oyuncu-listesi');
     if (!konteyner) return;
 
@@ -1393,7 +1365,8 @@ window.sinyalIsle = function(data, senderConn) {
         `;
     }).join('');
 };
-      async function mikrofonuBaslat() {
+
+async function mikrofonuBaslat() {
     try {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             alert("⚠️ Tarayıcınız ses kaydını desteklemiyor.");
@@ -1422,9 +1395,8 @@ window.sinyalIsle = function(data, senderConn) {
         console.error("Mikrofon izni alınamadı:", err);
         alert("⚠️ Mikrofon izni verilemedi veya cihaz bulunamadı!");
     }
-}
-
-window.mikrofonDurumDegistir = function() {
+        }
+        window.mikrofonDurumDegistir = function() {
     if (!localAudioStream) {
         mikrofonuBaslat();
         return;
@@ -1444,7 +1416,8 @@ window.mikrofonDurumDegistir = function() {
 
     if (isHost) window.odaOyuncuListesiniGuncelle();
 };
-        function sesAkisiniDinle(call) {
+
+function sesAkisiniDinle(call) {
     call.on('stream', (remoteStream) => {
         let audioEl = document.getElementById(`audio-${call.peer}`);
         if (!audioEl) {
@@ -1491,7 +1464,7 @@ window.profilIsimKaydet = function() {
         alert("✅ Profil başarıyla güncellendi!");
     }
 };
-     window.gunlukOdulAl = function() {
+    window.gunlukOdulAl = function() {
     const bugun = new Date().toDateString();
     const sonAlinanTarih = localStorage.getItem('son_gunluk_odul_tarihi');
 
@@ -1516,7 +1489,8 @@ window.profilIsimKaydet = function() {
         btn.disabled = true;
     }
 };
-      function gunlukOdulButonKontrol() {
+
+function gunlukOdulButonKontrol() {
     const bugun = new Date().toDateString();
     const sonAlinanTarih = localStorage.getItem('son_gunluk_odul_tarihi');
     const btn = document.getElementById('btn-gunluk-odul');
@@ -1526,9 +1500,8 @@ window.profilIsimKaydet = function() {
         btn.style.background = "#57606f";
         btn.disabled = true;
     }
-}
-
-window.kodKullan = function() {
+        }
+        window.kodKullan = function() {
     const input = document.getElementById('promosyon-kodu-input');
     const kod = input ? input.value.trim().toUpperCase() : '';
 
@@ -1556,7 +1529,8 @@ window.kodKullan = function() {
         alert("❌ Geçersiz veya süresi dolmuş kod!");
     }
 };
-      window.temaSatinAl = function(temaAdi, fiyat) {
+
+window.temaSatinAl = function(temaAdi, fiyat) {
     if (window.oyuncuVerisi.sahipOlunanlar.includes(temaAdi)) {
         window.oyuncuVerisi.aktifSkin = temaAdi;
         alert(`🎨 ${temaAdi.toUpperCase()} teması aktif edildi!`);
@@ -1575,7 +1549,7 @@ window.kodKullan = function() {
         alert("❌ Yetersiz Şeker Puanı!");
     }
 };
-       // ==========================================
+     // ==========================================
 // 8. ETKİNLİK (ÇEMBER ATMA) OYUN MANTIĞI
 // ==========================================
 window.etkinlikOyununuBaslat = function() {
@@ -1610,7 +1584,7 @@ window.etkinlikOyununuBaslat = function() {
         }
     }, 1000);
 };
-      window.etkinlikArayuzuGuncelle = function() {
+       window.etkinlikArayuzuGuncelle = function() {
     const alan = document.getElementById('cember-oyuncular-alani');
     if (!alan) return;
 
@@ -1674,7 +1648,7 @@ window.etkinlikOyununuBaslat = function() {
     html += `</div>`;
     alan.innerHTML = html;
 };
-     window.cemberiFirlat = function() {
+       window.cemberiFirlat = function() {
     if (window.etkinlikKalanSure <= 0) return;
     
     let benimIndex = window.kendiIndexim !== undefined ? window.kendiIndexim : 0;
@@ -1738,8 +1712,7 @@ window.etkinlikOyununuBaslat = function() {
         callback();
     }, 350);
 };
-
-window.botaCemberEkle = function(botIndex) {
+        window.botaCemberEkle = function(botIndex) {
     let siseler = window.oyuncuSiseDurumlari[botIndex];
     if (!siseler) return;
     for (let i = 0; i < 10; i++) {
@@ -1750,7 +1723,8 @@ window.botaCemberEkle = function(botIndex) {
     }
     window.etkinlikArayuzuGuncelle();
 };
-    window.oyunBittiKazanan = function(kazananIndex) {
+
+window.oyunBittiKazanan = function(kazananIndex) {
     let varsayilanIsimler = ["Siz", "Ali", "Ayşe", "Mehmet", "Zeynep"];
     let isimler = window.oyuncuListesi && window.oyuncuListesi.length > 0 ? window.oyuncuListesi : varsayilanIsimler;
     let kazananIsim = isimler[kazananIndex] || "Oyuncu";
@@ -1775,40 +1749,38 @@ window.kazananiBelirleVeBidir = function() {
     });
     window.oyunBittiKazanan(kazananIndex);
 };
-        // ==========================================
-// VS EŞLEŞTİRME VE DÜELLO MANTIĞI (1v1 & 4v4)
+       // ==========================================
+// 9. FIREBASE & VS EŞLEŞTİRME VE DÜELLO MANTIĞI (1v1 & 4v4)
 // ==========================================
 let eslesmeAramaTimer = null;
 let eslesmeModu = 1; 
 
- // 2. FIREBASE BAGLANTI AYARLARI (Kendi Firebase bilgilerinizle değiştirin)
-    const firebaseConfig = {
-        apiKey: "AIzaSyAW1Xh8lVhHCUaimrO9ILqvcRqxC2OKHzY",
-        authDomain: "meyve-oyunu-d8b38.firebaseapp.com",
-        databaseURL: "https://meyve-oyunu-d8b38-default-rtdb.firebaseio.com",
-        projectId: "meyve-oyunu-d8b38",
-        storageBucket: "meyve-oyunu-d8b38.firebasestorage.app",
-        messagingSenderId: "1084491198145",
-        appId: "1:1084491198145:web:cbcd3f1e37e2212efcee40"
-    };
-
-    // Firebase'i Başlat
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    const db = firebase.database();
-
-    // Rastgele Oyuncu Kimliği Oluştur
-    const oyuncuId = "Oyuncu_" + Math.floor(1000 + Math.random() * 9000);
-    let aktifOdaKey = null;
-    let odaDinleyici = null;
-
-    // 3. EŞLEŞME ARAMA FONKSİYONU (Butonlara basılınca bu çalışır)
-    window.odaAramayiBaslat = function(mod) {
-    alert("Buton çalışıyor! Mod: " + mod);
+const firebaseConfig = {
+    apiKey: "AIzaSyAW1Xh8lVhHCUaimrO9ILqvcRqxC2OKHzY",
+    authDomain: "meyve-oyunu-d8b38.firebaseapp.com",
+    databaseURL: "https://meyve-oyunu-d8b38-default-rtdb.firebaseio.com",
+    projectId: "meyve-oyunu-d8b38",
+    storageBucket: "meyve-oyunu-d8b38.firebasestorage.app",
+    messagingSenderId: "1084491198145",
+    appId: "1:1084491198145:web:cbcd3f1e37e2212efcee40"
 };
 
+// Firebase'i Başlat
+if (typeof firebase !== "undefined" && !firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = (typeof firebase !== "undefined") ? firebase.database() : null;
+
+// Rastgele Oyuncu Kimliği Oluştur
+const oyuncuId = "Oyuncu_" + Math.floor(1000 + Math.random() * 9000);
+let aktifOdaKey = null;
+let odaDinleyici = null;
+
+// EŞLEŞME ARAMA FONKSİYONU
+window.odaAramayiBaslat = function(mod) {
+    eslesmeModu = mod;
     const aramaEkrani = document.getElementById('etkinlik-arama-ekrani');
+    const modSecimi = document.getElementById('etkinlik-mod-secimi');
 
     if (!aramaEkrani) {
         alert("Eşleşme ekranı bulunamadı!");
@@ -1817,22 +1789,14 @@ let eslesmeModu = 1;
 
     aramaEkrani.style.display = 'block';
 
-    const modSecimi = document.getElementById('etkinlik-mod-secimi');
-
     if (modSecimi) {
         modSecimi.style.display = 'none';
     }
 
     // Firebase bağlantısını kontrol et
-    if (typeof db === "undefined") {
-        alert("Firebase bağlantısı bulunamadı!");
-        console.error("db değişkeni tanımlı değil.");
-        return;
-    }
-
-    if (typeof oyuncuId === "undefined" || !oyuncuId) {
-        alert("Oyuncu ID bulunamadı!");
-        console.error("oyuncuId tanımlı değil.");
+    if (!db) {
+        console.warn("Firebase bağlantısı bulunamadı! Simülasyon başlatılıyor.");
+        setTimeout(() => window.vsRakipBulunduSimulasyon(), 1500);
         return;
     }
 
@@ -1843,16 +1807,17 @@ let eslesmeModu = 1;
 
         if (bekleyenler) {
             console.log("Bekleyen oyuncu bulundu.");
+            window.vsRakipBulunduSimulasyon();
         } else {
             console.log("Oyuncu eşleşme havuzuna giriyor.");
+            setTimeout(() => window.vsRakipBulunduSimulasyon(), 2000);
         }
     }).catch((error) => {
         console.error("Firebase eşleşme hatası:", error);
+        window.vsRakipBulunduSimulasyon();
     });
 };
-
-
-       function slotlariOlustur(elementId, mod, isMe) {
+      function slotlariOlustur(elementId, mod, isMe) {
     const el = document.getElementById(elementId);
     if (!el) return;
     el.innerHTML = "";
@@ -1869,8 +1834,9 @@ let eslesmeModu = 1;
             </div>
         `;
     }
-        }
-        window.vsRakipBulunduSimulasyon = function(rakipVeri) {
+}
+
+window.vsRakipBulunduSimulasyon = function(rakipVeri) {
     const rakipIsim = rakipVeri ? rakipVeri.isim : ("Oyuncu_" + Math.floor(100 + Math.random() * 900));
     const rakipImg = rakipVeri ? rakipVeri.resim : "https://via.placeholder.com/100";
 
@@ -1910,7 +1876,7 @@ let eslesmeModu = 1;
         }
     }, 1000);
 };
-        window.eslesmeyiIptalEt = function() {
+    window.eslesmeyiIptalEt = function() {
     if (eslesmeAramaTimer) clearInterval(eslesmeAramaTimer);
     if (typeof socket !== "undefined" && socket && socket.connected) socket.emit("cancel_match");
 
@@ -1925,9 +1891,7 @@ let eslesmeModu = 1;
 
 function cemberiSunucuyaBildir(hedefSiseIndex) {
     if (typeof socket !== "undefined" && socket && currentRoomId) {
-        let benimIndexim = window.kendiIndexim !== undefined
-            ? window.kendiIndexim
-            : 0;
+        let benimIndexim = window.kendiIndexim !== undefined ? window.kendiIndexim : 0;
 
         socket.emit('player_action', {
             roomId: currentRoomId,
@@ -1936,8 +1900,8 @@ function cemberiSunucuyaBildir(hedefSiseIndex) {
         });
     }
         }
-        // ==========================================
-// 9. SOCKET EVENT DİNLEYİCİLERİ
+          // ==========================================
+// 10. SOCKET EVENT DİNLEYİCİLERİ VE BAŞLANGIÇ
 // ==========================================
 if (typeof socket !== "undefined" && socket) {
     socket.on('match_found', (data) => {
@@ -1953,107 +1917,11 @@ if (typeof socket !== "undefined" && socket) {
             }
         }
     });
-        }
-        // ==========================================
-// 10. SAYFA YÜKLENDİĞİNDE ÇALIŞACAKLAR
-// ==========================================
-window.addEventListener('DOMContentLoaded', () => {
-    if (typeof profilYukle === "function") profilYukle();
-    if (typeof gunlukOdulButonKontrol === "function") gunlukOdulButonKontrol();
-    if (typeof apkGuncellemeKontrol === "function") apkGuncellemeKontrol();
-});
-        // Eşleşme arama ve oyunu başlatma simülasyonu
-    function eslesmeyiBaslat() {
-        const rakipIsimEl = document.querySelector('.modal-icerik h3, [style*="Rakip Aranıyor"]');
-        const rakipResimEl = document.querySelector('.modal-icerik [style*="🔍"], img[src*="rakip"]');
-        
-        let saniye = 3;
-        
-        // Geri sayım sayacı
-        const sayac = setInterval(() => {
-            if (rakipIsimEl) {
-                rakipIsimEl.innerText = `Rakip Aranıyor... (${saniye}sn)`;
-            }
-            saniye--;
+}
 
-            if (saniye < 0) {
-                clearInterval(sayac);
-                rakipBulundu();
-            }
-        }, 1000);
-    }
-
-    // Rakip bulunduğunda çalışacak fonksiyon
-    function eslesmeTamamlandi(odaData) {
-
-    console.log("Eşleşme tamamlandı:", odaData);
-
-    const rakipId =
-        odaData.oyuncu1 === oyuncuId
-            ? odaData.oyuncu2
-            : odaData.oyuncu1;
-
-    const aramaEkrani =
-        document.getElementById('etkinlik-arama-ekrani');
-
-    if (aramaEkrani) {
-
-        aramaEkrani.style.display = 'block';
-
-        aramaEkrani.innerHTML = `
-            <div style="
-                display:flex;
-                flex-direction:column;
-                align-items:center;
-                justify-content:center;
-                height:100%;
-                color:white;
-                text-align:center;
-            ">
-
-                <div style="font-size:70px;">⚔️</div>
-
-                <h2 style="color:#feca57;">
-                    EŞLEŞME SAĞLANDI!
-                </h2>
-
-                <p style="font-size:18px;">
-                    Rakip bulundu!
-                </p>
-
-                <p style="
-                    color:#74b9ff;
-                    font-size:14px;
-                ">
-                    Rakip ID: ${rakipId}
-                </p>
-
-                <p>
-                    Oyun başlatılıyor...
-                </p>
-
-            </div>
-        `;
-    }
-
-    setTimeout(() => {
-
-        if (aramaEkrani) {
-            aramaEkrani.style.display = 'none';
-        }
-
-        oyunuBaslat();
-
-    }, 2000);
-        }
-
-    // 5. OYUNU BAŞLATAN FONKSİYON
-    function oyunuBaslat() {
-        console.log("Gerçek Zamanlı Oyun Başladı! Oda ID:", aktifOdaKey);
-        }
-
-    // Sayfa yüklendiğinde eşleşmeyi otomatik başlatmak için:
-    window.onload = function() {
-        eslesmeyiBaslat();
-    };
+window.onload = function() {
+    profilYukle();
+    gunlukOdulButonKontrol();
+    apkGuncellemeKontrol();
+};
     </script>
