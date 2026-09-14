@@ -7,6 +7,28 @@
     
     <link rel="manifest" href="manifest.json">
 
+    <!-- 1. Socket.io İstemci Kütüphanesi -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+    <!-- 2. Socket Bağlantısını Başlatma -->
+    <script>
+        // Sunucu adresiniz 
+        window.socket = io('https://meyvecokluoyunculu.com.tr', {
+            transports: ['websocket', 'polling']
+        });
+
+        window.socket.on('connect', () => {
+            console.log("Socket sunucusuna başarıyla bağlandı! ID:", window.socket.id);
+        });
+
+        window.socket.on('connect_error', (err) => {
+            console.error("Socket bağlantı hatası:", err);
+        });
+    </script>
+
+    <!-- 3. Eşleşme Dosyanız -->
+    <script src="vs-eslesme.js"></script>
+</head>
     <style>
         body {
             background-image: url("seker_temali_tekli_hareketli_arka_plan.gif");
