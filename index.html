@@ -6,40 +6,6 @@
     <title>Meyve & Şeker Odası - Çok Oyunculu</title>
     
     <link rel="manifest" href="manifest.json">
-    <!-- CSS Dosyalarınız Varsa Buraya Ekleyin -->
-</head>
-<body>
-
-    <!-- ARAYÜZ VE BUTONLARINIZ (HTML İÇERİĞİ) BURADA YER ALACAK -->
-    <div id="etkinlik-mod-secimi">
-        <button onclick="window.vs1v1ModuBaslat()">1v1 Düello</button>
-        <button onclick="window.vs4v4ModuBaslat()">4v4 Düello</button>
-    </div>
-
-    <!-- Eşleşme Ekranı HTML Kodlarınız -->
-    <div id="vs-otomatik-arama-ekrani" style="display: none;">
-        <!-- Eşleşme HTML içeriği... -->
-    </div>
-
-
-    <!-- =================================================== -->
-    <!-- SCRIPT'LERİ BODY EN ALTINA VE BU SIRAYLA YERLEŞTİRİN -->
-    <!-- =================================================== -->
-
-    <!-- 1. Dış Kütüphaneler -->
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-    <!-- 2. Sizin Eşleşme Kodunuz (PeerJS yüklendikten sonra çalışmalı) -->
-    <script src="vs-eslesme.js"></script>
-
-    <!-- 3. Ana Oyun Kodlarınız (En son yüklenecek) -->
-    <script src="oyun.js"></script>
-
-</body>
-</html>
 
     <style>
         body {
@@ -49,8 +15,9 @@
             background-repeat: no-repeat;
             background-attachment: fixed;
             margin: 0;
-            padding-top: 60px;
+            padding-top: 70px;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
         }
 
         /* CANLI VE PARLAK ŞEKER NAV BAR */
@@ -59,7 +26,7 @@
             top: 0 !important;
             left: 0 !important;
             width: 100% !important;
-            background: rgba(35, 15, 50, 0.85) !important;
+            background: rgba(35, 15, 50, 0.95) !important;
             backdrop-filter: blur(12px);
             border-bottom: 3px solid rgba(255, 105, 180, 0.5);
             display: flex !important;
@@ -70,13 +37,13 @@
             box-sizing: border-box !important;
             box-shadow: 0 4px 20px rgba(255, 105, 180, 0.3);
         }
-
         .logo {
             font-weight: 900;
             font-size: 20px;
             color: #ff70a6;
             text-shadow: 0 0 10px #ff70a6, 0 2px 0 #700030;
             letter-spacing: 0.5px;
+            white-space: nowrap;
         }
 
         .nav-links {
@@ -85,6 +52,7 @@
             gap: 8px !important;
             overflow-x: auto;
             padding: 4px 0;
+            -webkit-overflow-scrolling: touch;
         }
 
         .nav-item, .nav-btn {
@@ -100,8 +68,8 @@
             transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             white-space: nowrap;
             cursor: pointer;
+            flex-shrink: 0;
         }
-
         .nav-item:hover, .nav-btn:hover {
             transform: translateY(-2px) scale(1.06);
             background: linear-gradient(180deg, #ff75c3 0%, #ffa647 100%) !important;
@@ -121,7 +89,6 @@
             color: #ffffff !important;
             animation: sekerIskParlama 1.8s infinite alternate;
         }
-
         @keyframes sekerIskParlama {
             0% { box-shadow: 0 0 8px #ff4757; }
             100% { box-shadow: 0 0 18px #fffa65; transform: scale(1.03); }
@@ -143,7 +110,6 @@
             font-size: 32px;
             animation: kurbagaZip 0.6s infinite alternate cubic-bezier(0.5, 0.05, 1, 0.5);
         }
-
         @keyframes kurbagaZip {
             0% { transform: translateY(0) scale(1, 0.8); }
             100% { transform: translateY(-15px) scale(0.9, 1.1); }
@@ -170,10 +136,16 @@
             text-align: center; 
             color: white; 
         }
-
         .kapat { float: right; cursor: pointer; font-size: 24px; }
 
-        /* 4 Oyuncu için Duyarlı Grid Düzeni */
+        /* CARD PANELS & RESPONSIVE CONTAINERS */
+        .card-panel {
+            box-sizing: border-box;
+            width: 92%;
+            max-width: 480px;
+            margin: 20px auto;
+        }
+
         .savas-alani {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -189,7 +161,6 @@
             gap: 6px;
             margin-top: 8px;
         }
-
         .kart {
             aspect-ratio: 1;
             background: #2a2a3c;
@@ -214,713 +185,345 @@
             z-index: 1;
             animation: yuksel linear forwards;
         }
-          /* KULVAR GENİŞLİĞİ VE DÜZENİ */
-.oyuncu-kulvari {
-    flex: 0 0 195px; /* Kulvar genişliği şişelerin sığması için artırıldı */
-    min-width: 195px;
-    background: rgba(15, 23, 42, 0.9);
-    border: 2px solid #38bdf8;
-    border-radius: 16px;
-    padding: 10px 8px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    box-sizing: border-box;
-}
-
-.oyuncu-kulvari.benim-kulvar {
-    border-color: #f1c40f;
-    box-shadow: 0 0 14px rgba(241, 196, 15, 0.5);
-}
-    /* ŞİŞE VE ÇEMBER KAPSAYICISI (TABAN REFERANSI) */
-.soda-sise-kapsayici {
-    position: relative !important;
-    width: 24px;
-    height: 50px; /* Şişe ve çemberler için sabit yükseklik */
-    margin: 0 2px;
-    display: inline-block;
-}
-
-/* ŞİŞENİN EN ALT TABANA OTURTULMASI */
-.soda-sise {
-    position: absolute !important;
-    bottom: 0 !important;
-    left: 4px;
-    width: 14px;
-    height: 34px;
-    background: linear-gradient(180deg, #27ae60 0%, #1e824c 100%);
-    border-radius: 3px 3px 2px 2px;
-    border: 1px solid #145a32;
-    box-shadow: inset -2px 0 3px rgba(0,0,0,0.3);
-}
-
-/* BOYUN KISMI */
-.soda-sise::before {
-    content: '';
-    position: absolute;
-    top: -9px;
-    left: 3px;
-    width: 6px;
-    height: 9px;
-    background: #27ae60;
-    border: 1px solid #145a32;
-    border-bottom: none;
-    border-radius: 2px 2px 0 0;
-}
-
-/* KAPAK KISMI */
-.soda-sise::after {
-    content: '';
-    position: absolute;
-    top: -11px;
-    left: 2px;
-    width: 8px;
-    height: 3px;
-    background: #e74c3c;
-    border-radius: 2px;
-}
-
-/* ETİKET */
-.soda-etiket {
-    position: absolute;
-    top: 7px;
-    left: 1px;
-    width: 10px;
-    height: 12px;
-    background: #ffffff;
-    border-radius: 1px;
-    opacity: 0.9;
-}
-
-/* ÇEMBERLERİN TABANDAN (BOTTOM) YUKARIYA DİZİLME STİLİ */
-.cember-scalex-anim {
-    position: absolute !important;
-    left: 0px !important;
-    width: 22px !important;
-    height: 6px !important;
-    border: 2px solid #f1c40f !important;
-    border-radius: 50% !important;
-    box-shadow: 0 0 5px #f1c40f, inset 0 0 2px #f39c12 !important;
-    background: rgba(241, 196, 15, 0.45) !important;
-    pointer-events: none !important;
-    z-index: 20 !important;
-    animation: scaleXCemberOturma 0.2s ease-out forwards;
-}
-
-@keyframes scaleXCemberOturma {
-    0% {
-        transform: scale(1.4);
-        opacity: 0.7;
-    }
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-}
-        
-.etkinlik-sahne-kapsayici {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-around;
-    align-items: flex-end;
-    gap: 8px;
-    width: 100%;
-    overflow-x: auto;
-    padding: 10px 5px 110px 5px;
-    box-sizing: border-box;
-}
-
-/* KULVAR VE İNSAN MODELLERİ */
-.oyuncu-kulvari {
-    flex: 1;
-    min-width: 140px;
-    max-width: 170px;
-    background: rgba(15, 23, 42, 0.9);
-    border: 2px solid #38bdf8;
-    border-radius: 16px;
-    padding: 8px 4px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    box-sizing: border-box;
-}
-
-.oyuncu-kulvari.benim-kulvar {
-    border-color: #f1c40f;
-    box-shadow: 0 0 14px rgba(241, 196, 15, 0.5);
-}
-
-/* CSS İLE ÇİZİLMİŞ KANLI CANLI İNSAN FİGÜRÜ */
-.insan-figuru {
-    width: 32px;
-    height: 55px;
-    position: relative;
-    margin-bottom: 6px;
-}
-
-/* İnsan Kafası */
-.insan-kafa {
-    width: 16px;
-    height: 16px;
-    background: #ffdbac;
-    border-radius: 50%;
-    margin: 0 auto;
-    border: 1.5px solid #333;
-    position: relative;
-}
-
-/* İnsan Saçı */
-.insan-sac {
-    position: absolute;
-    top: -2px;
-    left: 1px;
-    width: 14px;
-    height: 6px;
-    background: #4a2c11;
-    border-radius: 8px 8px 0 0;
-}
-
-/* İnsan Gövdesi/Kıyafet */
-.insan-govde {
-    width: 20px;
-    height: 22px;
-    background: #3498db;
-    border-radius: 4px 4px 0 0;
-    margin: 1px auto 0 auto;
-    position: relative;
-}
-
-.benim-kulvar .insan-govde { background: #e74c3c; } /* Oyuncunun kıyafeti kırmızı */
-
-/* İnsan Kolları (Atış Pozisyonunda) */
-.insan-kol-sol, .insan-kol-sag {
-    position: absolute;
-    width: 4px;
-    height: 14px;
-    background: #ffdbac;
-    top: 2px;
-}
-.insan-kol-sol { left: -5px; transform: rotate(20deg); }
-.insan-kol-sag { right: -5px; transform: rotate(-35deg); } /* Sağ kol çember fırlatıyor */
-
-/* İnsan Bacakları */
-.insan-bacaklar {
-    display: flex;
-    justify-content: space-between;
-    width: 14px;
-    margin: 0 auto;
-}
-.insan-bacak {
-    width: 5px;
-    height: 15px;
-    background: #2c3e50;
-}
-
-/* 10 ŞİŞELİ SAHNE (5 ARKA, 5 ÖN) */
-.sise-sahne-10lu {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    height: 100px;
-    width: 100%;
-    background: rgba(0, 0, 0, 0.4);
-    border-radius: 10px;
-    padding: 6px 2px;
-    box-sizing: border-box;
-}
-
-.sise-sira-5-arka { display: flex; gap: 4px; transform: scale(0.8); opacity: 0.95; }
-.sise-sira-5-on { display: flex; gap: 3px; margin-top: -12px; }
-
-@keyframes scaleXCemberLanding {
-    0% {
-        transform: scaleX(0.1) scaleY(0.1) translateY(-50px);
-        opacity: 0;
-    }
-    60% {
-        transform: scaleX(1.6) scaleY(1.3) translateY(2px);
-        opacity: 1;
-    }
-    100% {
-        transform: scaleX(1) scaleY(1) translateY(0);
-        opacity: 1;
-    }
-        }
-     /* Menü kapsayıcısı için yatay kaydırma ve sıkışmayı önleme */
-.nav-container, nav, header {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    white-space: nowrap;
-    align-items: center;
-    padding: 5px;
-    -webkit-overflow-scrolling: touch;
-}
-
-/* Buton boyutlarını küçültme ve sıfırlama */
-.nav-btn {
-    flex-shrink: 0;
-    font-size: 12px;
-    padding: 6px 10px;
-    margin-right: 4px;
-        }
-        /* Ana ekran kapsayıcısı */
-#etkinlik-cember-ekrani, 
-#etkinlik-mod-secimi, 
-.game-screen {
-    width: 100%;
-    max-width: 100vw;
-    min-height: 100vh;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    padding-top: 60px; /* Üst menünün altında kalmaması için */
-    overflow-y: auto; /* Ekran küçükse dikey kaydırmaya izin ver */
-}
-
-/* Mod Seçim Kartları (4v4 ve 1v1 kutuları) */
-#etkinlik-mod-secimi {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-#etkinlik-mod-secimi > div {
-    max-width: 45%; /* Yan yana iki kutu sığacak şekilde */
-    transform: scale(0.9); /* Taşmayı önlemek için hafif küçültme */
-}
-        /* 1. ÜST MENÜ DÜZELTME (Menünün panelleri sıkıştırmasını engeller) */
-.header-bar, .nav-container, header {
-    position: relative;
-    z-index: 100;
-    width: 100%;
-    display: flex;
-    overflow-x: auto;
-    white-space: nowrap;
-    background: rgba(20, 10, 35, 0.9);
-    padding: 8px 5px;
-}
-
-/* 2. ORTADAKİ BOŞ KUTU DÜZELTME (İçeriği zorunlu görünür yapar) */
-#etkinlik-cember-ekrani, 
-#etkinlik-mod-secimi, 
-#etkinliker-ekrani {
-    width: 90% !important;
-    max-width: 500px;
-    margin: 20px auto;
-    min-height: 200px !important; /* Yüksekliğin sıfırlanmasını engeller */
-    height: auto !important;
-    display: flex !important;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: rgba(30, 15, 45, 0.95);
-    border: 2px solid #ff79c6;
-    border-radius: 16px;
-    padding: 15px;
-    box-sizing: border-box;
-}
-
-/* 3. MOD SEÇİM BUTONLARININ SIKIŞMASINI ÖNLEME */
-.mod-kart-kapsayici {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    gap: 15px;
-    width: 100%;
-    margin-top: 10px;
-}
-
-.mod-kart {
-    flex: 1;
-    min-width: 120px;
-    max-width: 180px;
-    height: 120px;
-    background: #ff4757;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-weight: bold;
-    cursor: pointer;
-}
-        
-    </style>
+        </style>
 </head>
-  <body>
-  <!-- NAV BAR -->
-<div class="game-navbar">
-    <div class="logo">🍬 Şeker Odası</div>
-    <div class="nav-links">
-        <button class="nav-btn active" onclick="window.sekmeDegistir('ana-lobi', this)">🏠 Anasayfa</button>
-        <button class="nav-btn" onclick="window.sekmeDegistir('oyunlarim-ekrani', this)">🎮 Oyunlarım</button>
-        <button class="nav-btn nav-magaza" onclick="window.sekmeDegistir('magaza-ekrani', this)">🛒 Mağaza</button>
-        <button class="nav-btn" onclick="window.sekmeDegistir('download-ekrani', this)">📥 Download</button>
-        <button class="nav-btn" onclick="window.sekmeDegistir('partner-ekrani', this)">🤝 Partner</button>
-        <button class="nav-btn" onclick="window.sekmeDegistir('iletisim-ekrani', this)">📞 İletişim Bilgileri</button>
-        <button class="nav-btn" onclick="window.sekmeDegistir('etkinlikler-ekrani', this)">🎉 Etkinlikler</button>
-    </div>
-</div>
+<body>
 
-<div id="seker-efekt-konteyner"></div>
-<div id="audio-container"></div>
-    <!-- 1. ANA LOBİ EKRANI -->
-<div id="ana-lobi" class="card-panel" style="display: block; max-width: 400px; margin: 20px auto; text-align: center; color: white;">
-    <div class="bakiye-rozet">🍬 Bakiyeniz: <span id="kullanici-bakiye">0</span> Şeker</div>
-    
-    <div style="background: rgba(30, 15, 45, 0.85); padding: 20px; border-radius: 20px; border: 2px solid #ff75c3;">
-        <h3 style="color: #fffa65; margin-top: 0;">Profil Ayarları</h3>
+    <div class="game-navbar">
+        <div class="logo">🍬 Şeker Odası</div>
+        <div class="nav-links">
+            <button class="nav-btn active" onclick="window.sekmeDegistir('ana-lobi', this)">🏠 Anasayfa</button>
+            <button class="nav-btn" onclick="window.sekmeDegistir('oyunlarim-ekrani', this)">🎮 Oyunlarım</button>
+            <button class="nav-btn nav-magaza" onclick="window.sekmeDegistir('magaza-ekrani', this)">🛒 Mağaza</button>
+            <button class="nav-btn" onclick="window.sekmeDegistir('download-ekrani', this)">📥 Download</button>
+            <button class="nav-btn" onclick="window.sekmeDegistir('partner-ekrani', this)">🤝 Partner</button>
+            <button class="nav-btn" onclick="window.sekmeDegistir('iletisim-ekrani', this)">📞 İletişim Bilgileri</button>
+            <button class="nav-btn" onclick="window.sekmeDegistir('etkinlikler-ekrani', this)">🎉 Etkinlikler</button>
+        </div>
+    </div>
+    <div id="seker-efekt-konteyner"></div>
+    <div id="audio-container"></div>
+
+    <div id="ana-lobi" class="card-panel" style="display: block; text-align: center; color: white;">
+        <div class="bakiye-rozet">🍬 Bakiyeniz: <span id="kullanici-bakiye">0</span> Şeker</div>
         
-        <!-- PROFİL FOTOĞRAFI ÖNİZLEME -->
-        <div style="margin-bottom: 12px;">
-            <img id="profil-resim-onizleme" src="https://via.placeholder.com/80" alt="Profil Fotoğrafı" style="width: 70px; height: 70px; border-radius: 50%; border: 3px solid #ff75c3; object-fit: cover; display: block; margin: 0 auto 8px auto;">
-            <label for="profil-foto-input" style="padding: 6px 12px; background: #54a0ff; color: white; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-block;">
-                📷 Fotoğraf Seç
-            </label>
-            <input type="file" id="profil-foto-input" accept="image/*" onchange="window.profilFotografiSec(event)" style="display: none;">
-        </div>
-
-        <input type="text" id="profil-isim-input" placeholder="Oyuncu Adınız..." style="padding: 10px; border-radius: 10px; border: none; width: 80%; margin-bottom: 10px; box-sizing: border-box;">
-        <br>
-        <button type="button" onclick="window.profilIsimKaydet()" style="padding: 8px 16px; background: #2ed573; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;">Kaydet</button>
-
-        <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
-
-        <!-- ODA OLUŞTUR BUTONU -->
-        <button type="button" onclick="window.odaOlustur(); window.sekmeDegistir('oda-ici-ekran');" style="padding: 12px 20px; background: linear-gradient(180deg, #ff75c3 0%, #ff4757 100%); border: none; color: white; border-radius: 12px; font-weight: bold; font-size: 15px; cursor: pointer; width: 100%; margin-bottom: 12px;">Oda Oluştur 👑</button>
-        
-        <div style="display: flex; gap: 8px;">
-            <input type="text" id="oda-kodu-input" placeholder="Oda Kodu..." style="flex: 1; padding: 10px; border-radius: 10px; border: none;">
-            <button type="button" onclick="window.odayaBaglanTikla()" style="padding: 10px 15px; background: #54a0ff; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer;">Katıl 🚀</button>
-        </div>
-    </div>
-</div>
-      <!-- 2. OYUNLARIM EKRANI -->
-<div id="oyunlarim-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff75c3; border-radius: 24px; padding: 25px; max-width: 450px; margin: 20px auto; color: #fff; text-align: center;">
-    <h2 style="color: #fffa65;">🎮 Oyunlarım</h2>
-    <p style="color: #ffeaa7; font-size: 13px;">Oynayabileceğiniz mevcut oyunlar:</p>
-    <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #ff75c3; border-radius: 18px; padding: 15px; margin-top: 10px;">
-        <h3 style="margin: 0; color: #ff70a6;">🍓 Meyve & Şeker Eşleştirme</h3>
-        <p style="font-size: 12px; color: #a5b1c2;">4 Kişilik Çok Oyunculu Hafıza Oyunu</p>
-        <button type="button" onclick="window.sekmeDegistir('ana-lobi')" style="padding: 8px 16px; background: #ff75c3; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;">Anasayfa</button>
-    </div>
-</div>
-
-<!-- 3. DOWNLOAD EKRANI -->
-<div id="download-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #54a0ff; border-radius: 24px; padding: 25px; max-width: 480px; margin: 20px auto; color: #fff; text-align: center;">
-    <h2 style="color: #74b9ff; margin-top: 0;">📥 İndirme Merkezi</h2>
-    <p style="color: #ffeaa7; font-size: 13px;">Şeker Odası'nı mobil cihazınızda kesintisiz oynayın!</p>
-    
-    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
-        <!-- ANDROID APK İNDİRME ALANI -->
-        <div style="background: rgba(20, 10, 35, 0.7); padding: 14px; border-radius: 14px; border: 1px solid #54a0ff; display: flex; align-items: center; justify-content: space-between;">
-            <div style="text-align: left;">
-                <strong style="color: #74b9ff; font-size: 14px;">Android (APK)</strong>
-                <div style="font-size: 11px; color: #a5b1c2;">Mobil cihazlar için optimize edildi</div>
-            </div>
-            <a href="https://meyvecokluoyunculu.com.tr/oyun.apk" download style="padding: 10px 16px; background: #54a0ff; color: white; border-radius: 10px; font-weight: bold; text-decoration: none; font-size: 13px;">
-                İndir (.apk)
-            </a>
-        </div>
+        <div style="background: rgba(30, 15, 45, 0.85); padding: 20px; border-radius: 20px; border: 2px solid #ff75c3; backdrop-filter: blur(12px);">
+            <h3 style="color: #fffa65; margin-top: 0;">Profil Ayarları</h3>
             
-        <!-- WINDOWS (EXE) İNDİRME ALANI -->
-        <div style="background: rgba(20, 10, 35, 0.7); padding: 14px; border-radius: 14px; border: 1px solid #2ed573; display: flex; align-items: center; justify-content: space-between;">
-            <div style="text-align: left;">
-                <strong style="color: #2ed573; font-size: 14px;">Windows (Exe)</strong>
-                <div style="font-size: 11px; color: #a5b1c2;">Masaüstü yüksek performans sürümü</div>
+            <div style="margin-bottom: 12px;">
+                <img id="profil-resim-onizleme" src="https://via.placeholder.com/80" alt="Profil Fotoğrafı" style="width: 70px; height: 70px; border-radius: 50%; border: 3px solid #ff75c3; object-fit: cover; display: block; margin: 0 auto 8px auto;">
+                <label for="profil-foto-input" style="padding: 6px 12px; background: #54a0ff; color: white; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-block;">
+                    📷 Fotoğraf Seç
+                </label>
+                <input type="file" id="profil-foto-input" accept="image/*" onchange="window.profilFotografiSec(event)" style="display: none;">
             </div>
-            <a href="SekerOdasi_Setup.exe" download="SekerOdasi_Setup.exe" style="padding: 10px 16px; background: #2ed573; color: white; border-radius: 10px; font-weight: bold; text-decoration: none; font-size: 13px;">
-                İndir (.exe)
-            </a>
-        </div>
-    </div>
-</div>
-      <!-- 4. PARTNER EKRANI -->
-<div id="partner-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #facc15; border-radius: 24px; padding: 25px; max-width: 480px; margin: 20px auto; color: #fff;">
-    <h2 style="color: #fffa65; text-shadow: 0 0 10px #ffa502; text-align: center; margin-top: 0;">🤝 Partner & Ödül Sistemi</h2>
-    
-    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-        <button type="button" onclick="window.partnerSekmeAc('basvuru-formu')" style="flex: 1; padding: 10px; background: #ff75c3; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;">Partner Başvurusu</button>
-        <button type="button" onclick="window.partnerSekmeAc('kod-bozdur')" style="flex: 1; padding: 10px; background: #2ed573; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;">🎁 Kod Bozdur</button>
-    </div>
 
-    <div id="basvuru-formu" style="display: block; background: rgba(20, 10, 35, 0.7); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
-        <h3 style="margin-top: 0; color: #fffa65; font-size: 15px;">Yayıncı / İçerik Üretici Başvurusu</h3>
-        <p style="font-size: 12px; color: #a5b1c2; margin-bottom: 12px;">Özel komisyon oranları ve kanalınıza özel hediye kodları almak için formu doldurun.</p>
-        
-        <input type="text" id="partner-kanal-link" placeholder="Kanal / Yayın Linkiniz (TikTok, YouTube vb.)" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ff75c3; margin-bottom: 10px; box-sizing: border-box; background: #1e0a1b; color: white;">
-        <input type="text" id="partner-iletisim" placeholder="Discord / E-posta Adresiniz" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ff75c3; margin-bottom: 12px; box-sizing: border-box; background: #1e0a1b; color: white;">
-        
-        <button type="button" onclick="window.partnerBasvuruGonder()" style="width: 100%; padding: 12px; background: linear-gradient(180deg, #facc15 0%, #eab308 100%); border: none; color: #1e1b4b; border-radius: 10px; font-weight: 900; cursor: pointer;">Başvuruyu Gönder 🚀</button>
-    </div>
+            <input type="text" id="profil-isim-input" placeholder="Oyuncu Adınız..." style="padding: 10px; border-radius: 10px; border: none; width: 80%; margin-bottom: 10px; box-sizing: border-box;">
+            <br>
+            <button type="button" onclick="window.profilIsimKaydet()" style="padding: 8px 16px; background: #2ed573; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;">Kaydet</button>
 
-    <div id="kod-bozdur" style="display: none; background: rgba(20, 10, 35, 0.7); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
-        <h3 style="margin-top: 0; color: #2ed573; font-size: 15px;">Promosyon / Ödül Kodu Kullan</h3>
-        <p style="font-size: 12px; color: #a5b1c2; margin-bottom: 12px;">Yayıncılardan veya etkinliklerden aldığınız promosyon kodunu girin.</p>
-        
-        <div style="display: flex; gap: 8px;">
-            <input type="text" id="promosyon-kodu-input" placeholder="Örn: SEKER2026" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #2ed573; background: #1e0a1b; color: white; font-weight: bold; text-transform: uppercase;">
-            <button type="button" onclick="window.kodKullan()" style="padding: 10px 16px; background: #2ed573; border: none; color: white; border-radius: 8px; font-weight: bold; cursor: pointer;">Kullan</button>
-        </div>
-    </div>
-</div>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
 
-<!-- 5. İLETİŞİM EKRANI -->
-<div id="iletisim-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff4757; border-radius: 24px; padding: 25px; max-width: 450px; margin: 20px auto; color: #fff; text-align: center;">
-    <h2 style="color: #ff6b81;">📞 İletişim Bilgileri</h2>
-    <div style="text-align: left; font-size: 14px; line-height: 1.8; margin-top: 15px; background: rgba(20, 10, 35, 0.7); padding: 15px; border-radius: 15px;">
-        <p>📧 <strong>E-Posta:</strong> destek@sekerodasi.com</p>
-        <p>💬 <strong>Discord:</strong> discord.gg/sekerodasi</p>
-        <p>🌐 <strong>Web:</strong> www.sekerodasi.com</p>
-    </div>
-</div>
-      <!-- 6. MAĞAZA EKRANI -->
-<div id="magaza-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff75c3; border-radius: 24px; box-shadow: 0 0 25px rgba(255, 117, 195, 0.4); padding: 25px; max-width: 480px; margin: 20px auto; color: #fff;">
-    <div style="text-align: center; margin-bottom: 20px;">
-        <h2 style="color: #fffa65; text-shadow: 0 0 10px #ffa502; font-weight: 900; margin: 0 0 8px 0;">🛒 Şeker & Büyü Mağazası</h2>
-        <p style="color: #ffeaa7; font-size: 13px; font-weight: 600; margin: 0;">Güçlendirmeler ve yeni kart temaları satın alın!</p>
-    </div>
-
-    <div style="display: flex; gap: 8px; margin-bottom: 15px;">
-        <button type="button" onclick="window.magazaKategoriAc('guc-kategori')" style="flex: 1; padding: 8px; background: #ff75c3; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 12px;">⚡ Güçler</button>
-        <button type="button" onclick="window.magazaKategoriAc('tema-kategori')" style="flex: 1; padding: 8px; background: #54a0ff; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 12px;">🎨 Kart Temaları</button>
-    </div>
-
-    <div id="guc-kategori" style="display: flex; flex-direction: column; gap: 12px;">
-        <div class="magaza-urun-kart" style="background: rgba(20, 10, 35, 0.7); border: 2px solid #a55eea; border-radius: 18px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-            <div style="font-size: 32px;">🧙‍♀️</div>
-            <div style="flex: 1; text-align: left;">
-                <h3 style="margin: 0; color: #d1d8e0; font-size: 14px; font-weight: bold;">Cadı Büyüsü</h3>
-                <p style="margin: 2px 0; color: #a5b1c2; font-size: 11px;">Tüm kartları otomatik eşleştirir.</p>
-                <div style="color: #fffa65; font-weight: bold; font-size: 12px;">150 🍬 Şeker</div>
-            </div>
-            <button type="button" onclick="window.esyaSatinAl('cadi', 150)" style="background: #facc15; border: none; border-radius: 10px; color: #1e1b4b; font-weight: 900; padding: 8px 12px; cursor: pointer; font-size: 12px;">Satın Al</button>
-        </div>
-
-        <div class="magaza-urun-kart" style="background: rgba(20, 10, 35, 0.7); border: 2px solid #2ed573; border-radius: 18px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-            <div class="kurbaga-animasyon" style="font-size: 32px;">🐸</div>
-            <div style="flex: 1; text-align: left;">
-                <h3 style="margin: 0; color: #d1d8e0; font-size: 14px; font-weight: bold;">Kurbağa Görüşü</h3>
-                <p style="margin: 2px 0; color: #a5b1c2; font-size: 11px;">Tüm kartları 2 saniye açık gösterir.</p>
-                <div style="color: #fffa65; font-weight: bold; font-size: 12px;">75 🍬 Şeker</div>
-            </div>
-            <button type="button" onclick="window.esyaSatinAl('kurbaga', 75)" style="background: #facc15; border: none; border-radius: 10px; color: #1e1b4b; font-weight: 900; padding: 8px 12px; cursor: pointer; font-size: 12px;">Satın Al</button>
-        </div>
-    </div>
-
-    <div id="tema-kategori" style="display: none; flex-direction: column; gap: 12px;">
-        <div class="magaza-urun-kart" style="background: rgba(20, 10, 35, 0.7); border: 2px solid #ff7675; border-radius: 18px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-            <div style="font-size: 32px;">🧁</div>
-            <div style="flex: 1; text-align: left;">
-                <h3 style="margin: 0; color: #d1d8e0; font-size: 14px; font-weight: bold;">Tatlı Dünyası</h3>
-                <p style="margin: 2px 0; color: #a5b1c2; font-size: 11px;">Kart simgelerini çikolata ve pastalara dönüştürür.</p>
-                <div style="color: #fffa65; font-weight: bold; font-size: 12px;">100 🍬 Şeker</div>
-            </div>
-            <button type="button" onclick="window.temaSatinAl('tatlilar', 100)" style="background: #54a0ff; border: none; border-radius: 10px; color: white; font-weight: 900; padding: 8px 12px; cursor: pointer; font-size: 12px;">Kilidi Aç</button>
-        </div>
-
-        <div class="magaza-urun-kart" style="background: rgba(20, 10, 35, 0.7); border: 2px solid #fdcb6e; border-radius: 18px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-            <div style="font-size: 32px;">🦁</div>
-            <div style="flex: 1; text-align: left;">
-                <h3 style="margin: 0; color: #d1d8e0; font-size: 14px; font-weight: bold;">Sevimli Hayvanlar</h3>
-                <p style="margin: 2px 0; color: #a5b1c2; font-size: 11px;">Kart simgelerini sevimli hayvanlara dönüştürür.</p>
-                <div style="color: #fffa65; font-weight: bold; font-size: 12px;">120 🍬 Şeker</div>
-            </div>
-            <button type="button" onclick="window.temaSatinAl('hayvanlar', 120)" style="background: #54a0ff; border: none; border-radius: 10px; color: white; font-weight: 900; padding: 8px 12px; cursor: pointer; font-size: 12px;">Kilidi Aç</button>
-        </div>
-    </div>
-</div>
-      <!-- 7. ETKİNLİKLER VE EŞLEŞTİRME MENÜSÜ -->
-<div id="etkinlikler-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff9f43; border-radius: 24px; box-shadow: 0 0 25px rgba(255, 159, 67, 0.4); padding: 25px; max-width: 480px; margin: 20px auto; color: #fff;">
-    <div style="text-align: center; margin-bottom: 20px;">
-        <h2 style="color: #feca57; text-shadow: 0 0 10px #ff9f43; font-weight: 900; margin: 0 0 8px 0;">🎉 Özel Etkinlikler & Ödüller</h2>
-        <p style="color: #ffeaa7; font-size: 13px; font-weight: 600; margin: 0;">Mod seçin ve diğer oyuncularla eşleşin!</p>
-    </div>
-
-    <div style="display: flex; flex-direction: column; gap: 12px;">
-        <!-- Mod Seçimi Paneli -->
-        <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #ff75c3; border-radius: 18px; padding: 14px; text-align: center;">
-            <h3 style="color: #fff; margin: 0 0 10px 0; font-size: 15px;">ETKİNLİK MODU SEÇİN</h3>
-            <div style="display: flex; gap: 10px;">
-                <button type="button" onclick="window.odaAramayiBaslat(1)" style="flex: 1; padding: 12px; background: linear-gradient(180deg, #ff4757, #ff6b81); border: none; color: white; border-radius: 12px; font-weight: bold; cursor: pointer;">1 v 1 Düello</button>
-                <button type="button" onclick="window.odaAramayiBaslat(4)" style="flex: 1; padding: 12px; background: linear-gradient(180deg, #2ed573, #1e90ff); border: none; color: white; border-radius: 12px; font-weight: bold; cursor: pointer;">4 v 4 Takım</button>
-            </div>
-        </div>
-
-        <!-- Günlük Ödül Kutusu -->
-        <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #ff9f43; border-radius: 18px; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-            <div style="font-size: 32px;">🎁</div>
-            <div style="flex: 1; text-align: left;">
-                <h3 style="margin: 0; color: #feca57; font-size: 15px; font-weight: bold;">Günlük Giriş Ödülü</h3>
-                <p style="margin: 2px 0 0 0; color: #a5b1c2; font-size: 11px;">Her gün 50 Şekerinizi alın!</p>
-            </div>
-            <button type="button" onclick="window.gunlukOdulAl()" style="background: linear-gradient(180deg, #2ed573 0%, #26af5f 100%); border: none; border-radius: 12px; color: white; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">Ödülü Al</button>
-        </div>
-
-        <!-- 2 Kişilik Eşleşme Kartı -->
-        <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #f1c40f; border-radius: 18px; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-            <div style="font-size: 32px;">🥊</div>
-            <div style="flex: 1; text-align: left;">
-                <h3 style="margin: 0; color: #f1c40f; font-size: 15px; font-weight: bold;">Çember Atma (1v1)</h3>
-                <p style="margin: 2px 0 0 0; color: #a5b1c2; font-size: 11px;">2 Kişilik Hızlı Eşleşme</p>
-            </div>
-            <button type="button" onclick="window.odaAramayiBaslat(2)" style="background: linear-gradient(180deg, #f1c40f 0%, #d4ac0d 100%); border: none; border-radius: 12px; color: #000; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">2 Kişilik Oyna 💍</button>
-        </div>
-
-        <!-- 5 Kişilik Eşleşme Kartı -->
-        <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #e74c3c; border-radius: 18px; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-            <div style="font-size: 32px;">👑</div>
-            <div style="flex: 1; text-align: left;">
-                <h3 style="margin: 0; color: #e74c3c; font-size: 15px; font-weight: bold;">Çember Atma (5 Kişilik)</h3>
-                <p style="margin: 2px 0 0 0; color: #a5b1c2; font-size: 11px;">5 Kişilik Büyük Yarış</p>
-            </div>
-            <button type="button" onclick="window.odaAramayiBaslat(5)" style="background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%); border: none; border-radius: 12px; color: #fff; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">5 Kişilik Oyna 💍</button>
-        </div>
-    </div>
-</div>
-      <!-- MAÇ ARANIYOR BEKLEME EKRANI (Varsayılan Olarak Gizli) -->
-       <div id="vs-otomatik-arama-ekrani" style="display: none; position: fixed; inset: 0; z-index: 9999; background: #0f172a; font-family: 'Arial Black', sans-serif; overflow: hidden;">
-    <!-- VS ARAMA VE EŞLEŞME EKRANI -->
-    <div id="vs-eslesme-sahnesi" style="width: 100%; height: 100%; position: relative;">
-        
-        <!-- Sol Taraf (Mavi Takım / Siz) -->
-        <div class="vs-taraf vs-mavi" style="position: absolute; top: -20%; left: -20%; width: 75%; height: 140%; background: linear-gradient(135deg, #1e90ff, #00d2d3); transform: rotate(-12deg); display: flex; align-items: center; justify-content: center; box-shadow: 10px 0 30px rgba(0,0,0,0.5); z-index: 1;">
-            <div class="vs-icerik" style="transform: rotate(12deg); display: flex; flex-direction: column; align-items: center; color: #fff; gap: 10px;">
-                <div style="position: relative;">
-                    <img id="mavi-oyuncu-img" src="https://via.placeholder.com/100" alt="Oyuncu Resmi" style="width: 100px; height: 100px; border-radius: 25px; border: 4px solid #fff; box-shadow: 0 6px 15px rgba(0,0,0,0.4); object-fit: cover;">
-                </div>
-                <div id="mavi-oyuncu-isim" style="font-size: 20px; font-weight: 900; text-shadow: 2px 2px 4px #000;">Oyuncu</div>
-                
-                <!-- 4v4 Mavi Takım Slotları -->
-                <div id="mavi-takim-slotlari" style="display: flex; gap: 6px; background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 12px;"></div>
-            </div>
-        </div>
-
-        <!-- Sağ Taraf (Kırmızı Takım / Rakipler) -->
-        <div class="vs-taraf vs-kirmizi" style="position: absolute; bottom: -20%; right: -20%; width: 75%; height: 140%; background: linear-gradient(135deg, #ff4757, #ff6b81); transform: rotate(-12deg); display: flex; align-items: center; justify-content: center; box-shadow: -10px 0 30px rgba(0,0,0,0.5); z-index: 1;">
-            <div class="vs-icerik" style="transform: rotate(12deg); display: flex; flex-direction: column; align-items: center; color: #fff; gap: 10px;">
-                <div style="position: relative;">
-                    <img id="kirmizi-oyuncu-img" src="https://via.placeholder.com/100" alt="Rakip Resmi" style="width: 100px; height: 100px; border-radius: 25px; border: 4px solid #fff; box-shadow: 0 6px 15px rgba(0,0,0,0.4); object-fit: cover;">
-                </div>
-                <div id="kirmizi-oyuncu-isim" style="font-size: 20px; font-weight: 900; text-shadow: 2px 2px 4px #000;">Aranıyor...</div>
-                
-                <!-- 4v4 Kırmızı Takım Slotları -->
-                <div id="kirmizi-takim-slotlari" style="display: flex; gap: 6px; background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 12px;"></div>
-            </div>
-        </div>
-
-        <!-- Orta Üst Bilgi Başlığı -->
-        <div style="position: absolute; top: 15px; width: 100%; text-align: center; z-index: 10; color: #fff;">
-            <div id="vs-arama-baslik" style="font-size: 18px; font-weight: 900; background: rgba(0,0,0,0.5); display: inline-block; padding: 6px 20px; border-radius: 20px;">⚔️ Rakip Aranıyor...</div>
+            <button type="button" onclick="window.odaOlustur(); window.sekmeDegistir('oda-ici-ekran');" style="padding: 12px 20px; background: linear-gradient(180deg, #ff75c3 0%, #ff4757 100%); border: none; color: white; border-radius: 12px; font-weight: bold; font-size: 15px; cursor: pointer; width: 100%; margin-bottom: 12px;">Oda Oluştur 👑</button>
             
-            <!-- Canlı Oyuncu Sayacı -->
-            <div id="vs-arama-durum" style="font-size: 14px; color: #f1c40f; margin-top: 6px; text-shadow: 0 2px 4px #000;">
-                Oyuncular: <span id="vs-bulunan-oyuncu" style="font-size: 18px; color: #2ed573;">1</span> / <span id="vs-hedef-oyuncu" style="font-size: 18px;">2</span>
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="oda-kodu-input" placeholder="Oda Kodu..." style="flex: 1; padding: 10px; border-radius: 10px; border: none;">
+                <button type="button" onclick="window.odayaBaglanTikla()" style="padding: 10px 15px; background: #54a0ff; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer;">Katıl 🚀</button>
             </div>
         </div>
-
-        <!-- ORTA VS SİMGESİ VE GERİ SAYIM -->
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; display: flex; flex-direction: column; align-items: center;">
-            <div style="background: #eccc68; color: #2f3542; font-size: 42px; font-weight: 900; width: 90px; height: 90px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 6px solid #fff; box-shadow: 0 0 25px rgba(236, 204, 104, 0.8), inset 0 0 10px rgba(0,0,0,0.2); font-style: italic;">VS</div>
-            <div id="vs-geri-sayim" style="font-size: 32px; font-weight: 900; color: #fff; text-shadow: 0 4px 10px #000; margin-top: 10px;"></div>
-        </div>
-
-        <!-- İPTAL BUTONU -->
-        <div style="position: absolute; bottom: 30px; right: 30px; z-index: 10;">
-            <button type="button" onclick="window.eslesmeyiIptalEt()" style="padding: 12px 30px; background: #57606f; color: #fff; border: 3px solid #a4b0be; border-radius: 15px; font-weight: 900; font-size: 16px; cursor: pointer; box-shadow: 0 4px 0 #2f3542;">İptal Et</button>
+    </div>
+    <div id="oyunlarim-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff75c3; border-radius: 24px; padding: 25px; color: #fff; text-align: center;">
+        <h2 style="color: #fffa65;">🎮 Oyunlarım</h2>
+        <p style="color: #ffeaa7; font-size: 13px;">Oynayabileceğiniz mevcut oyunlar:</p>
+        <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #ff75c3; border-radius: 18px; padding: 15px; margin-top: 10px;">
+            <h3 style="margin: 0; color: #ff70a6;">🍓 Meyve & Şeker Eşleştirme</h3>
+            <p style="font-size: 12px; color: #a5b1c2;">4 Kişilik Çok Oyunculu Hafıza Oyunu</p>
+            <button type="button" onclick="window.sekmeDegistir('ana-lobi')" style="padding: 8px 16px; background: #ff75c3; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;">Anasayfa</button>
         </div>
     </div>
-       </div>
-      
-      <!-- 8. ARKADAŞLAR EKRANI -->
-<div id="arkadaslar-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.9); backdrop-filter: blur(12px); border: 3px solid #ff75c3; border-radius: 24px; padding: 20px; max-width: 400px; margin: 20px auto; color: #fff;">
-    <h2 style="color: #fffa65; text-shadow: 0 0 10px #ffa502; font-weight: 900; text-align: center; margin-top: 0;">👥 Şeker Arkadaşlarım</h2>
-    <div style="margin: 15px 0; display: flex; gap: 10px; justify-content: center;">
-        <input type="text" id="arkadas-id-input" placeholder="Arkadaşının Şeker İsmi..." style="padding: 8px; border-radius: 8px; border: 1px solid #ff69b4; flex: 1;">
-        <button type="button" onclick="window.arkadasEkle()" style="padding: 8px 15px; background: #ff69b4; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Ekle</button>
-    </div>
 
-    <div style="background: rgba(255, 255, 255, 0.1); border: 2px dashed #ff75c3; border-radius: 16px; padding: 10px; text-align: center; margin-bottom: 15px;">
-        <span style="font-size: 11px; color: #ffeaa7;">Senin Şeker İsmin:</span>
-        <div id="my-peer-id-display" style="font-weight: 900; font-size: 16px; color: #fffa65; margin-top: 2px;">Yükleniyor...</div>
-    </div>
+    <div id="download-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #54a0ff; border-radius: 24px; padding: 25px; color: #fff; text-align: center;">
+        <h2 style="color: #74b9ff; margin-top: 0;">📥 İndirme Merkezi</h2>
+        <p style="color: #ffeaa7; font-size: 13px;">Şeker Odası'nı mobil cihazınızda kesintisiz oynayın!</p>
+        
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
+            <div style="background: rgba(20, 10, 35, 0.7); padding: 14px; border-radius: 14px; border: 1px solid #54a0ff; display: flex; align-items: center; justify-content: space-between;">
+                <div style="text-align: left;">
+                    <strong style="color: #74b9ff; font-size: 14px;">Android (APK)</strong>
+                    <div style="font-size: 11px; color: #a5b1c2;">Mobil cihazlar için optimize edildi</div>
+                </div>
+                <a href="https://meyvecokluoyunculu.com.tr/oyun.apk" download style="padding: 10px 16px; background: #54a0ff; color: white; border-radius: 10px; font-weight: bold; text-decoration: none; font-size: 13px;">
+                    İndir (.apk)
+                </a>
+            </div>
 
-    <div id="arkadas-listesi" style="margin-bottom: 15px;"></div>
-</div>
-
-<!-- 9. ODA İÇİ EKRANI -->
-<div id="oda-ici-ekran" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff75c3; border-radius: 24px; padding: 25px; text-align: center; max-width: 400px; margin: 20px auto; color: #fff;">
-    <h2 style="color: #fffa65; text-shadow: 0 0 10px #ffa502; font-weight: 900; margin-bottom: 15px;">👑 Şeker Oyun Odası</h2>
-    <p style="margin: 15px 0; color: #74b9ff; font-weight: bold; font-size: 15px;">
-        Oda Kodun: 
-        <span style="background: rgba(255, 255, 255, 0.1); padding: 6px 14px; border-radius: 14px; border: 2px dashed #ff75c3; display: inline-block; margin-left: 5px;">
-            <strong id="oda-kodu-display" style="font-size: 22px; color: #ff4757;">-</strong>
-        </span>
-    </p>
-
-    <div style="margin: 15px 0; color: #2ed573; font-weight: bold;">
-        Katılan Oyuncu Sayısı: <span id="oyuncu-sayisi-display">1</span> / 4
-    </div>
-    
-    <div id="kurucu-oyuncu-listesi" style="margin: 20px 0; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 12px; max-width: 320px; width: 100%;">
-        <!-- Katılan oyuncular ve kurucu buraya listelenecek -->
-    </div>
-    
-    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
-        <button type="button" onclick="window.oyunuBaslatButonunaBas()" style="background: linear-gradient(180deg, #facc15 0%, #eab308 100%); border: 2px solid #fffa65; border-radius: 16px; color: #1e1b4b; font-weight: 900; font-size: 16px; padding: 12px; cursor: pointer;">Oyunu Başlat 🚀</button>
-        <button type="button" onclick="window.odadanCik(); window.sekmeDegistir('ana-lobi');" style="background: linear-gradient(180deg, #ff4757 0%, #ff6b81 100%); border: 2px solid #ff70a6; border-radius: 16px; color: white; font-weight: 900; font-size: 15px; padding: 12px; cursor: pointer;">Odadan Çık 🚪</button>
-    </div>
-</div>
-      <!-- 10. MİSAFİR BEKLEME EKRANI -->
-<div id="misafir-bekleme-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #54a0ff; border-radius: 24px; padding: 25px; text-align: center; max-width: 400px; margin: 20px auto; color: #fff;">
-    <h2 style="color: #74b9ff; text-shadow: 0 0 10px #54a0ff; font-weight: 900; margin-bottom: 15px;">⏳ Odadasınız</h2>
-    <p style="color: #ffeaa7; margin: 15px 0; font-size: 14px; font-weight: 600;">Oda sahibi oyunu başlatınca ekranınız otomatik açılacaktır... 🍭</p>
-    <div style="margin-top: 20px;">
-        <div id="misafir-oyuncu-listesi" style="margin: 20px 0; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 12px;">
-            <!-- Oyuncular buraya dinamik dolacak -->
-        </div>
-        <button type="button" onclick="window.odadanCik(); window.sekmeDegistir('ana-lobi');" style="background: linear-gradient(180deg, #ff4757 0%, #ff6b81 100%); border: 2px solid #ff70a6; border-radius: 16px; color: white; font-weight: 900; font-size: 15px; padding: 12px; cursor: pointer; width: 100%;">Odadan Çık 🚪</button>
-    </div>
-</div>
-
-<!-- 11. OYUN EKRANI -->
-<div id="game-screen" class="card-panel" style="display: none; flex-direction: column; gap: 15px; padding: 10px;">
-    <button id="btn-mikrofon" type="button" onclick="window.mikrofonDurumDegistir()" style="padding: 8px 16px; font-size: 13px; font-weight: bold; background: linear-gradient(180deg, #2ed573, #26af5f); border: 2px solid #ffffff; border-radius: 16px; color: white; cursor: pointer;">
-        🎙️ Mikrofonu Aç
-    </button>
-    
-    <div id="envanter-modal" class="modal" style="display: none;">
-        <div class="modal-icerik">
-            <span class="kapat" onclick="window.kapatEnvanter()">&times;</span>
-            <h2 style="color: #fffa65;">🎒 Şeker Envanterim</h2>
-            <div id="envanter-listesi"></div>
+            <div style="background: rgba(20, 10, 35, 0.7); padding: 14px; border-radius: 14px; border: 1px solid #2ed573; display: flex; align-items: center; justify-content: space-between;">
+                <div style="text-align: left;">
+                    <strong style="color: #2ed573; font-size: 14px;">Windows (Exe)</strong>
+                    <div style="font-size: 11px; color: #a5b1c2;">Masaüstü yüksek performans sürümü</div>
+                </div>
+                <a href="SekerOdasi_Setup.exe" download="SekerOdasi_Setup.exe" style="padding: 10px 16px; background: #2ed573; color: white; border-radius: 10px; font-weight: bold; text-decoration: none; font-size: 13px;">
+                    İndir (.exe)
+                </a>
+            </div>
         </div>
     </div>
-    
-    <div id="oyun-chat-kutusu" style="background: rgba(20, 10, 35, 0.85); border: 2px solid #ff75c3; border-radius: 16px; padding: 10px; margin-top: 10px; width: 100%; box-sizing: border-box;">
-        <div id="chat-mesajlar" style="height: 80px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; font-size: 12px; text-align: left; padding: 4px; margin-bottom: 8px; background: rgba(0,0,0,0.3); border-radius: 8px;">
-            <div style="color: #fffa65;">💬 <i>Oda sohbetine hoş geldiniz!</i></div>
+    <div id="partner-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #facc15; border-radius: 24px; padding: 25px; color: #fff;">
+        <h2 style="color: #fffa65; text-shadow: 0 0 10px #ffa502; text-align: center; margin-top: 0;">🤝 Partner & Ödül Sistemi</h2>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button type="button" onclick="window.partnerSekmeAc('basvuru-formu')" style="flex: 1; padding: 10px; background: #ff75c3; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;">Partner Başvurusu</button>
+            <button type="button" onclick="window.partnerSekmeAc('kod-bozdur')" style="flex: 1; padding: 10px; background: #2ed573; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;">🎁 Kod Bozdur</button>
         </div>
-        <div style="display: flex; gap: 6px;">
-            <input type="text" id="chat-input" placeholder="Mesaj yazın..." style="flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #ff75c3; background: #1e0a1b; color: white; font-size: 12px;">
-            <button type="button" onclick="window.chatMesajGonder()" style="padding: 8px 14px; background: #ff75c3; border: none; color: white; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;">Gönder</button>
+
+        <div id="basvuru-formu" style="display: block; background: rgba(20, 10, 35, 0.7); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+            <h3 style="margin-top: 0; color: #fffa65; font-size: 15px;">Yayıncı / İçerik Üretici Başvurusu</h3>
+            <p style="font-size: 12px; color: #a5b1c2; margin-bottom: 12px;">Özel komisyon oranları ve kanalınıza özel hediye kodları almak için formu doldurun.</p>
+            
+            <input type="text" id="partner-kanal-link" placeholder="Kanal / Yayın Linkiniz (TikTok, YouTube vb.)" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ff75c3; margin-bottom: 10px; box-sizing: border-box; background: #1e0a1b; color: white;">
+            <input type="text" id="partner-iletisim" placeholder="Discord / E-posta Adresiniz" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ff75c3; margin-bottom: 12px; box-sizing: border-box; background: #1e0a1b; color: white;">
+            
+            <button type="button" onclick="window.partnerBasvuruGonder()" style="width: 100%; padding: 12px; background: linear-gradient(180deg, #facc15 0%, #eab308 100%); border: none; color: #1e1b4b; border-radius: 10px; font-weight: 900; cursor: pointer;">Başvuruyu Gönder 🚀</button>
+        </div>
+
+        <div id="kod-bozdur" style="display: none; background: rgba(20, 10, 35, 0.7); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+            <h3 style="margin-top: 0; color: #2ed573; font-size: 15px;">Promosyon / Ödül Kodu Kullan</h3>
+            <p style="font-size: 12px; color: #a5b1c2; margin-bottom: 12px;">Yayıncılardan veya etkinliklerden aldığınız promosyon kodunu girin.</p>
+            
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="promosyon-kodu-input" placeholder="Örn: SEKER2026" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #2ed573; background: #1e0a1b; color: white; font-weight: bold; text-transform: uppercase;">
+                <button type="button" onclick="window.kodKullan()" style="padding: 10px 16px; background: #2ed573; border: none; color: white; border-radius: 8px; font-weight: bold; cursor: pointer;">Kullan</button>
+            </div>
         </div>
     </div>
-    
-    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: rgba(25, 15, 40, 0.85); backdrop-filter: blur(10px); border-radius: 20px; border: 2px solid #ff75c3;">
-        <button type="button" onclick="window.sekmeDegistir('ana-lobi')" style="padding: 8px 16px; font-size: 13px; font-weight: bold; background: linear-gradient(180deg, #ff4757, #ff6b81); border: 2px solid #ff70a6; border-radius: 16px; color: white; cursor: pointer;">🏠 Lobiye Dön</button>
-        <div style="color: #fffa65; font-weight: bold; font-size: 16px;">Skorunuz: <span id="skor-siz">0</span></div>
-        <button type="button" onclick="window.odadanCik(); window.sekmeDegistir('ana-lobi');" style="padding: 8px 16px; font-size: 13px; font-weight: bold; background: linear-gradient(180deg, #ff4757, #ff6b81); border: 2px solid #ff70a6; border-radius: 16px; color: white; cursor: pointer;">Odadan Çık 🚪</button>
+    <div id="iletisim-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff4757; border-radius: 24px; padding: 25px; color: #fff; text-align: center;">
+        <h2 style="color: #ff6b81;">📞 İletişim Bilgileri</h2>
+        <div style="text-align: left; font-size: 14px; line-height: 1.8; margin-top: 15px; background: rgba(20, 10, 35, 0.7); padding: 15px; border-radius: 15px;">
+            <p>📧 <strong>E-Posta:</strong> destek@sekerodasi.com</p>
+            <p>💬 <strong>Discord:</strong> discord.gg/sekerodasi</p>
+            <p>🌐 <strong>Web:</strong> www.sekerodasi.com</p>
+        </div>
     </div>
-    <!-- 4 KİŞİLİK SAVAŞ ALANI -->
-    <div class="savas-alani"></div>
-</div>
+
+    <div id="magaza-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff75c3; border-radius: 24px; box-shadow: 0 0 25px rgba(255, 117, 195, 0.4); padding: 25px; color: #fff;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h2 style="color: #fffa65; text-shadow: 0 0 10px #ffa502; font-weight: 900; margin: 0 0 8px 0;">🛒 Şeker & Büyü Mağazası</h2>
+            <p style="color: #ffeaa7; font-size: 13px; font-weight: 600; margin: 0;">Güçlendirmeler ve yeni kart temaları satın alın!</p>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+            <button type="button" onclick="window.magazaKategoriAc('guc-kategori')" style="flex: 1; padding: 8px; background: #ff75c3; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 12px;">⚡ Güçler</button>
+            <button type="button" onclick="window.magazaKategoriAc('tema-kategori')" style="flex: 1; padding: 8px; background: #54a0ff; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 12px;">🎨 Kart Temaları</button>
+        </div>
+        <div id="guc-kategori" style="display: flex; flex-direction: column; gap: 12px;">
+            <div class="magaza-urun-kart" style="background: rgba(20, 10, 35, 0.7); border: 2px solid #a55eea; border-radius: 18px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <div style="font-size: 32px;">🧙‍♀️</div>
+                <div style="flex: 1; text-align: left;">
+                    <h3 style="margin: 0; color: #d1d8e0; font-size: 14px; font-weight: bold;">Cadı Büyüsü</h3>
+                    <p style="margin: 2px 0; color: #a5b1c2; font-size: 11px;">Tüm kartları otomatik eşleştirir.</p>
+                    <div style="color: #fffa65; font-weight: bold; font-size: 12px;">150 🍬 Şeker</div>
+                </div>
+                <button type="button" onclick="window.esyaSatinAl('cadi', 150)" style="background: #facc15; border: none; border-radius: 10px; color: #1e1b4b; font-weight: 900; padding: 8px 12px; cursor: pointer; font-size: 12px;">Satın Al</button>
+            </div>
+
+            <div class="magaza-urun-kart" style="background: rgba(20, 10, 35, 0.7); border: 2px solid #2ed573; border-radius: 18px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <div class="kurbaga-animasyon" style="font-size: 32px;">🐸</div>
+                <div style="flex: 1; text-align: left;">
+                    <h3 style="margin: 0; color: #d1d8e0; font-size: 14px; font-weight: bold;">Kurbağa Görüşü</h3>
+                    <p style="margin: 2px 0; color: #a5b1c2; font-size: 11px;">Tüm kartları 2 saniye açık gösterir.</p>
+                    <div style="color: #fffa65; font-weight: bold; font-size: 12px;">75 🍬 Şeker</div>
+                </div>
+                <button type="button" onclick="window.esyaSatinAl('kurbaga', 75)" style="background: #facc15; border: none; border-radius: 10px; color: #1e1b4b; font-weight: 900; padding: 8px 12px; cursor: pointer; font-size: 12px;">Satın Al</button>
+            </div>
+        </div>
+        <div id="tema-kategori" style="display: none; flex-direction: column; gap: 12px;">
+            <div class="magaza-urun-kart" style="background: rgba(20, 10, 35, 0.7); border: 2px solid #ff7675; border-radius: 18px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <div style="font-size: 32px;">🧁</div>
+                <div style="flex: 1; text-align: left;">
+                    <h3 style="margin: 0; color: #d1d8e0; font-size: 14px; font-weight: bold;">Tatlı Dünyası</h3>
+                    <p style="margin: 2px 0; color: #a5b1c2; font-size: 11px;">Kart simgelerini çikolata ve pastalara dönüştürür.</p>
+                    <div style="color: #fffa65; font-weight: bold; font-size: 12px;">100 🍬 Şeker</div>
+                </div>
+                <button type="button" onclick="window.temaSatinAl('tatlilar', 100)" style="background: #54a0ff; border: none; border-radius: 10px; color: white; font-weight: 900; padding: 8px 12px; cursor: pointer; font-size: 12px;">Kilidi Aç</button>
+            </div>
+
+            <div class="magaza-urun-kart" style="background: rgba(20, 10, 35, 0.7); border: 2px solid #fdcb6e; border-radius: 18px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <div style="font-size: 32px;">🦁</div>
+                <div style="flex: 1; text-align: left;">
+                    <h3 style="margin: 0; color: #d1d8e0; font-size: 14px; font-weight: bold;">Sevimli Hayvanlar</h3>
+                    <p style="margin: 2px 0; color: #a5b1c2; font-size: 11px;">Kart simgelerini sevimli hayvanlara dönüştürür.</p>
+                    <div style="color: #fffa65; font-weight: bold; font-size: 12px;">120 🍬 Şeker</div>
+                </div>
+                <button type="button" onclick="window.temaSatinAl('hayvanlar', 120)" style="background: #54a0ff; border: none; border-radius: 10px; color: white; font-weight: 900; padding: 8px 12px; cursor: pointer; font-size: 12px;">Kilidi Aç</button>
+            </div>
+        </div>
+    </div>
+    <div id="etkinlikler-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff9f43; border-radius: 24px; box-shadow: 0 0 25px rgba(255, 159, 67, 0.4); padding: 25px; color: #fff;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h2 style="color: #feca57; text-shadow: 0 0 10px #ff9f43; font-weight: 900; margin: 0 0 8px 0;">🎉 Özel Etkinlikler & Ödüller</h2>
+            <p style="color: #ffeaa7; font-size: 13px; font-weight: 600; margin: 0;">Mod seçin ve diğer oyuncularla eşleşin!</p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #ff75c3; border-radius: 18px; padding: 14px; text-align: center;">
+                <h3 style="color: #fff; margin: 0 0 10px 0; font-size: 15px;">ETKİNLİK MODU SEÇİN</h3>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" onclick="window.odaAramayiBaslat(1)" style="flex: 1; padding: 12px; background: linear-gradient(180deg, #ff4757, #ff6b81); border: none; color: white; border-radius: 12px; font-weight: bold; cursor: pointer;">1 v 1 Düello</button>
+                    <button type="button" onclick="window.odaAramayiBaslat(4)" style="flex: 1; padding: 12px; background: linear-gradient(180deg, #2ed573, #1e90ff); border: none; color: white; border-radius: 12px; font-weight: bold; cursor: pointer;">4 v 4 Takım</button>
+                </div>
+            </div>
+
+            <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #ff9f43; border-radius: 18px; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <div style="font-size: 32px;">🎁</div>
+                <div style="flex: 1; text-align: left;">
+                    <h3 style="margin: 0; color: #feca57; font-size: 15px; font-weight: bold;">Günlük Giriş Ödülü</h3>
+                    <p style="margin: 2px 0 0 0; color: #a5b1c2; font-size: 11px;">Her gün 50 Şekerinizi alın!</p>
+                </div>
+                <button type="button" onclick="window.gunlukOdulAl()" style="background: linear-gradient(180deg, #2ed573 0%, #26af5f 100%); border: none; border-radius: 12px; color: white; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">Ödülü Al</button>
+            </div>
+            <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #f1c40f; border-radius: 18px; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <div style="font-size: 32px;">🥊</div>
+                <div style="flex: 1; text-align: left;">
+                    <h3 style="margin: 0; color: #f1c40f; font-size: 15px; font-weight: bold;">Çember Atma (1v1)</h3>
+                    <p style="margin: 2px 0 0 0; color: #a5b1c2; font-size: 11px;">2 Kişilik Hızlı Eşleşme</p>
+                </div>
+                <button type="button" onclick="window.odaAramayiBaslat(2)" style="background: linear-gradient(180deg, #f1c40f 0%, #d4ac0d 100%); border: none; border-radius: 12px; color: #000; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">2 Kişilik Oyna 💍</button>
+            </div>
+
+            <div style="background: rgba(20, 10, 35, 0.7); border: 2px solid #e74c3c; border-radius: 18px; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <div style="font-size: 32px;">👑</div>
+                <div style="flex: 1; text-align: left;">
+                    <h3 style="margin: 0; color: #e74c3c; font-size: 15px; font-weight: bold;">Çember Atma (5 Kişilik)</h3>
+                    <p style="margin: 2px 0 0 0; color: #a5b1c2; font-size: 11px;">5 Kişilik Büyük Yarış</p>
+                </div>
+                <button type="button" onclick="window.odaAramayiBaslat(5)" style="background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%); border: none; border-radius: 12px; color: #fff; font-weight: 900; padding: 10px 14px; cursor: pointer; font-size: 12px;">5 Kişilik Oyna 💍</button>
+            </div>
+        </div>
+    </div>
+    <div id="vs-otomatik-arama-ekrani" style="display: none; position: fixed; inset: 0; z-index: 9999; background: #0f172a; font-family: 'Arial Black', sans-serif; overflow: hidden;">
+        <div id="vs-eslesme-sahnesi" style="width: 100%; height: 100%; position: relative;">
+            
+            <div class="vs-taraf vs-mavi" style="position: absolute; top: -20%; left: -20%; width: 75%; height: 140%; background: linear-gradient(135deg, #1e90ff, #00d2d3); transform: rotate(-12deg); display: flex; align-items: center; justify-content: center; box-shadow: 10px 0 30px rgba(0,0,0,0.5); z-index: 1;">
+                <div class="vs-icerik" style="transform: rotate(12deg); display: flex; flex-direction: column; align-items: center; color: #fff; gap: 10px;">
+                    <div style="position: relative;">
+                        <img id="mavi-oyuncu-img" src="https://via.placeholder.com/100" alt="Oyuncu Resmi" style="width: 100px; height: 100px; border-radius: 25px; border: 4px solid #fff; box-shadow: 0 6px 15px rgba(0,0,0,0.4); object-fit: cover;">
+                    </div>
+                    <div id="mavi-oyuncu-isim" style="font-size: 20px; font-weight: 900; text-shadow: 2px 2px 4px #000;">Oyuncu</div>
+                    <div id="mavi-takim-slotlari" style="display: flex; gap: 6px; background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 12px;"></div>
+                </div>
+            </div>
+
+            <div class="vs-taraf vs-kirmizi" style="position: absolute; bottom: -20%; right: -20%; width: 75%; height: 140%; background: linear-gradient(135deg, #ff4757, #ff6b81); transform: rotate(-12deg); display: flex; align-items: center; justify-content: center; box-shadow: -10px 0 30px rgba(0,0,0,0.5); z-index: 1;">
+                <div class="vs-icerik" style="transform: rotate(12deg); display: flex; flex-direction: column; align-items: center; color: #fff; gap: 10px;">
+                    <div style="position: relative;">
+                        <img id="kirmizi-oyuncu-img" src="https://via.placeholder.com/100" alt="Rakip Resmi" style="width: 100px; height: 100px; border-radius: 25px; border: 4px solid #fff; box-shadow: 0 6px 15px rgba(0,0,0,0.4); object-fit: cover;">
+                    </div>
+                    <div id="kirmizi-oyuncu-isim" style="font-size: 20px; font-weight: 900; text-shadow: 2px 2px 4px #000;">Aranıyor...</div>
+                    <div id="kirmizi-takim-slotlari" style="display: flex; gap: 6px; background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 12px;"></div>
+                </div>
+            </div>
+            <div style="position: absolute; top: 15px; width: 100%; text-align: center; z-index: 10; color: #fff;">
+                <div id="vs-arama-baslik" style="font-size: 18px; font-weight: 900; background: rgba(0,0,0,0.5); display: inline-block; padding: 6px 20px; border-radius: 20px;">⚔️ Rakip Aranıyor...</div>
+                <div id="vs-arama-durum" style="font-size: 14px; color: #f1c40f; margin-top: 6px; text-shadow: 0 2px 4px #000;">
+                    Oyuncular: <span id="vs-bulunan-oyuncu" style="font-size: 18px; color: #2ed573;">1</span> / <span id="vs-hedef-oyuncu" style="font-size: 18px;">2</span>
+                </div>
+            </div>
+
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; display: flex; flex-direction: column; align-items: center;">
+                <div style="background: #eccc68; color: #2f3542; font-size: 42px; font-weight: 900; width: 90px; height: 90px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 6px solid #fff; box-shadow: 0 0 25px rgba(236, 204, 104, 0.8), inset 0 0 10px rgba(0,0,0,0.2); font-style: italic;">VS</div>
+                <div id="vs-geri-sayim" style="font-size: 32px; font-weight: 900; color: #fff; text-shadow: 0 4px 10px #000; margin-top: 10px;"></div>
+            </div>
+
+            <div style="position: absolute; bottom: 30px; right: 30px; z-index: 10;">
+                <button type="button" onclick="window.eslesmeyiIptalEt()" style="padding: 12px 30px; background: #57606f; color: #fff; border: 3px solid #a4b0be; border-radius: 15px; font-weight: 900; font-size: 16px; cursor: pointer; box-shadow: 0 4px 0 #2f3542;">İptal Et</button>
+            </div>
+        </div>
+    </div>
+    <div id="arkadaslar-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.9); backdrop-filter: blur(12px); border: 3px solid #ff75c3; border-radius: 24px; padding: 20px; color: #fff;">
+        <h2 style="color: #fffa65; text-shadow: 0 0 10px #ffa502; font-weight: 900; text-align: center; margin-top: 0;">👥 Şeker Arkadaşlarım</h2>
+        <div style="margin: 15px 0; display: flex; gap: 10px; justify-content: center;">
+            <input type="text" id="arkadas-id-input" placeholder="Arkadaşının Şeker İsmi..." style="padding: 8px; border-radius: 8px; border: 1px solid #ff69b4; flex: 1;">
+            <button type="button" onclick="window.arkadasEkle()" style="padding: 8px 15px; background: #ff69b4; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Ekle</button>
+        </div>
+
+        <div style="background: rgba(255, 255, 255, 0.1); border: 2px dashed #ff75c3; border-radius: 16px; padding: 10px; text-align: center; margin-bottom: 15px;">
+            <span style="font-size: 11px; color: #ffeaa7;">Senin Şeker İsmin:</span>
+            <div id="my-peer-id-display" style="font-weight: 900; font-size: 16px; color: #fffa65; margin-top: 2px;">Yükleniyor...</div>
+        </div>
+
+        <div id="arkadas-listesi" style="margin-bottom: 15px;"></div>
+    </div>
+
+    <div id="oda-ici-ekran" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #ff75c3; border-radius: 24px; padding: 25px; text-align: center; color: #fff;">
+        <h2 style="color: #fffa65; text-shadow: 0 0 10px #ffa502; font-weight: 900; margin-bottom: 15px;">👑 Şeker Oyun Odası</h2>
+        <p style="margin: 15px 0; color: #74b9ff; font-weight: bold; font-size: 15px;">
+            Oda Kodun: 
+            <span style="background: rgba(255, 255, 255, 0.1); padding: 6px 14px; border-radius: 14px; border: 2px dashed #ff75c3; display: inline-block; margin-left: 5px;">
+                <strong id="oda-kodu-display" style="font-size: 22px; color: #ff4757;">-</strong>
+            </span>
+        </p>
+
+        <div style="margin: 15px 0; color: #2ed573; font-weight: bold;">
+            Katılan Oyuncu Sayısı: <span id="oyuncu-sayisi-display">1</span> / 4
+        </div>
+        
+        <div id="kurucu-oyuncu-listesi" style="margin: 20px auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 12px; width: 100%; box-sizing: border-box;">
+            </div>
+       <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
+            <button type="button" onclick="window.oyunuBaslatButonunaBas()" style="background: linear-gradient(180deg, #facc15 0%, #eab308 100%); border: 2px solid #fffa65; border-radius: 16px; color: #1e1b4b; font-weight: 900; font-size: 16px; padding: 12px; cursor: pointer;">Oyunu Başlat 🚀</button>
+            <button type="button" onclick="window.odadanCik(); window.sekmeDegistir('ana-lobi');" style="background: linear-gradient(180deg, #ff4757 0%, #ff6b81 100%); border: 2px solid #ff70a6; border-radius: 16px; color: white; font-weight: 900; font-size: 15px; padding: 12px; cursor: pointer;">Odadan Çık 🚪</button>
+        </div>
+    </div>
+
+    <div id="misafir-bekleme-ekrani" class="card-panel" style="display: none; background: rgba(30, 15, 45, 0.85); backdrop-filter: blur(12px); border: 3px solid #54a0ff; border-radius: 24px; padding: 25px; text-align: center; color: #fff;">
+        <h2 style="color: #74b9ff; text-shadow: 0 0 10px #54a0ff; font-weight: 900; margin-bottom: 15px;">⏳ Odadasınız</h2>
+        <p style="color: #ffeaa7; margin: 15px 0; font-size: 14px; font-weight: 600;">Oda sahibi oyunu başlatınca ekranınız otomatik açılacaktır... 🍭</p>
+        <div style="margin-top: 20px;">
+            <div id="misafir-oyuncu-listesi" style="margin: 20px 0; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 12px;"></div>
+            <button type="button" onclick="window.odadanCik(); window.sekmeDegistir('ana-lobi');" style="background: linear-gradient(180deg, #ff4757 0%, #ff6b81 100%); border: 2px solid #ff70a6; border-radius: 16px; color: white; font-weight: 900; font-size: 15px; padding: 12px; cursor: pointer; width: 100%;">Odadan Çık 🚪</button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="card-panel" style="display: none; flex-direction: column; gap: 15px; padding: 10px; max-width: 1000px;">
+        <button id="btn-mikrofon" type="button" onclick="window.mikrofonDurumDegistir()" style="padding: 8px 16px; font-size: 13px; font-weight: bold; background: linear-gradient(180deg, #2ed573, #26af5f); border: 2px solid #ffffff; border-radius: 16px; color: white; cursor: pointer; align-self: flex-start;">
+            🎙️ Mikrofonu Aç
+        </button>
+        
+        <div id="envanter-modal" class="modal" style="display: none;">
+            <div class="modal-icerik">
+                <span class="kapat" onclick="window.kapatEnvanter()">&times;</span>
+                <h2 style="color: #fffa65;">🎒 Şeker Envanterim</h2>
+                <div id="envanter-listesi"></div>
+            </div>
+        </div>
+        <div id="oyun-chat-kutusu" style="background: rgba(20, 10, 35, 0.85); border: 2px solid #ff75c3; border-radius: 16px; padding: 10px; width: 100%; box-sizing: border-box;">
+            <div id="chat-mesajlar" style="height: 80px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; font-size: 12px; text-align: left; padding: 4px; margin-bottom: 8px; background: rgba(0,0,0,0.3); border-radius: 8px;">
+                <div style="color: #fffa65;">💬 <i>Oda sohbetine hoş geldiniz!</i></div>
+            </div>
+            <div style="display: flex; gap: 6px;">
+                <input type="text" id="chat-input" placeholder="Mesaj yazın..." style="flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #ff75c3; background: #1e0a1b; color: white; font-size: 12px;">
+                <button type="button" onclick="window.chatMesajGonder()" style="padding: 8px 14px; background: #ff75c3; border: none; color: white; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;">Gönder</button>
+            </div>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: rgba(25, 15, 40, 0.85); backdrop-filter: blur(10px); border-radius: 20px; border: 2px solid #ff75c3;">
+            <button type="button" onclick="window.sekmeDegistir('ana-lobi')" style="padding: 8px 16px; font-size: 13px; font-weight: bold; background: linear-gradient(180deg, #ff4757, #ff6b81); border: 2px solid #ff70a6; border-radius: 16px; color: white; cursor: pointer;">🏠 Lobiye Dön</button>
+            <div style="color: #fffa65; font-weight: bold; font-size: 16px;">Skorunuz: <span id="skor-siz">0</span></div>
+            <button type="button" onclick="window.odadanCik(); window.sekmeDegistir('ana-lobi');" style="padding: 8px 16px; font-size: 13px; font-weight: bold; background: linear-gradient(180deg, #ff4757, #ff6b81); border: 2px solid #ff70a6; border-radius: 16px; color: white; cursor: pointer;">Odadan Çık 🚪</button>
+        </div>
+
+        <div class="savas-alani"></div>
+        </div>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="vs-eslesme.js"></script>
+    <script src="oyun.js"></script>
+
+</body>
+</html>
     <script>                                 
          // ==========================================
 // 1. SÜRÜM VE SUNUCU BAĞLANTISI (SOCKET.IO)
