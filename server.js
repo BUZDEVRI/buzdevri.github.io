@@ -59,54 +59,66 @@ io.on('connection', (socket) => {
             console.log(`🎉 Eşleşme Tamamlandı! Oda ID: ${roomId}`);
         }
     });
-
-    // ==========================================
-    // 2. YENİ ETKİNLİK SİSTEMİ (eslesme_ara)
+         // ==========================================
+    // YENİ ETKİNLİK SİSTEMİ (eslesme_ara) - GÜNCELLENMİŞ EKSİKSİZ KOD
     // ==========================================
     socket.on('eslesme_ara', (data) => {
+        // Profil fotosu boşsa varsayılan resim atayalım (kırılmayı önler)
         const oyuncuData = {
             id: socket.id,
-            oyuncuAdi: data.oyuncuAdi,
-            profilFoto: data.profilFoto
+            oyuncuAdi: data.oyuncuAdi || 'Oyuncu',
+            profilFoto: (data.profilFoto && data.profilFoto.length > 5) 
+                        ? data.profilFoto 
+                        : 'https://via.placeholder.com/100'
         };
 
-        if (data.mod === '1v1') {
-            // Çift eklemeyi önlemek için temizle ve ekle
-            const index = eslesmeHavuza1v1.findIndex(o => o.id === socket.id);
-            if (index !== -1) eslesmeHavuza1v1.splice(index, 1);
+        // ------------------ 1v1 MODU ------------------
+        if (data.mod === '1v1' || data.mod === 1 || data.mod === 2) {
+            // Çift eklemeyi önle
+            const varMi = eslesmeHavuza1v1.findIndex(o => o.id === socket.id);
+            if (varMi !== -1) eslesmeHavuza1v1.splice(varMi, 1);
             
             eslesmeHavuza1v1.push(oyuncuData);
-            console.log(`[1v1] Havuzdaki oyuncu: ${eslesmeHavuza1v1.length}/2`);
-            
-            // Havuzda 2 kişi biriktiyse maçı başlat
+            console.log(`[1v1] Havuzdaki oyuncu sayısı: ${eslesmeHavuza1v1.length}/2`);
+
+            // Arama yapan ilk oyuncunun ekranında "Oyuncular 1 / 2" bilgisini güncelle
+            socket.emit('eslesme_guncelleme', { mevcutSayi: eslesmeHavuza1v1.length });
+
+            // 2 Kişi biriktiğinde maçı başlat
             if (eslesmeHavuza1v1.length >= 2) {
                 const oyuncu1 = eslesmeHavuza1v1.shift();
                 const oyuncu2 = eslesmeHavuza1v1.shift();
                 const odaId = "1v1_oda_" + Date.now();
 
-                // 1. Oyuncunun Socket'ini Odaya Al ve Bildir
                 const s1 = io.sockets.sockets.get(oyuncu1.id);
-                if (s1) s1.join(odaId);
-                io.to(oyuncu1.id).emit('eslesme_guncelleme', { mevcutSayi: 2, rakipBilgisi: oyuncu2 });
-                io.to(oyuncu1.id).emit('mac_bulundu', { odaId: odaId, rol: 'kurucu' });
-
-                // 2. Oyuncunun Socket'ini Odaya Al ve Bildir
                 const s2 = io.sockets.sockets.get(oyuncu2.id);
+
+                if (s1) s1.join(odaId);
                 if (s2) s2.join(odaId);
+
+                // 1. Oyuncunun ekranında rakip bilgilerini ve maçı başlat
+                io.to(oyuncu1.id).emit('eslesme_guncelleme', { mevcutSayi: 2, rakipBilgisi: oyuncu2 });
+                io.to(oyuncu1.id).emit('mac_bulundu', { odaId: odaId, rol: 'kurucu', rakipBilgisi: oyuncu2 });
+
+                // 2. Oyuncunun ekranında rakip bilgilerini ve maçı başlat
                 io.to(oyuncu2.id).emit('eslesme_guncelleme', { mevcutSayi: 2, rakipBilgisi: oyuncu1 });
-                io.to(oyuncu2.id).emit('mac_bulundu', { odaId: odaId, rol: 'katilimci' });
+                io.to(oyuncu2.id).emit('mac_bulundu', { odaId: odaId, rol: 'katilimci', rakipBilgisi: oyuncu1 });
 
                 console.log(`⚡ 1v1 Maç Başladı! Oda ID: ${odaId}`);
             }
         } 
-        else if (data.mod === '4v4') {
-            const index = eslesmeHavuza4v4.findIndex(o => o.id === socket.id);
-            if (index !== -1) eslesmeHavuza4v4.splice(index, 1);
+        // ------------------ 4v4 MODU ------------------
+        else if (data.mod === '4v4' || data.mod === 4 || data.mod === 8) {
+            const varMi = eslesmeHavuza4v4.findIndex(o => o.id === socket.id);
+            if (varMi !== -1) eslesmeHavuza4v4.splice(varMi, 1);
 
             eslesmeHavuza4v4.push(oyuncuData);
-            console.log(`[4v4] Havuzdaki oyuncu: ${eslesmeHavuza4v4.length}/8`);
+            console.log(`[4v4] Havuzdaki oyuncu sayısı: ${eslesmeHavuza4v4.length}/8`);
 
-            // Havuzda 8 kişi (4v4) biriktiyse maçı başlat
+            // Havuzdaki anlık kişi sayısını arama yapan oyuncuya gönder (örn: 3/8)
+            socket.emit('eslesme_guncelleme', { mevcutSayi: eslesmeHavuza4v4.length });
+
+            // 8 Kişi biriktiğinde maçı başlat
             if (eslesmeHavuza4v4.length >= 8) {
                 const takimMavi = eslesmeHavuza4v4.splice(0, 4);
                 const takimKirmizi = eslesmeHavuza4v4.splice(0, 4);
@@ -123,7 +135,7 @@ io.on('connection', (socket) => {
             }
         }
     });
-
+    
     // ==========================================
     // 3. GENEL ORTAK OLAYLAR (Hamle, İptal, Disconnect)
     // ==========================================
