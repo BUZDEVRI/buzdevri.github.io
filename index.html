@@ -1455,6 +1455,17 @@ window.otomatikEslesmeBaslat = function(mod) {
         window.odaAramayiBaslat = function(kisiSayisi) {
     mevcutAramaModu = kisiSayisi;
     
+    // Socket Bağlantı Kontrolü ve Otomatik Bağlanma
+    if (!window.socket || !window.socket.connected) {
+        if (typeof io !== 'undefined') {
+            // Bağlantı kopmuşsa veya başlatılmadıysa tekrar dene
+            window.socket = io(); 
+        } else {
+            alert("Socket kütüphanesi (socket.io.js) yüklenemedi! Lütfen sayfayı yenileyin.");
+            return;
+        }
+    }
+
     // Profil Verilerini Al
     const mevcutIsim = localStorage.getItem('sekerOyuncuAdi') || 'Oyuncu';
     const mevcutFoto = localStorage.getItem('sekerProfilFoto') || 'https://via.placeholder.com/100';
@@ -1477,6 +1488,7 @@ window.otomatikEslesmeBaslat = function(mod) {
     const kirmiziImgEl = document.getElementById('kirmizi-oyuncu-img');
     if (kirmiziIsimEl) kirmiziIsimEl.innerText = "Aranıyor...";
     if (kirmiziImgEl) kirmiziImgEl.src = "https://via.placeholder.com/100";
+    
     // Hedef Sayıları Ayarla
     const hedefSayisi = kisiSayisi === 1 ? 2 : 8;
     const hedefEl = document.getElementById('vs-hedef-oyuncu');
@@ -1497,7 +1509,8 @@ window.otomatikEslesmeBaslat = function(mod) {
     const kirmiziSlotContainer = document.getElementById('kirmizi-takim-slotlari');
     if (maviSlotContainer) maviSlotContainer.innerHTML = '';
     if (kirmiziSlotContainer) kirmiziSlotContainer.innerHTML = '';
-        if (kisiSayisi === 4 && maviSlotContainer && kirmiziSlotContainer) {
+
+    if (kisiSayisi === 4 && maviSlotContainer && kirmiziSlotContainer) {
         for (let i = 0; i < 3; i++) {
             maviSlotContainer.innerHTML += `<div class="slot-mavi-kutu" style="width:28px; height:28px; background:rgba(255,255,255,0.2); border-radius:50%; border:1px solid #fff; display:flex; align-items:center; justify-content:center; font-size:10px;">❓</div>`;
             kirmiziSlotContainer.innerHTML += `<div class="slot-kirmizi-kutu" style="width:28px; height:28px; background:rgba(255,255,255,0.2); border-radius:50%; border:1px solid #fff; display:flex; align-items:center; justify-content:center; font-size:10px;">❓</div>`;
@@ -1505,16 +1518,13 @@ window.otomatikEslesmeBaslat = function(mod) {
     }
 
     // Node.js Sunucusu Üzerinden Eşleşmeyi Başlat
-    if (window.socket && window.socket.connected) {
-        window.socket.emit('eslesme_ara', {
-            mod: kisiSayisi === 1 ? '1v1' : '4v4',
-            oyuncuAdi: mevcutIsim,
-            profilFoto: mevcutFoto
-        });
-    } else {
-        alert("Sunucu bağlantısı kurulamadı. Lütfen internet bağlantınızı ve Socket sunucunuzu kontrol edin.");
-    }
+    window.socket.emit('eslesme_ara', {
+        mod: kisiSayisi === 1 ? '1v1' : '4v4',
+        oyuncuAdi: mevcutIsim,
+        profilFoto: mevcutFoto
+    });
 };
+        
         /**
  * Socket Dinleyicileri - Gerçek Zamanlı Oyuncu Görünürlüğü ve Maç Başlangıcı
  */
