@@ -1638,7 +1638,99 @@ if (typeof socket !== "undefined" && socket) {
         }
     });
 }
+// Eşleşme ve Arama Durum Değişkenleri
+let mevcutAramaModu = null; // 1 (1v1) veya 4 (4v4)
+let aramaSuresiTimer = null;
+let bulunanOyuncular = [];
 
+/**
+ * Etkinlikler ekranından 1v1 veya 4v4 butonlarına tıklandığında tetiklenir.
+ * @param {number} kisiSayisi - 1v1 için 1 (Tek rakip), 4v4 için 4 (4 kişilik takım)
+ */
+window.odaAramayiBaslat = function(kisiSayisi) {
+    mevcutAramaModu = kisiSayisi;
+    
+    // Kullanıcı bilgilerini al
+    const mevcutIsim = localStorage.getItem('sekerOyuncuAdi') || 'Oyuncu';
+    const mevcutFoto = localStorage.getItem('sekerProfilFoto') || 'https://via.placeholder.com/100';
+    
+    // UI Güncellemeleri
+    document.getElementById('mavi-oyuncu-isim').innerText = mevcutIsim;
+    document.getElementById('mavi-oyuncu-img').src = mevcutFoto;
+    
+    const hedefOyuncuSayisi = kisiSayisi === 1 ? 2 : 8; // 1v1 -> 2 Oyuncu, 4v4 -> 8 Oyuncu
+    document.getElementById('vs-hedef-oyuncu').innerText = hedefOyuncuSayisi;
+    document.getElementById('vs-bulunan-oyuncu').innerText = "1";
+    document.getElementById('vs-arama-baslik').innerText = kisiSayisi === 1 ? '⚔️ 1v1 Düello Aranıyor...' : '🛡️ 4v4 Takım Maçı Aranıyor...';
+    
+    // Arama ekranını göster
+    document.getElementById('vs-otomatik-arama-ekrani').style.display = 'block';
+    
+    // Sunucuya (Node.js / Socket.io) Arama İsteği Gönder
+    if (window.socket && window.socket.connected) {
+        window.socket.emit('eslesme_ara', {
+            mod: kisiSayisi === 1 ? '1v1' : '4v4',
+            oyuncuAdi: mevcutIsim,
+            profilFoto: mevcutFoto
+        });
+    } else {
+        console.warn("Socket bağlantısı kurulamadı. Simülasyon modu aktif.");
+    }
+};
+
+/**
+ * Eşleşmeyi İptal Et Butonu
+ */
+window.eslesmeyiIptalEt = function() {
+    if (window.socket && window.socket.connected) {
+        window.socket.emit('eslesme_iptal');
+    }
+    
+    if (aramaSuresiTimer) clearInterval(aramaSuresiTimer);
+    document.getElementById('vs-otomatik-arama-ekrani').style.display = 'none';
+    mevcutAramaModu = null;
+};
+
+// Sunucudan (Socket.io) Gelen Eşleşme Olayları
+if (window.socket) {
+    // Oda doldukça / oyuncu geldikçe güncellenir
+    window.socket.on('eslesme_guncelleme', (data) => {
+        document.getElementById('vs-bulunan-oyuncu').innerText = data.mevcutSayi;
+        
+        // Rakip (Kırmızı Takım) Bilgisini Güncelle
+        if (data.rakipBilgisi) {
+            document.getElementById('kirmizi-oyuncu-isim').innerText = data.rakipBilgisi.oyuncuAdi;
+            document.getElementById('kirmizi-oyuncu-img').src = data.rakipBilgisi.profilFoto;
+        }
+    });
+
+    // Maç Bulunduğunda Çalışır
+    window.socket.on('mac_bulundu', (data) => {
+        document.getElementById('vs-arama-baslik').innerText = '🔥 MAÇ BULUNDU!';
+        document.getElementById('vs-arama-baslik').style.background = '#2ed573';
+        
+        let sayac = 3;
+        const geriSayimEl = document.getElementById('vs-geri-sayim');
+        geriSayimEl.innerText = sayac;
+        
+        const interval = setInterval(() => {
+            sayac--;
+            if (sayac > 0) {
+                geriSayimEl.innerText = sayac;
+            } else {
+                clearInterval(interval);
+                document.getElementById('vs-otomatik-arama-ekrani').style.display = 'none';
+                
+                // Oyunu başlat ve oyun ekranına geç
+                window.sekmeDegistir('game-screen');
+                if (window.oyunBaslatEvrensel) {
+                    window.oyunBaslatEvrensel(data.odaId, data.rol);
+                }
+            }
+        }, 1000);
+    });
+}
+        
 window.onload = function() {
     profilYukle();
     gunlukOdulButonKontrol();
