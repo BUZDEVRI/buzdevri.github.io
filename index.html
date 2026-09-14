@@ -1409,143 +1409,172 @@ window.oyunBittiKazanan = function(kazananIndex) {
     window.oyunBittiKazanan(kazananIndex);
 };
        // ==========================================
-// 9. FIREBASE & VS EŞLEŞTİRME VE DÜELLO MANTIĞI (1v1 & 4v4)
+// VS EŞLEŞTİRME VE DÜELLO MANTIĞI (SOCKET.IO - 1v1 & 4v4)
 // ==========================================
-let eslesmeAramaTimer = null;
 
-const firebaseConfig = {
-    apiKey: "AIzaSyAW1Xh8lVhHCUaimrO9ILqvcRqxC2OKHzY",
-    authDomain: "meyve-oyunu-d8b38.firebaseapp.com",
-    databaseURL: "https://meyve-oyunu-d8b38-default-rtdb.firebaseio.com",
-    projectId: "meyve-oyunu-d8b38",
-    storageBucket: "meyve-oyunu-d8b38.firebasestorage.app",
-    messagingSenderId: "1084491198145",
-    appId: "1:1084491198145:web:cbcd3f1e37e2212efcee40"
-};
+let mevcutAramaModu = null;
 
-if (typeof firebase !== "undefined" && !firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
-const db = (typeof firebase !== "undefined") ? firebase.database() : null;
-
-const oyuncuId = "Oyuncu_" + Math.floor(1000 + Math.random() * 9000);
-let aktifOdaKey = null;
-let odaDinleyici = null;
-
+// Eski butonların (1v1 ve 4v4) yeni Socket.io aramasını tetiklemesini sağlayan köprüler
 window.vs1v1ModuBaslat = function() {
-    window.otomatikEslesmeBaslat(1, 2); 
+    window.odaAramayiBaslat(1); 
 };
 
 window.vs4v4ModuBaslat = function() {
-    window.otomatikEslesmeBaslat(4, 8); 
+    window.odaAramayiBaslat(4); 
 };
 
-window.otomatikEslesmeBaslat = function(mod, hedefOyuncuSayisi) {
-    window.eslesmeModu = mod;
-    window.odaListesi4v4 = [];
+window.otomatikEslesmeBaslat = function(mod) {
+    window.odaAramayiBaslat(mod);
+};
 
+/**
+ * Etkinlik Arama Ekranını Açma ve Socket Üzerinden Arama Başlatma
+ */
+        window.odaAramayiBaslat = function(kisiSayisi) {
+    mevcutAramaModu = kisiSayisi;
+    
+    // Profil Verilerini Al
+    const mevcutIsim = localStorage.getItem('sekerOyuncuAdi') || 'Oyuncu';
+    const mevcutFoto = localStorage.getItem('sekerProfilFoto') || 'https://via.placeholder.com/100';
+    
+    // HTML Elementlerini Al
     const modSecimi = document.getElementById('etkinlik-mod-secimi');
     const aramaEkrani = document.getElementById('vs-otomatik-arama-ekrani') || document.getElementById('etkinlik-arama-ekrani');
-    const baslik = document.getElementById('vs-arama-baslik');
-    const durum = document.getElementById('vs-arama-durum');
-    const bulunanEl = document.getElementById('vs-bulunan-oyuncu');
-    const hedefEl = document.getElementById('vs-hedef-oyuncu');
-
+    
     if (modSecimi) modSecimi.style.display = 'none';
     if (aramaEkrani) aramaEkrani.style.display = 'block';
 
-    if (baslik) baslik.innerText = mod === 1 ? "⚔️ 1v1 Rakip Aranıyor..." : "🛡️ 4v4 Takım Aranıyor...";
-    if (durum) durum.innerText = "Uygun oyuncu havuzu taranıyor...";
+    // Kendi Bilgilerini Doldur (Mavi Takım)
+    const maviIsimEl = document.getElementById('mavi-oyuncu-isim');
+    const maviImgEl = document.getElementById('mavi-oyuncu-img');
+    if (maviIsimEl) maviIsimEl.innerText = mevcutIsim;
+    if (maviImgEl) maviImgEl.src = mevcutFoto;
+    
+    // Rakip Alanını Sıfırla (Kırmızı Takım)
+    const kirmiziIsimEl = document.getElementById('kirmizi-oyuncu-isim');
+    const kirmiziImgEl = document.getElementById('kirmizi-oyuncu-img');
+    if (kirmiziIsimEl) kirmiziIsimEl.innerText = "Aranıyor...";
+    if (kirmiziImgEl) kirmiziImgEl.src = "https://via.placeholder.com/100";
+    // Hedef Sayıları Ayarla
+    const hedefSayisi = kisiSayisi === 1 ? 2 : 8;
+    const hedefEl = document.getElementById('vs-hedef-oyuncu');
+    const bulunanEl = document.getElementById('vs-bulunan-oyuncu');
+    const baslikEl = document.getElementById('vs-arama-baslik');
+    const geriSayimEl = document.getElementById('vs-geri-sayim');
+
+    if (hedefEl) hedefEl.innerText = hedefSayisi;
     if (bulunanEl) bulunanEl.innerText = "1";
-    if (hedefEl) hedefEl.innerText = hedefOyuncuSayisi;
+    if (baslikEl) {
+        baslikEl.innerText = kisiSayisi === 1 ? '⚔️ 1v1 Düello Aranıyor...' : '🛡️ 4v4 Takım Maçı Aranıyor...';
+        baslikEl.style.background = 'rgba(0,0,0,0.5)';
+    }
+    if (geriSayimEl) geriSayimEl.innerText = "";
 
-    window.havuzAramasiYap(1, hedefOyuncuSayisi);
-};
-       window.havuzAramasiYap = function(odaIndex, hedefOyuncu) {
-    if (peer) peer.destroy();
+    // Slot Kutularını Temizle (4v4 Modu için)
+    const maviSlotContainer = document.getElementById('mavi-takim-slotlari');
+    const kirmiziSlotContainer = document.getElementById('kirmizi-takim-slotlari');
+    if (maviSlotContainer) maviSlotContainer.innerHTML = '';
+    if (kirmiziSlotContainer) kirmiziSlotContainer.innerHTML = '';
+        if (kisiSayisi === 4 && maviSlotContainer && kirmiziSlotContainer) {
+        for (let i = 0; i < 3; i++) {
+            maviSlotContainer.innerHTML += `<div class="slot-mavi-kutu" style="width:28px; height:28px; background:rgba(255,255,255,0.2); border-radius:50%; border:1px solid #fff; display:flex; align-items:center; justify-content:center; font-size:10px;">❓</div>`;
+            kirmiziSlotContainer.innerHTML += `<div class="slot-kirmizi-kutu" style="width:28px; height:28px; background:rgba(255,255,255,0.2); border-radius:50%; border:1px solid #fff; display:flex; align-items:center; justify-content:center; font-size:10px;">❓</div>`;
+        }
+    }
 
-    const sabitOdaId = `VS_AUTO_ROOM_${window.eslesmeModu}V${window.eslesmeModu}_ODANUM_${odaIndex}`;
-    peer = new Peer();
-
-    peer.on('open', (id) => {
-        myPeerId = id;
-        let conn = peer.connect(sabitOdaId);
-        let baglandi = false;
-
-        conn.on('open', () => {
-            baglandi = true;
-            isHost = false;
-            connectedPeers = [conn];
-
-            conn.send({
-                type: "HAVUZ_KATILDI",
-                name: myPlayerName,
-                img: ""
-            });
+    // Node.js Sunucusu Üzerinden Eşleşmeyi Başlat
+    if (window.socket && window.socket.connected) {
+        window.socket.emit('eslesme_ara', {
+            mod: kisiSayisi === 1 ? '1v1' : '4v4',
+            oyuncuAdi: mevcutIsim,
+            profilFoto: mevcutFoto
         });
-
-        conn.on('data', (data) => window.otomatikSinyalIsle(data));
-
-        setTimeout(() => {
-            if (!baglandi) {
-                window.havuzHostOl(sabitOdaId, odaIndex, hedefOyuncu);
-            }
-        }, 1500);
-    });
+    } else {
+        alert("Sunucu bağlantısı kurulamadı. Lütfen internet bağlantınızı ve Socket sunucunuzu kontrol edin.");
+    }
 };
-       window.havuzHostOl = function(sabitOdaId, odaIndex, hedefOyuncu) {
-    if (peer) peer.destroy();
-
-    peer = new Peer(sabitOdaId);
-    isHost = true;
-    connectedPeers = [];
-
-    window.odaListesi4v4 = [{
-        name: myPlayerName,
-        img: ""
-    }];
-
-    peer.on('open', (id) => {
-        myPeerId = id;
-        console.log(`[Eşleşme] Havuz Kuruldu: ${sabitOdaId}`);
+        /**
+ * Socket Dinleyicileri - Gerçek Zamanlı Oyuncu Görünürlüğü ve Maç Başlangıcı
+ */
+if (window.socket) {
+    
+    // Eşleşme Sırasında Oyuncu Sayısı veya Rakip Bilgisi Güncellendiğinde
+    window.socket.on('eslesme_guncelleme', (data) => {
+        const bulunanEl = document.getElementById('vs-bulunan-oyuncu');
+        if (bulunanEl && data.mevcutSayi) {
+            bulunanEl.innerText = data.mevcutSayi;
+        }
+        
+        // 1v1'de İkinci Oyuncu Geldiği An Görselini ve İsmini Ekranına Bas
+        if (data.rakipBilgisi) {
+            const kirmiziIsimEl = document.getElementById('kirmizi-oyuncu-isim');
+            const kirmiziImgEl = document.getElementById('kirmizi-oyuncu-img');
+            
+            if (kirmiziIsimEl) kirmiziIsimEl.innerText = data.rakipBilgisi.oyuncuAdi || 'Rakip Oyuncu';
+            if (kirmiziImgEl && data.rakipBilgisi.profilFoto) {
+                kirmiziImgEl.src = data.rakipBilgisi.profilFoto;
+            }
+        }
     });
-
-    peer.on('connection', (conn) => {
-        if (window.odaListesi4v4.length >= hedefOyuncu) {
-            conn.close();
-            return;
+     // Oda Tamamlandığında Ve Maç Başladığında
+    window.socket.on('mac_bulundu', (data) => {
+        const baslikEl = document.getElementById('vs-arama-baslik');
+        if (baslikEl) {
+            baslikEl.innerText = '🔥 MAÇ BULUNDU!';
+            baslikEl.style.background = '#2ed573';
+        }
+        
+        // 1v1 Veri Yansıtma
+        if (data.rakipBilgisi) {
+            const kirmiziIsimEl = document.getElementById('kirmizi-oyuncu-isim');
+            const kirmiziImgEl = document.getElementById('kirmizi-oyuncu-img');
+            if (kirmiziIsimEl) kirmiziIsimEl.innerText = data.rakipBilgisi.oyuncuAdi;
+            if (kirmiziImgEl) kirmiziImgEl.src = data.rakipBilgisi.profilFoto;
         }
 
-        conn.on('data', (data) => {
-            if (data.type === "HAVUZ_KATILDI") {
-                connectedPeers.push(conn);
-                window.odaListesi4v4.push({ name: data.name, img: data.img });
+        // 4v4 Veri Yansıtma
+        if (data.takimMavi && data.takimKirmizi) {
+            document.getElementById('mavi-oyuncu-isim').innerText = data.takimMavi[0].oyuncuAdi;
+            document.getElementById('mavi-oyuncu-img').src = data.takimMavi[0].profilFoto;
+            
+            document.getElementById('kirmizi-oyuncu-isim').innerText = data.takimKirmizi[0].oyuncuAdi;
+            document.getElementById('kirmizi-oyuncu-img').src = data.takimKirmizi[0].profilFoto;
 
-                window.otomatikYayinla({
-                    type: "SAYI_GUNCELLE",
-                    oyuncular: window.odaListesi4v4
-                });
+            const maviSlotlar = document.querySelectorAll('.slot-mavi-kutu');
+            const kirmiziSlotlar = document.querySelectorAll('.slot-kirmizi-kutu');
 
-                window.aramaEkraniGuncelle(window.odaListesi4v4.length, hedefOyuncu);
-
-                if (window.odaListesi4v4.length === hedefOyuncu) {
-                    setTimeout(() => {
-                        window.otomatikYayinla({ type: "OTOMATIK_OYUN_BASLA" });
-                        window.otomatikOyunuBaslat();
-                    }, 500);
+            for (let i = 1; i < 4; i++) {
+                if (data.takimMavi[i] && maviSlotlar[i - 1]) {
+                    maviSlotlar[i - 1].innerHTML = `<img src="${data.takimMavi[i].profilFoto}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
                 }
-            } else {
-                window.otomatikSinyalIsle(data);
+                if (data.takimKirmizi[i] && kirmiziSlotlar[i - 1]) {
+                    kirmiziSlotlar[i - 1].innerHTML = `<img src="${data.takimKirmizi[i].profilFoto}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+                }
             }
-        });
-    });
-
-    peer.on('error', (err) => {
-        if (err.type === 'unavailable-id') {
-            window.havuzAramasiYap(odaIndex + 1, hedefOyuncu);
         }
+        // Geri Sayım ve Sahneye Geçiş
+        let sayac = 3;
+        const geriSayimEl = document.getElementById('vs-geri-sayim');
+        if (geriSayimEl) geriSayimEl.innerText = sayac;
+        
+        const interval = setInterval(() => {
+            sayac--;
+            if (sayac > 0) {
+                if (geriSayimEl) geriSayimEl.innerText = sayac;
+            } else {
+                clearInterval(interval);
+                const aramaEkrani = document.getElementById('vs-otomatik-arama-ekrani') || document.getElementById('etkinlik-arama-ekrani');
+                if (aramaEkrani) aramaEkrani.style.display = 'none';
+                
+                // Oyuna Geçiş Tetikleyicisi
+                if (window.sekmeDegistir) window.sekmeDegistir('game-screen');
+                if (window.oyunBaslatEvrensel) {
+                    window.oyunBaslatEvrensel(data.odaId, data.rol);
+                }
+            }
+        }, 1000);
     });
-};
+}
        window.otomatikSinyalIsle = function(data) {
     if (!data) return;
 
@@ -1637,137 +1666,7 @@ if (typeof socket !== "undefined" && socket) {
             }
         }
     });
-}
-    let mevcutAramaModu = null;
-
-/**
- * Etkinlik Arama Ekranını Açma ve Slot Hazırlığı
- */
-window.odaAramayiBaslat = function(kisiSayisi) {
-    mevcutAramaModu = kisiSayisi;
-    
-    // Profil Verilerini Al
-    const mevcutIsim = localStorage.getItem('sekerOyuncuAdi') || 'Oyuncu';
-    const mevcutFoto = localStorage.getItem('sekerProfilFoto') || 'https://via.placeholder.com/100';
-    
-    // Kendi Bilgilerini Doldur (Mavi Takım Ana Oyuncu)
-    document.getElementById('mavi-oyuncu-isim').innerText = mevcutIsim;
-    document.getElementById('mavi-oyuncu-img').src = mevcutFoto;
-    
-    // Rakip Alanını Sıfırla
-    document.getElementById('kirmizi-oyuncu-isim').innerText = "Aranıyor...";
-    document.getElementById('kirmizi-oyuncu-img').src = "https://via.placeholder.com/100";
-    
-    // Hedef Sayıları Ayarla
-    const hedefSayisi = kisiSayisi === 1 ? 2 : 8;
-    document.getElementById('vs-hedef-oyuncu').innerText = hedefSayisi;
-    document.getElementById('vs-bulunan-oyuncu').innerText = "1";
-    document.getElementById('vs-arama-baslik').innerText = kisiSayisi === 1 ? '⚔️ 1v1 Düello Aranıyor...' : '🛡️ 4v4 Takım Maçı Aranıyor...';
-    document.getElementById('vs-arama-baslik').style.background = 'rgba(0,0,0,0.5)';
-    document.getElementById('vs-geri-sayim').innerText = "";
-
-    // Slot Kutularını Temizle
-    const maviSlotContainer = document.getElementById('mavi-takim-slotlari');
-    const kirmiziSlotContainer = document.getElementById('kirmizi-takim-slotlari');
-    maviSlotContainer.innerHTML = '';
-    kirmiziSlotContainer.innerHTML = '';
-
-    // 4v4 ise Küçük Takım Slotlarını Oluştur
-    if (kisiSayisi === 4) {
-        for (let i = 0; i < 3; i++) {
-            maviSlotContainer.innerHTML += `<div class="slot-mavi-kutu" style="width:28px; height:28px; background:rgba(255,255,255,0.2); border-radius:50%; border:1px solid #fff; display:flex; align-items:center; justify-content:center; font-size:10px;">❓</div>`;
-            kirmiziSlotContainer.innerHTML += `<div class="slot-kirmizi-kutu" style="width:28px; height:28px; background:rgba(255,255,255,0.2); border-radius:50%; border:1px solid #fff; display:flex; align-items:center; justify-content:center; font-size:10px;">❓</div>`;
-        }
-    }
-
-    // Arama Ekranını Aç
-    document.getElementById('vs-otomatik-arama-ekrani').style.display = 'block';
-    
-    // Socket Üzerinden Arama Başlat
-    if (window.socket && window.socket.connected) {
-        window.socket.emit('eslesme_ara', {
-            mod: kisiSayisi === 1 ? '1v1' : '4v4',
-            oyuncuAdi: mevcutIsim,
-            profilFoto: mevcutFoto
-        });
-    }
-};
-
-/**
- * Socket Dinleyicileri - Gerçek Zamanlı Oyuncu Görünürlüğü
- */
-if (window.socket) {
-    
-    // 1v1 veya 4v4 Arama Sırasında Yeni Oyuncu Geldiğinde Tetiklenir
-    window.socket.on('eslesme_guncelleme', (data) => {
-        document.getElementById('vs-bulunan-oyuncu').innerText = data.mevcutSayi;
-        
-        // 1v1 Modunda Bağlanan Arkadaşı / Rakibi Anında Göster
-        if (data.rakipBilgisi) {
-            document.getElementById('kirmizi-oyuncu-isim').innerText = data.rakipBilgisi.oyuncuAdi || 'Rakip Oyuncu';
-            if (data.rakipBilgisi.profilFoto) {
-                document.getElementById('kirmizi-oyuncu-img').src = data.rakipBilgisi.profilFoto;
-            }
-        }
-    });
-
-    // Maç Tam Eşleştiğinde (1v1 ve 4v4 Görsel Dağıtımı)
-    window.socket.on('mac_bulundu', (data) => {
-        document.getElementById('vs-arama-baslik').innerText = '🔥 MAÇ BULUNDU!';
-        document.getElementById('vs-arama-baslik').style.background = '#2ed573';
-        
-        // 1v1 Modu için Rakip Detayı
-        if (data.rakipBilgisi) {
-            document.getElementById('kirmizi-oyuncu-isim').innerText = data.rakipBilgisi.oyuncuAdi;
-            document.getElementById('kirmizi-oyuncu-img').src = data.rakipBilgisi.profilFoto;
-        }
-
-        // 4v4 Modu için Takım Kadrolarını Slotlara Çiz
-        if (data.takimMavi && data.takimKirmizi) {
-            // Mavi Takım Lideri ve Rakipler
-            document.getElementById('mavi-oyuncu-isim').innerText = data.takimMavi[0].oyuncuAdi;
-            document.getElementById('mavi-oyuncu-img').src = data.takimMavi[0].profilFoto;
-            
-            document.getElementById('kirmizi-oyuncu-isim').innerText = data.takimKirmizi[0].oyuncuAdi;
-            document.getElementById('kirmizi-oyuncu-img').src = data.takimKirmizi[0].profilFoto;
-
-            // Küçük Slotları Fotoğraflarla Doldur
-            const maviSlotlar = document.querySelectorAll('.slot-mavi-kutu');
-            const kirmiziSlotlar = document.querySelectorAll('.slot-kirmizi-kutu');
-
-            for (let i = 1; i < 4; i++) {
-                if (data.takimMavi[i] && maviSlotlar[i - 1]) {
-                    maviSlotlar[i - 1].innerHTML = `<img src="${data.takimMavi[i].profilFoto}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
-                }
-                if (data.takimKirmizi[i] && kirmiziSlotlar[i - 1]) {
-                    kirmiziSlotlar[i - 1].innerHTML = `<img src="${data.takimKirmizi[i].profilFoto}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
-                }
-            }
-        }
-
-        // 3 Saniye Geri Sayım ve Oyuna Geçiş
-        let sayac = 3;
-        const geriSayimEl = document.getElementById('vs-geri-sayim');
-        geriSayimEl.innerText = sayac;
-        
-        const interval = setInterval(() => {
-            sayac--;
-            if (sayac > 0) {
-                geriSayimEl.innerText = sayac;
-            } else {
-                clearInterval(interval);
-                document.getElementById('vs-otomatik-arama-ekrani').style.display = 'none';
-                
-                // Oyuna Aktarma
-                window.sekmeDegistir('game-screen');
-                if (window.oyunBaslatEvrensel) {
-                    window.oyunBaslatEvrensel(data.odaId, data.rol);
-                }
-            }
-        }, 1000);
-    });
-    }
-                
+}                
 window.onload = function() {
     profilYukle();
     gunlukOdulButonKontrol();
