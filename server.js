@@ -11,7 +11,7 @@ const io = new Server(server, {
     }
 });
 
-// --- TÜM BEKLEME HAVUZLARI (Diziler En Üstte) ---
+// --- TÜM BEKLEME HAVUZLARI ---
 let waitingPlayers = {}; 
 const eslesmeHavuza1v1 = [];
 const eslesmeHavuza4v4 = [];
@@ -59,11 +59,11 @@ io.on('connection', (socket) => {
             console.log(`🎉 Eşleşme Tamamlandı! Oda ID: ${roomId}`);
         }
     });
-         // ==========================================
-    // YENİ ETKİNLİK SİSTEMİ (eslesme_ara) - GÜNCELLENMİŞ EKSİKSİZ KOD
+
+    // ==========================================
+    // 2. YENİ ETKİNLİK SİSTEMİ (eslesme_ara) - KESİN EŞLEŞTİRME DÜZELTMESİ
     // ==========================================
     socket.on('eslesme_ara', (data) => {
-        // Profil fotosu boşsa varsayılan resim atayalım (kırılmayı önler)
         const oyuncuData = {
             id: socket.id,
             oyuncuAdi: data.oyuncuAdi || 'Oyuncu',
@@ -74,17 +74,17 @@ io.on('connection', (socket) => {
 
         // ------------------ 1v1 MODU ------------------
         if (data.mod === '1v1' || data.mod === 1 || data.mod === 2) {
-            // Çift eklemeyi önle
-            const varMi = eslesmeHavuza1v1.findIndex(o => o.id === socket.id);
-            if (varMi !== -1) eslesmeHavuza1v1.splice(varMi, 1);
+            // Mükerrer kaydı temizle
+            const index = eslesmeHavuza1v1.findIndex(o => o.id === socket.id);
+            if (index !== -1) eslesmeHavuza1v1.splice(index, 1);
             
             eslesmeHavuza1v1.push(oyuncuData);
             console.log(`[1v1] Havuzdaki oyuncu sayısı: ${eslesmeHavuza1v1.length}/2`);
 
-            // Arama yapan ilk oyuncunun ekranında "Oyuncular 1 / 2" bilgisini güncelle
-            socket.emit('eslesme_guncelleme', { mevcutSayi: eslesmeHavuza1v1.length });
+            // Ekrandaki durumu güncelle
+            io.emit('eslesme_guncelleme', { mevcutSayi: eslesmeHavuza1v1.length });
 
-            // 2 Kişi biriktiğinde maçı başlat
+            // 2 Kişi olduğunda maçı anında başlat
             if (eslesmeHavuza1v1.length >= 2) {
                 const oyuncu1 = eslesmeHavuza1v1.shift();
                 const oyuncu2 = eslesmeHavuza1v1.shift();
@@ -96,29 +96,36 @@ io.on('connection', (socket) => {
                 if (s1) s1.join(odaId);
                 if (s2) s2.join(odaId);
 
-                // 1. Oyuncunun ekranında rakip bilgilerini ve maçı başlat
-                io.to(oyuncu1.id).emit('eslesme_guncelleme', { mevcutSayi: 2, rakipBilgisi: oyuncu2 });
-                io.to(oyuncu1.id).emit('mac_bulundu', { odaId: odaId, rol: 'kurucu', rakipBilgisi: oyuncu2 });
+                // İki tarafa da aynı paket formatını gönder (Kırılmayı önler)
+                io.to(oyuncu1.id).emit('mac_bulundu', { 
+                    odaId: odaId, 
+                    rol: 'kurucu', 
+                    rakipBilgisi: oyuncu2,
+                    takimMavi: [{ oyuncuAdi: oyuncu1.oyuncuAdi, profilFoto: oyuncu1.profilFoto }],
+                    takimKirmizi: [{ oyuncuAdi: oyuncu2.oyuncuAdi, profilFoto: oyuncu2.profilFoto }]
+                });
 
-                // 2. Oyuncunun ekranında rakip bilgilerini ve maçı başlat
-                io.to(oyuncu2.id).emit('eslesme_guncelleme', { mevcutSayi: 2, rakipBilgisi: oyuncu1 });
-                io.to(oyuncu2.id).emit('mac_bulundu', { odaId: odaId, rol: 'katilimci', rakipBilgisi: oyuncu1 });
+                io.to(oyuncu2.id).emit('mac_bulundu', { 
+                    odaId: odaId, 
+                    rol: 'katilimci', 
+                    rakipBilgisi: oyuncu1,
+                    takimMavi: [{ oyuncuAdi: oyuncu1.oyuncuAdi, profilFoto: oyuncu1.profilFoto }],
+                    takimKirmizi: [{ oyuncuAdi: oyuncu2.oyuncuAdi, profilFoto: oyuncu2.profilFoto }]
+                });
 
-                console.log(`⚡ 1v1 Maç Başladı! Oda ID: ${odaId}`);
+                console.log(`⚡ 1v1 Maç Başladı! (${oyuncu1.oyuncuAdi} VS ${oyuncu2.oyuncuAdi})`);
             }
         } 
         // ------------------ 4v4 MODU ------------------
         else if (data.mod === '4v4' || data.mod === 4 || data.mod === 8) {
-            const varMi = eslesmeHavuza4v4.findIndex(o => o.id === socket.id);
-            if (varMi !== -1) eslesmeHavuza4v4.splice(varMi, 1);
+            const index = eslesmeHavuza4v4.findIndex(o => o.id === socket.id);
+            if (index !== -1) eslesmeHavuza4v4.splice(index, 1);
 
             eslesmeHavuza4v4.push(oyuncuData);
             console.log(`[4v4] Havuzdaki oyuncu sayısı: ${eslesmeHavuza4v4.length}/8`);
 
-            // Havuzdaki anlık kişi sayısını arama yapan oyuncuya gönder (örn: 3/8)
             socket.emit('eslesme_guncelleme', { mevcutSayi: eslesmeHavuza4v4.length });
 
-            // 8 Kişi biriktiğinde maçı başlat
             if (eslesmeHavuza4v4.length >= 8) {
                 const takimMavi = eslesmeHavuza4v4.splice(0, 4);
                 const takimKirmizi = eslesmeHavuza4v4.splice(0, 4);
@@ -137,17 +144,14 @@ io.on('connection', (socket) => {
     });
     
     // ==========================================
-    // 3. GENEL ORTAK OLAYLAR (Hamle, İptal, Disconnect)
+    // 3. GENEL ORTAK OLAYLAR
     // ==========================================
-    
-    // Oyuncu Hamlesi
     socket.on('player_action', (data) => {
         if (data.roomId) {
             socket.to(data.roomId).emit('update_game', data);
         }
     });
 
-    // Eşleşmeyi İptal Etme
     socket.on('eslesme_iptal', () => {
         const index1 = eslesmeHavuza1v1.findIndex(o => o.id === socket.id);
         if (index1 !== -1) eslesmeHavuza1v1.splice(index1, 1);
@@ -165,14 +169,11 @@ io.on('connection', (socket) => {
         console.log('Eşleşme iptal edildi:', socket.id);
     });
 
-    // Bağlantı Kopması Temizliği
     socket.on('disconnect', () => {
-        // Eski modların temizliği
         for (let mode in waitingPlayers) {
             waitingPlayers[mode] = waitingPlayers[mode].filter(p => p.socketId !== socket.id);
         }
 
-        // Yeni etkinlik havuzlarının temizliği
         const index1 = eslesmeHavuza1v1.findIndex(o => o.id === socket.id);
         if (index1 !== -1) eslesmeHavuza1v1.splice(index1, 1);
 
@@ -187,4 +188,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Sunucu ${PORT} portunda aktif!`);
 });
-      
