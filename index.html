@@ -1449,54 +1449,23 @@ window.vs4v4ModuBaslat = function() {
 window.otomatikEslesmeBaslat = function(mod) {
     window.odaAramayiBaslat(mod);
 };
-* Arama İptal Etme Fonksiyonu
- */
-window.vsAramayiIptalEt = function() {
-    // 1. Socket Sunucusuna İptal Bildirimi Gönder
-    if (window.socket && window.socket.connected) {
-        window.socket.emit('eslesme_iptal', {
-            mod: mevcutAramaModu === 1 ? '1v1' : '4v4'
-        });
-    }
 
-    // 2. Arama Ekranını Gizle
-    const aramaEkrani = document.getElementById('vs-otomatik-arama-ekrani') || document.getElementById('etkinlik-arama-ekrani');
-    if (aramaEkrani) {
-        aramaEkrani.style.display = 'none';
-    }
-
-    // 3. Etkinlik Seçim Ekranını Geri Getir (Boş Ekranı Önler)
-    const modSecimi = document.getElementById('etkinlik-mod-secimi');
-    if (modSecimi) {
-        modSecimi.style.display = 'block';
-    }
-};
-
-// HTML'deki İptal Butonunun Onclick Olayına Bağla
-document.addEventListener('DOMContentLoaded', () => {
-    const iptalBtn = document.getElementById('vs-iptal-btn') || document.getElementById('arama-iptal-btn');
-    if (iptalBtn) {
-        iptalBtn.onclick = window.vsAramayiIptalEt;
-    }
-});
 /**
  * Etkinlik Arama Ekranını Açma ve Socket Üzerinden Arama Başlatma
  */
-        window.odaAramayiBaslat = function(kisiSayisi) {
+window.odaAramayiBaslat = function(kisiSayisi) {
     mevcutAramaModu = kisiSayisi;
     
-    // Socket Bağlantı Kontrolü ve Otomatik Bağlanma
+    // Socket Bağlantı Kontrolü
     if (!window.socket || !window.socket.connected) {
         if (typeof io !== 'undefined') {
-            // Bağlantı kopmuşsa veya başlatılmadıysa tekrar dene
             window.socket = io(); 
         } else {
-            alert("Socket kütüphanesi (socket.io.js) yüklenemedi! Lütfen sayfayı yenileyin.");
+            alert("Sunucu bağlantısı kurulamadı. Lütfen sayfayı yenileyip tekrar deneyin.");
             return;
         }
     }
-       
-        
+
     // Profil Verilerini Al
     const mevcutIsim = localStorage.getItem('sekerOyuncuAdi') || 'Oyuncu';
     const mevcutFoto = localStorage.getItem('sekerProfilFoto') || 'https://via.placeholder.com/100';
@@ -1555,20 +1524,41 @@ document.addEventListener('DOMContentLoaded', () => {
         profilFoto: mevcutFoto
     });
 };
-        
-        /**
- * Socket Dinleyicileri - Gerçek Zamanlı Oyuncu Görünürlüğü ve Maç Başlangıcı
+
+/**
+ * Arama İptal Etme Fonksiyonu
+ */
+window.vsAramayiIptalEt = function() {
+    // 1. Socket Sunucusuna İptal Bildirimi Gönder
+    if (window.socket && window.socket.connected) {
+        window.socket.emit('eslesme_iptal', {
+            mod: mevcutAramaModu === 1 ? '1v1' : '4v4'
+        });
+    }
+
+    // 2. Arama Ekranını Gizle
+    const aramaEkrani = document.getElementById('vs-otomatik-arama-ekrani') || document.getElementById('etkinlik-arama-ekrani');
+    if (aramaEkrani) {
+        aramaEkrani.style.display = 'none';
+    }
+
+    // 3. Etkinlik Seçim Ekranını Geri Getir
+    const modSecimi = document.getElementById('etkinlik-mod-secimi');
+    if (modSecimi) {
+        modSecimi.style.display = 'block';
+    }
+};
+
+/**
+ * Socket Dinleyicileri
  */
 if (window.socket) {
-    
-    // Eşleşme Sırasında Oyuncu Sayısı veya Rakip Bilgisi Güncellendiğinde
     window.socket.on('eslesme_guncelleme', (data) => {
         const bulunanEl = document.getElementById('vs-bulunan-oyuncu');
         if (bulunanEl && data.mevcutSayi) {
             bulunanEl.innerText = data.mevcutSayi;
         }
         
-        // 1v1'de İkinci Oyuncu Geldiği An Görselini ve İsmini Ekranına Bas
         if (data.rakipBilgisi) {
             const kirmiziIsimEl = document.getElementById('kirmizi-oyuncu-isim');
             const kirmiziImgEl = document.getElementById('kirmizi-oyuncu-img');
@@ -1579,13 +1569,50 @@ if (window.socket) {
             }
         }
     });
-     // Oda Tamamlandığında Ve Maç Başladığında
+
     window.socket.on('mac_bulundu', (data) => {
         const baslikEl = document.getElementById('vs-arama-baslik');
         if (baslikEl) {
             baslikEl.innerText = '🔥 MAÇ BULUNDU!';
             baslikEl.style.background = '#2ed573';
         }
+        
+        if (data.rakipBilgisi) {
+            const kirmiziIsimEl = document.getElementById('kirmizi-oyuncu-isim');
+            const kirmiziImgEl = document.getElementById('kirmizi-oyuncu-img');
+            if (kirmiziIsimEl) kirmiziIsimEl.innerText = data.rakipBilgisi.oyuncuAdi;
+            if (kirmiziImgEl) kirmiziImgEl.src = data.rakipBilgisi.profilFoto;
+        }
+
+        let sayac = 3;
+        const geriSayimEl = document.getElementById('vs-geri-sayim');
+        if (geriSayimEl) geriSayimEl.innerText = sayac;
+        
+        const interval = setInterval(() => {
+            sayac--;
+            if (sayac > 0) {
+                if (geriSayimEl) geriSayimEl.innerText = sayac;
+            } else {
+                clearInterval(interval);
+                const aramaEkrani = document.getElementById('vs-otomatik-arama-ekrani') || document.getElementById('etkinlik-arama-ekrani');
+                if (aramaEkrani) aramaEkrani.style.display = 'none';
+                
+                if (window.sekmeDegistir) window.sekmeDegistir('game-screen');
+                if (window.oyunBaslatEvrensel) {
+                    window.oyunBaslatEvrensel(data.odaId, data.rol);
+                }
+            }
+        }, 1000);
+    });
+}
+
+// İptal Butonu Dinleyicisi
+document.addEventListener('DOMContentLoaded', () => {
+    const iptalBtn = document.getElementById('vs-iptal-btn') || document.getElementById('arama-iptal-btn');
+    if (iptalBtn) {
+        iptalBtn.onclick = window.vsAramayiIptalEt;
+    }
+});
         
         // 1v1 Veri Yansıtma
         if (data.rakipBilgisi) {
