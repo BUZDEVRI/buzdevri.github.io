@@ -457,7 +457,8 @@
             </div>
 
             <div style="position: absolute; bottom: 30px; right: 30px; z-index: 10;">
-                <button type="button" onclick="window.eslesmeyiIptalEt()" style="padding: 12px 30px; background: #57606f; color: #fff; border: 3px solid #a4b0be; border-radius: 15px; font-weight: 900; font-size: 16px; cursor: pointer; box-shadow: 0 4px 0 #2f3542;">İptal Et</button>
+                <button id="vs-iptal-btn" onclick="window.vsAramayiIptalEt()" class="btn-iptal">Aramayı İptal Et</button>
+                
             </div>
         </div>
     </div>
@@ -1448,7 +1449,36 @@ window.vs4v4ModuBaslat = function() {
 window.otomatikEslesmeBaslat = function(mod) {
     window.odaAramayiBaslat(mod);
 };
+* Arama İptal Etme Fonksiyonu
+ */
+window.vsAramayiIptalEt = function() {
+    // 1. Socket Sunucusuna İptal Bildirimi Gönder
+    if (window.socket && window.socket.connected) {
+        window.socket.emit('eslesme_iptal', {
+            mod: mevcutAramaModu === 1 ? '1v1' : '4v4'
+        });
+    }
 
+    // 2. Arama Ekranını Gizle
+    const aramaEkrani = document.getElementById('vs-otomatik-arama-ekrani') || document.getElementById('etkinlik-arama-ekrani');
+    if (aramaEkrani) {
+        aramaEkrani.style.display = 'none';
+    }
+
+    // 3. Etkinlik Seçim Ekranını Geri Getir (Boş Ekranı Önler)
+    const modSecimi = document.getElementById('etkinlik-mod-secimi');
+    if (modSecimi) {
+        modSecimi.style.display = 'block';
+    }
+};
+
+// HTML'deki İptal Butonunun Onclick Olayına Bağla
+document.addEventListener('DOMContentLoaded', () => {
+    const iptalBtn = document.getElementById('vs-iptal-btn') || document.getElementById('arama-iptal-btn');
+    if (iptalBtn) {
+        iptalBtn.onclick = window.vsAramayiIptalEt;
+    }
+});
 /**
  * Etkinlik Arama Ekranını Açma ve Socket Üzerinden Arama Başlatma
  */
@@ -1465,7 +1495,8 @@ window.otomatikEslesmeBaslat = function(mod) {
             return;
         }
     }
-
+       /**
+        
     // Profil Verilerini Al
     const mevcutIsim = localStorage.getItem('sekerOyuncuAdi') || 'Oyuncu';
     const mevcutFoto = localStorage.getItem('sekerProfilFoto') || 'https://via.placeholder.com/100';
