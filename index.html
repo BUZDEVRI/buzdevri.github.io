@@ -423,6 +423,16 @@
         </div>
     </div>
     <div id="vs-otomatik-arama-ekrani" style="display: none; position: fixed; inset: 0; z-index: 9999; background: #0f172a; font-family: 'Arial Black', sans-serif; overflow: hidden;">
+        <h2 id="vs-arama-baslik">⚔️ Eşleşme Aranıyor...</h2>
+    
+    <!-- 10 Saniyelik Geri Sayım Sayacı -->
+    <div style="font-size: 48px; font-weight: bold; color: #f1c40f; margin: 15px 0;">
+        <span id="sayac-10sn">10</span>
+    </div>
+    <p style="font-size:12px; color:#ccc;">Arkadaşınızla aynı anda "1" olduğunda eşleşeceksiniz!</p>
+
+    <button id="vs-iptal-btn" onclick="vsAramayiIptalEt()" style="background:#e74c3c; color:#fff; border:none; padding:10px 20px; border-radius:8px;">İptal</button>
+    </div>
         <div id="vs-eslesme-sahnesi" style="width: 100%; height: 100%; position: relative;">
             
             <div class="vs-taraf vs-mavi" style="position: absolute; top: -20%; left: -20%; width: 75%; height: 140%; background: linear-gradient(135deg, #1e90ff, #00d2d3); transform: rotate(-12deg); display: flex; align-items: center; justify-content: center; box-shadow: 10px 0 30px rgba(0,0,0,0.5); z-index: 1;">
@@ -1449,6 +1459,7 @@ window.oyunBittiKazanan = function (kazananIndex) {
 // 9. VS EŞLEŞTİRME VE DÜELLO MANTIĞI (SOCKET.IO - 1v1 & 4v4)
 // ==========================================
 let mevcutAramaModu = null;
+let gerisayımTimer = null;
 
 window.vs1v1ModuBaslat = function () {
     window.odaAramayiBaslat(1);
@@ -1465,6 +1476,7 @@ window.otomatikEslesmeBaslat = function (mod) {
 window.odaAramayiBaslat = function (kisiSayisi) {
     mevcutAramaModu = kisiSayisi;
 
+    // 1. Socket Bağlantı Kontrolü
     if (!window.socket || !window.socket.connected) {
         if (typeof io !== 'undefined') {
             window.socket = io(RENDER_SERVER_URL);
@@ -1473,6 +1485,59 @@ window.odaAramayiBaslat = function (kisiSayisi) {
             return;
         }
     }
+
+    // 2. Arayüz Ekranlarını Güncelleme
+    const modSecimi = document.getElementById('etkinlik-mod-secimi');
+    const aramaEkrani = document.getElementById('vs-otomatik-arama-ekrani');
+    
+    if (modSecimi) modSecimi.style.display = 'none';
+    if (aramaEkrani) aramaEkrani.style.display = 'block';
+
+    // 3. 10 Saniyelik Sayacı Başlatma
+    let kalanSure = 10;
+    const sayacEl = document.getElementById('sayac-10sn');
+    if (sayacEl) sayacEl.innerText = kalanSure;
+
+    if (gerisayımTimer) clearInterval(gerisayımTimer);
+
+    gerisayımTimer = setInterval(() => {
+        kalanSure--;
+        if (sayacEl) sayacEl.innerText = kalanSure;
+
+        // Süre Bittiğinde Eşleşme İsteği Gönder
+        if (kalanSure <= 0) {
+            clearInterval(gerisayımTimer);
+            
+            if (window.socket && window.socket.connected) {
+                const mevcutIsim = localStorage.getItem('seker_oyuncu_isim') || (window.oyuncuVerisi ? window.oyuncuVerisi.isim : 'Oyuncu');
+                const mevcutFoto = localStorage.getItem('seker_oyuncu_resim') || (window.oyuncuVerisi ? window.oyuncuVerisi.resim : '');
+
+                window.socket.emit('eslesme_ara', {
+                    mod: kisiSayisi === 1 ? '1v1' : '4v4',
+                    oyuncuAdi: mevcutIsim,
+                    profilFoto: mevcutFoto
+                });
+            }
+        }
+    }, 1000);
+};
+
+window.vsAramayiIptalEt = function () {
+    if (gerisayımTimer) clearInterval(gerisayımTimer);
+    
+    if (window.socket && window.socket.connected) {
+        window.socket.emit('eslesme_iptal', {
+            mod: mevcutAramaModu === 1 ? '1v1' : '4v4'
+        });
+    }
+
+    const aramaEkrani = document.getElementById('vs-otomatik-arama-ekrani');
+    const modSecimi = document.getElementById('etkinlik-mod-secimi');
+    
+    if (aramaEkrani) aramaEkrani.style.display = 'none';
+    if (modSecimi) modSecimi.style.display = 'block';
+};
+        
 
     const mevcutIsim = localStorage.getItem('seker_oyuncu_isim') || window.oyuncuVerisi.isim || 'Oyuncu';
     const mevcutFoto = localStorage.getItem('seker_oyuncu_resim') || window.oyuncuVerisi.resim || 'https://via.placeholder.com/100';
