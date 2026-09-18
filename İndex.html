@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>Şehir Online</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Multiplayer -->
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+</head>
+
+<body>
+
+<div id="oyun">
+
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Üst bilgi -->
+    <div id="ustPanel">
+        <div>👤 <span id="isimGoster">Oyuncu</span></div>
+        <div>💰 <span id="paraGoster">500</span> ₺</div>
+        <div>💼 <span id="meslekGoster">İşsiz</span></div>
+    </div>
+
+    <!-- Oyuncu listesi -->
+    <div id="oyuncularPanel">
+        👥 Oyuncular: <span id="oyuncuSayisi">1</span>
+    </div>
+
+    <!-- Sohbet -->
+    <div id="sohbetKutusu">
+        <div id="mesajlar"></div>
+
+        <div id="sohbetAlt">
+            <input id="mesajInput" placeholder="Mesaj yaz...">
+            <button onclick="mesajGonder()">➤</button>
+        </div>
+    </div>
+
+    <!-- Etkileşim -->
+    <div id="etkilesim">
+        <button id="etkilesimButonu" onclick="etkilesimYap()">
+            Etkileşim
+        </button>
+    </div>
+
+    <!-- Telefon kontrolleri -->
+    <div id="kontroller">
+
+        <div class="yonKontroller">
+            <button class="bos"></button>
+            <button ontouchstart="hareketBas('yukari')"
+                    ontouchend="hareketBit('yukari')">▲</button>
+            <button class="bos"></button>
+
+            <button ontouchstart="hareketBas('sol')"
+                    ontouchend="hareketBit('sol')">◀</button>
+
+            <button ontouchstart="hareketBas('asagi')"
+                    ontouchend="hareketBit('asagi')">▼</button>
+
+            <button ontouchstart="hareketBas('sag')"
+                    ontouchend="hareketBit('sag')">▶</button>
+        </div>
+
+        <button id="aracButonu" onclick="aracaBin()">
+            🚗
+        </button>
+    </div>
+
+</div>
+
+<!-- Başlangıç ekranı -->
+<div id="baslangic">
+
+    <h1>🌆 ŞEHİR ONLINE</h1>
+
+    <input id="isimInput"
+           maxlength="16"
+           placeholder="Oyuncu adın">
+
+    <button onclick="oyunaBasla()">
+        🎮 Oyuna Gir
+    </button>
+
+    <p id="baglantiDurumu">
+        🔴 Sunucuya bağlanıyor...
+    </p>
+
+</div>
+
+<script src="game.js"></script>
+
+</body>
+</html>
