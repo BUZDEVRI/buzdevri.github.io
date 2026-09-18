@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gelişmiş Neon Parkur Multiplayer</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background-color: #05050a;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 1280px;
+            max-height: 720px;
+            background: #090a10;
+            overflow: hidden;
+            border-radius: 12px;
+            border: 2px solid #00f0ff;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        #matchmaking-panel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 12, 24, 0.95);
+            border: 2px solid #00f0ff;
+            padding: 30px 40px;
+            border-radius: 16px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.3);
+            width: 400px;
+            text-align: center;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            color: #fff;
+            background: linear-gradient(135deg, #00f0ff, #7000ff);
+            box-shadow: 0 4px 15px rgba(0, 240, 255, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 240, 255, 0.6);
+        }
+
+        #status-txt {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(10, 12, 24, 0.8);
+            border: 1px solid #00f0ff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #00f0ff;
+            z-index: 90;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        #controls-info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(10, 12, 24, 0.8);
+            border: 1px solid #7000ff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #a5b4fc;
+            z-index: 90;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="status-txt">Durum: Lobi Hazır</div>
+
+        <div id="matchmaking-panel">
+            <h1 style="color: #00f0ff; text-shadow: 0 0 10px #00f0ff; letter-spacing: 2px;">NEON DASH</h1>
+            <p style="font-size: 13px; color: #a5b4fc;">Arkadaşınla aynı anda tıklayarak parkur yarışına katılın!</p>
+            <button class="btn" id="match-btn" onclick="startMatchmaking()">⚡ EŞLEŞME ARA</button>
+        </div>
+
+        <div id="controls-info">
+            <b>Kontroller:</b> A / D veya Ok Tuşları: Hareket<br>
+            W / BOŞLUK: Zıplama (Havada 2. kez bas: Çift Zıplama)
+        </div>
+
+        <canvas id="gameCanvas" width="1280" height="720"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // PEERJS EŞLEŞTİRME SİSTEMİ
+        const ROOM_PREFIX = "nd-neon-parkour-v3-";
+        let peer = null;
+        let conn = null;
+
+        function startMatchmaking() {
+            const btn = document.getElementById("match-btn");
+            btn.innerText = "ARANIYOR...";
+            btn.disabled = true;
+            btn.style.opacity = "0.5";
+
+            updateStatus("Sinyal Aranıyor...");
+            tryConnectToRoom(1);
+        }
+
+        function updateStatus(text) {
+            document.getElementById("status-txt").innerText = "Durum: " + text;
+        }
+
+        function tryConnectToRoom(index) {
+            if (index > 5) {
+                createRoom(Math.floor(Math.random() * 100) + 10);
+                return;
+            }
+
+            const roomId = ROOM_PREFIX + index;
+            if (peer) peer.destroy();
+            peer = new Peer();
+
+            peer.on('open', () => {
+                const testConn = peer.connect(roomId, { reliable: true });
+                let connected = false;
+
+                testConn.on('open', () => {
+                    connected = true;
+                    conn = testConn;
+                    setupConnection();
+                    updateStatus("RAKİP BULUNDU! Yarış Başlıyor 🔥");
+                });
+
+                setTimeout(() => {
+                    if (!connected) {
+                        testConn.close();
+                        peer.destroy();
+                        createRoom(index);
+                    }
+                }, 1200);
+            });
+
+            peer.on('error', () => tryConnectToRoom(index + 1));
+        }
+
+        function createRoom(index) {
+            const roomId = ROOM_PREFIX + index;
+            peer = new Peer(roomId);
+
+            peer.on('open', () => updateStatus("Oda Kuruldu (" + index + "). Arkadaşın Bekleniyor..."));
+            peer.on('connection', incomingConn => {
+                conn = incomingConn;
+                setupConnection();
+                updateStatus("RAKİP BAĞLANDI! Yarış Başlıyor 🔥");
+            });
+
+            peer.on('error', () => tryConnectToRoom(index + 1));
+        }
+
+        function setupConnection() {
+            document.getElementById("matchmaking-panel").style.display = "none";
+
+            conn.on('data', data => {
+                if (data.type === 'POS') {
+                    remotePlayer.x = data.x;
+                    remotePlayer.y = data.y;
+                    remotePlayer.vx = data.vx;
+                    remotePlayer.vy = data.vy;
+                }
+            });
+
+            conn.on('close', () => {
+                alert("Rakip oyundan koptu!");
+                location.reload();
+            });
+        }
+
+        // PARKUR HARİTASI (PLATFORMLAR & TEHLİKELER)
+        const platforms = [
+            // Başlangıç Alanı
+            { x: 50, y: 550, w: 300, h: 40, type: 'normal' },
+            { x: 420, y: 480, w: 180, h: 20, type: 'normal' },
+            { x: 680, y: 420, w: 150, h: 20, type: 'normal' },
+            
+            // Yüksek Tırmanış
+            { x: 900, y: 320, w: 120, h: 20, type: 'normal' },
+            { x: 1100, y: 240, w: 160, h: 20, type: 'normal' },
+            { x: 1350, y: 300, w: 200, h: 20, type: 'normal' },
+
+            // Hareketli Platform Hissi (Geniş Atlama)
+            { x: 1680, y: 380, w: 100, h: 20, type: 'normal' },
+            { x: 1880, y: 450, w: 100, h: 20, type: 'normal' },
+            { x: 2080, y: 380, w: 100, h: 20, type: 'normal' },
+
+            // Zorlu Dar Platformlar
+            { x: 2300, y: 300, w: 80, h: 20, type: 'normal' },
+            { x: 2480, y: 220, w: 80, h: 20, type: 'normal' },
+            { x: 2680, y: 280, w: 250, h: 30, type: 'normal' },
+
+            // Bitiş Zirvesi
+            { x: 3000, y: 350, w: 400, h: 40, type: 'finish_plat' }
+        ];
+
+        // Diken Tehlikeleri
+        const spikes = [
+            { x: 720, y: 400, w: 30, h: 20 },
+            { x: 1400, y: 280, w: 40, h: 20 },
+            { x: 2750, y: 260, w: 60, h: 20 }
+        ];
+
+        const LAV_Y = 650; // Düşünce öldüren lav seviyesi
+        const FINISH_X = 3250;
+
+        // OYUN AKTÖRLERİ & FİZİK
+        const localPlayer = {
+            x: 100, y: 480, w: 24, h: 32,
+            vx: 0, vy: 0,
+            speed: 7,
+            jumpForce: -13,
+            isGrounded: false,
+            jumpCount: 0,
+            maxJumps: 2,
+            color: '#00f0ff'
+        };
+
+        const remotePlayer = {
+            x: 100, y: 480, w: 24, h: 32,
+            vx: 0, vy: 0,
+            color: '#ff0055'
+        };
+
+        const keys = {};
+
+        window.addEventListener("keydown", e => {
+            if (!keys[e.key.toLowerCase()]) {
+                // İlk basışta Zıplama Mantığı (Çift Zıplama Destekli)
+                if ((e.key.toLowerCase() === 'w' || e.key === ' ' || e.key === 'ArrowUp')) {
+                    if (localPlayer.jumpCount < localPlayer.maxJumps) {
+                        localPlayer.vy = localPlayer.jumpForce;
+                        localPlayer.jumpCount++;
+                        localPlayer.isGrounded = false;
+                    }
+                }
+            }
+            keys[e.key.toLowerCase()] = true;
+        });
+
+        window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+        function resetToStart() {
+            localPlayer.x = 100;
+            localPlayer.y = 480;
+            localPlayer.vx = 0;
+            localPlayer.vy = 0;
+        }
+
+        // FİZİK VE ÇARPIŞMA GÜNCELLEMELERİ
+        function update() {
+            // Sağ / Sol Hareket
+            if (keys["a"] || keys["arrowleft"]) localPlayer.vx = -localPlayer.speed;
+            else if (keys["d"] || keys["arrowright"]) localPlayer.vx = localPlayer.speed;
+            else localPlayer.vx *= 0.8;
+
+            // Yerçekimi
+            localPlayer.vy += 0.65;
+
+            // Yatay Pozisyon ve Çarpışma
+            localPlayer.x += localPlayer.vx;
+
+            // Dikey Pozisyon ve Çarpışma
+            localPlayer.y += localPlayer.vy;
+            localPlayer.isGrounded = false;
+
+            // Platform Çarpışma Kontrolleri
+            platforms.forEach(p => {
+                if (localPlayer.x < p.x + p.w &&
+                    localPlayer.x + localPlayer.w > p.x &&
+                    localPlayer.y < p.y + p.h &&
+                    localPlayer.y + localPlayer.h > p.y) {
+
+                    // Yukarıdan platforma iniş
+                    if (localPlayer.vy > 0 && localPlayer.y + localPlayer.h - localPlayer.vy <= p.y + 12) {
+                        localPlayer.y = p.y - localPlayer.h;
+                        localPlayer.vy = 0;
+                        localPlayer.isGrounded = true;
+                        localPlayer.jumpCount = 0; // Zıplama hakkını yenile
+                    }
+                }
+            });
+
+            // Diken Çarpışma Kontrolü
+            spikes.forEach(s => {
+                if (localPlayer.x < s.x + s.w &&
+                    localPlayer.x + localPlayer.w > s.x &&
+                    localPlayer.y < s.y + s.h &&
+                    localPlayer.y + localPlayer.h > s.y) {
+                    resetToStart();
+                }
+            });
+
+            // Lav Kontrolü (Aşağı Düşme)
+            if (localPlayer.y > LAV_Y) {
+                resetToStart();
+            }
+
+            // Bitiş Çizgisi Kontrolü
+            if (localPlayer.x >= FINISH_X) {
+                alert("🏆 ŞAMPİYON! Parkuru Harika Bir Sürede Tamamladın!");
+                resetToStart();
+            }
+
+            // Pozisyonu Rakibe İlet
+            if (conn && conn.open) {
+                conn.send({
+                    type: 'POS',
+                    x: localPlayer.x,
+                    y: localPlayer.y,
+                    vx: localPlayer.vx,
+                    vy: localPlayer.vy
+                });
+            }
+        }
+
+        // ÇİZİM VE GÖRSEL MOTOR
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Kamera Takibi
+            const cameraX = localPlayer.x - 300;
+            const cameraY = Math.max(0, localPlayer.y - 400);
+
+            ctx.save();
+            ctx.translate(-cameraX, -cameraY);
+
+            // Arka Plan Grid / Izgara Deseni
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.03)";
+            ctx.lineWidth = 1;
+            for (let x = cameraX - (cameraX % 40); x < cameraX + canvas.width + 40; x += 40) {
+                ctx.beginPath();
+                ctx.moveTo(x, cameraY);
+                ctx.lineTo(x, cameraY + canvas.height);
+                ctx.stroke();
+            }
+
+            // Platformları Çiz (Neon Efektli)
+            platforms.forEach(p => {
+                ctx.fillStyle = p.type === 'finish_plat' ? '#facc15' : '#1e1b4b';
+                ctx.strokeStyle = p.type === 'finish_plat' ? '#facc15' : '#7000ff';
+                ctx.lineWidth = 2;
+                
+                ctx.fillRect(p.x, p.y, p.w, p.h);
+                ctx.strokeRect(p.x, p.y, p.w, p.h);
+            });
+
+            // Dikenleri Çiz
+            spikes.forEach(s => {
+                ctx.fillStyle = '#ff0055';
+                ctx.beginPath();
+                ctx.moveTo(s.x, s.y + s.h);
+                ctx.lineTo(s.x + s.w / 2, s.y);
+                ctx.lineTo(s.x + s.w, s.y + s.h);
+                ctx.closePath();
+                ctx.fill();
+            });
+
+            // Lav Çizimi (Aşağıdaki Tehlike)
+            ctx.fillStyle = "rgba(255, 0, 85, 0.8)";
+            ctx.shadowColor = "#ff0055";
+            ctx.shadowBlur = 15;
+            ctx.fillRect(cameraX - 100, LAV_Y, canvas.width + 200, 200);
+            ctx.shadowBlur = 0; // Gölgeyi sıfırla
+
+            // Bitiş Bayrağı / Çizgisi
+            ctx.fillStyle = "#facc15";
+            ctx.shadowColor = "#facc15";
+            ctx.shadowBlur = 20;
+            ctx.fillRect(FINISH_X, 200, 10, 160);
+            ctx.font = "bold 16px Segoe UI";
+            ctx.fillText("BİTİŞ 🏆", FINISH_X - 15, 180);
+            ctx.shadowBlur = 0;
+
+            // RAKİP KARAKTER (Kırmızı Neon)
+            ctx.fillStyle = remotePlayer.color;
+            ctx.shadowColor = remotePlayer.color;
+            ctx.shadowBlur = 10;
+            ctx.fillRect(remotePlayer.x, remotePlayer.y, remotePlayer.w, remotePlayer.h);
+            ctx.fillStyle = "#fff";
+            ctx.font = "11px Segoe UI";
+            ctx.fillText("Rakip", remotePlayer.x - 2, remotePlayer.y - 8);
+
+            // SENİN KARAKTERİN (Mavi Neon)
+            ctx.fillStyle = localPlayer.color;
+            ctx.shadowColor = localPlayer.color;
+            ctx.shadowBlur = 12;
+            ctx.fillRect(localPlayer.x, localPlayer.y, localPlayer.w, localPlayer.h);
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 11px Segoe UI";
+            ctx.fillText("SEN", localPlayer.x, localPlayer.y - 8);
+            
+            ctx.shadowBlur = 0; // Performans için gölgeyi kapat
+
+            ctx.restore();
+        }
+
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>
