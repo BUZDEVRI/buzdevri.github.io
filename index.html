@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>3D CS:GO Mobile - Full System</title>
+    <style>
+        /* ==========================================
+   1. GENEL RESET VE TEMEL AYARLAR
+   ========================================== */
+* {
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body { 
+    overflow: hidden; 
+    background: #0f172a;
+    color: #fff;
+    touch-action: none;
+    width: 100vw;
+    height: 100vh;
+}
+
+/* ==========================================
+   2. YENİ LOBİ MENÜSÜ KAPSAYICISI VE DÜZENİ
+   ========================================== */
+#lobby-menu-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: transparent !important; /* Arkadaki 3D sahneyi ve karakteri gösterir */
+    pointer-events: none; /* Arka plan boşluklarında 3D sahne tıklamalarını engellemez */
+    z-index: 1000;
+}
+
+/* Menü İçi Elemanların Tıklanabilmesini Sağlar */
+#lobby-menu-container .top-bar,
+#lobby-menu-container .left-sidebar,
+#lobby-menu-container .right-sidebar,
+#lobby-menu-container .bottom-center-panel {
+    pointer-events: auto !important;
+}
+
+/* --- ÜST PROFİL VE PARA BARI --- */
+.top-bar {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    right: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 100;
+}
+
+.user-profile-card {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 4px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    backdrop-filter: blur(4px);
+}
+
+.avatar-box {
+    font-size: 18px;
+    background: #0284c7;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-name {
+    font-size: 11px;
+    font-weight: 900;
+    color: #fff;
+}
+
+.user-title {
+    font-size: 8px;
+    color: #38bdf8;
+    font-weight: bold;
+}
+
+.currencies-box {
+    display: flex;
+    gap: 8px;
+}
+
+.currency-item {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 900;
+    backdrop-filter: blur(4px);
+}
+
+.currency-item.coin span:last-child { color: #facc15; }
+.currency-item.gem span:last-child { color: #38bdf8; }
+
+/* --- SOL SİDEBAR --- */
+.left-sidebar {
+    position: absolute;
+    top: 55px;
+    left: 12px;
+    width: 150px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 100;
+}
+
+.vip-banner {
+    background: linear-gradient(135deg, #7e22ce, #3b0764);
+    border: 1px solid #c084fc;
+    border-radius: 6px;
+    padding: 6px 8px;
+    position: relative;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+}
+
+.vip-title {
+    display: block;
+    color: #fde047;
+    font-weight: 900;
+    font-size: 11px;
+    font-style: italic;
+}
+
+.vip-sub {
+    display: block;
+    color: #e9d5ff;
+    font-size: 8px;
+}
+
+.vip-badge-dot {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
+    border-radius: 50%;
+}
+
+.season-pass-card {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9));
+    border: 1px solid rgba(234, 179, 8, 0.5);
+    border-radius: 6px;
+    padding: 5px 8px;
+    cursor: pointer;
+}
+
+.season-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #eab308;
+    font-weight: 800;
+    font-size: 10px;
+}
+
+.season-num {
+    background: #eab308;
+    color: #000;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 8px;
+}
+
+.season-stars {
+    color: #eab308;
+    font-size: 8px;
+    margin-top: 1px;
+    letter-spacing: 1px;
+}
+
+.left-menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.side-btn {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-left: 3px solid #38bdf8;
+    border-radius: 4px;
+    padding: 6px 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #fff;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+}
+
+.side-btn:hover {
+    background: rgba(30, 41, 59, 0.9);
+    border-left-color: #f59e0b;
+    transform: translateX(3px);
+}
+
+.btn-icon { font-size: 12px; }
+.btn-text { font-weight: 800; font-size: 9px; letter-spacing: 0.5px; }
+
+.dot-green {
+    width: 6px;
+    height: 6px;
+    background: #22c55e;
+    border-radius: 50%;
+    position: absolute;
+    right: 6px;
+}
+
+.btn-market {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border: none;
+    border-radius: 6px;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #000;
+    font-weight: 900;
+    font-size: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+    transform: skewX(-6deg);
+    margin-top: 2px;
+}
+
+.btn-market:hover { filter: brightness(1.1); }
+.market-icon { font-size: 14px; }
+
+/* --- ALT ORTA PANEL (CHAT & KASALAR) --- */
+.bottom-center-panel {
+    position: absolute;
+    bottom: 10px;
+    left: 170px;
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    z-index: 100;
+}
+
+.chat-input-box {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    padding: 5px 8px;
+    width: 130px;
+    gap: 5px;
+}
+
+.chat-icon { font-size: 11px; color: #94a3b8; }
+.chat-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #fff;
+    font-size: 10px;
+    width: 100%;
+}
+.chat-input::placeholder { color: #64748b; font-style: italic; }
+
+.crate-slots-container {
+    display: flex;
+    gap: 6px;
+}
+
+.crate-slot {
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    border-radius: 6px;
+    width: 80px;
+    padding: 5px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    position: relative;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    transition: transform 0.2s;
+}
+
+.crate-slot:hover {
+    transform: translateY(-3px);
+    border-color: #38bdf8;
+}
+
+.crate-action-btn {
+    background: #0284c7;
+    color: #fff;
+    font-size: 7px;
+    font-weight: 900;
+    padding: 2px 4px;
+    border-radius: 3px;
+    text-align: center;
+    width: 95%;
+}
+
+.crate-action-btn.green-btn { background: #16a34a; }
+.crate-timer { font-size: 8px; color: #94a3b8; font-weight: bold; }
+.crate-instant-open { font-size: 8px; color: #f59e0b; font-weight: bold; }
+.crate-icon-box { font-size: 18px; margin: 1px 0; }
+.crate-name { font-size: 7px; color: #cbd5e1; font-weight: bold; text-align: center; white-space: nowrap; }
+
+.crate-slot.active-unlock {
+    border-color: #a855f7;
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+}
+
+/* --- SAĞ SİDEBAR --- */
+.right-sidebar {
+    position: absolute;
+    top: 55px;
+    right: 12px;
+    width: 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    z-index: 100;
+}
+
+.team-invite-box {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 5px 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    cursor: pointer;
+}
+
+.invite-add-btn {
+    background: #0284c7;
+    border: none;
+    color: #fff;
+    font-weight: 900;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.invite-text { display: flex; gap: 4px; font-size: 9px; font-weight: bold; }
+.invite-title { color: #fff; }
+.invite-count { color: #94a3b8; }
+
+.event-banner {
+    width: 100%;
+    height: 50px;
+    background: linear-gradient(135deg, #b91c1c, #450a0a);
+    border: 1px solid #f87171;
+    border-radius: 6px;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.event-tag { color: #fef08a; font-weight: 900; font-size: 8px; letter-spacing: 0.5px; }
+.event-sub-tag { color: #fff; font-weight: 900; font-size: 11px; font-style: italic; }
+
+.right-quick-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    align-items: flex-end;
+}
+
+.quick-circle-btn {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 15px;
+    padding: 3px 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #fff;
+    cursor: pointer;
+    width: fit-content;
+    transition: all 0.2s;
+}
+
+.quick-circle-btn:hover {
+    background: rgba(30, 41, 59, 0.95);
+    border-color: #38bdf8;
+    transform: translateX(-3px);
+}
+
+.q-icon { font-size: 12px; }
+.q-label { font-size: 8px; font-weight: 900; letter-spacing: 0.5px; }
+
+.start-group {
+    width: 100%;
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.mode-selector-card {
+    background: linear-gradient(90deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.9) 100%);
+    border: 1px solid #0284c7;
+    border-radius: 6px;
+    padding: 5px 8px;
+    position: relative;
+    cursor: pointer;
+}
+
+.mode-header { color: #ef4444; font-size: 8px; font-weight: 900; }
+.mode-body { display: flex; flex-direction: column; }
+.mode-name { color: #fff; font-weight: 900; font-size: 10px; }
+.mode-sub { color: #94a3b8; font-size: 7px; }
+.mode-icon { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 14px; }
+
+.btn-play-big {
+    background: linear-gradient(135deg, #facc15, #ca8a04);
+    border: none;
+    border-radius: 6px;
+    padding: 10px;
+    color: #000;
+    font-weight: 900;
+    font-size: 16px;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(250, 204, 21, 0.5);
+    transform: skewX(-10deg);
+    transition: transform 0.1s, filter 0.2s;
+    text-align: center;
+    width: 100%;
+}
+
+.btn-play-big:hover { filter: brightness(1.15); }
+.btn-play-big:active { transform: skewX(-10deg) scale(0.97); }
+
+/* ==========================================
+   3. OYUN İÇİ ARAYÜZ (GAME UI / HUD)
+   ========================================== */
+#game-ui {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 2000;
+}
+
+/* UI İçi Butonları Tıklanabilir Yapma */
+#game-ui button, 
+#game-ui .btn-action, 
+#game-ui div[onclick] {
+    pointer-events: auto !important;
+}
+
+#damage-vignette {
+    position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+    pointer-events: none; box-shadow: inset 0 0 80px rgba(239, 68, 68, 0);
+    transition: box-shadow 0.1s; z-index: 15;
+}
+
+#hud-top-left {
+    position: absolute; top: 15px; left: 15px;
+    display: flex; flex-direction: column; gap: 6px;
+}
+
+.hud-card {
+    background: rgba(15, 23, 42, 0.85);
+    border: 2px solid #38bdf8;
+    padding: 6px 12px; border-radius: 8px;
+    font-size: 12px; font-weight: bold; backdrop-filter: blur(4px);
+}
+
+#radar-container {
+    position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+    width: 75px; height: 75px; background: rgba(15, 23, 42, 0.85);
+    border: 2px solid #22c55e; border-radius: 50%; overflow: hidden;
+}
+
+#weapon-menu {
+    position: absolute; top: 15px; right: 15px;
+    display: flex; gap: 6px; pointer-events: auto;
+}
+
+.weapon-btn {
+    background: rgba(15, 23, 42, 0.85); border: 2px solid #f59e0b;
+    color: white; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: bold;
+}
+.weapon-btn.active { background: #f59e0b; color: #000; }
+
+/* MOBİL DOKUNMATİK KONTROLLER */
+.mobile-controls {
+    position: absolute; bottom: 15px; left: 0; width: 100vw;
+    height: 160px; pointer-events: none; z-index: 50;
+    display: flex; justify-content: space-between; align-items: flex-end; padding: 0 15px;
+}
+
+#joystick-zone {
+    width: 110px; height: 110px; background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.4); border-radius: 50%;
+    position: relative; pointer-events: auto; touch-action: none;
+}
+
+#joystick-knob {
+    width: 45px; height: 45px; background: #38bdf8; border-radius: 50%;
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+}
+
+.action-buttons { display: flex; gap: 10px; align-items: flex-end; pointer-events: auto; }
+.btn-action {
+    width: 55px; height: 55px; border-radius: 50%; color: white;
+    font-size: 10px; font-weight: bold; display: flex; align-items: center;
+    justify-content: center; touch-action: none; border: 2px solid #fff;
+    cursor: pointer;
+}
+
+#btn-fire { background: linear-gradient(135deg, #ef4444, #dc2626); width: 65px; height: 65px; font-size: 12px; }
+#btn-scope { background: linear-gradient(135deg, #0284c7, #0369a1); display: none; }
+#btn-reload { background: linear-gradient(135deg, #f59e0b, #d97706); }
+#btn-jump { background: linear-gradient(135deg, #22c55e, #16a34a); }
+
+/* AWP SCOPE */
+#sniper-scope {
+    position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+    pointer-events: none; z-index: 30; display: none;
+    background: radial-gradient(circle, transparent 30%, rgba(0,0,0,0.95) 65%);
+}
+
+#scope-crosshair-v { position: absolute; top: 0; left: 50%; width: 2px; height: 100%; background: #000; }
+#scope-crosshair-h { position: absolute; top: 50%; left: 0; width: 100%; height: 2px; background: #000; }
+
+#btn-pause {
+    position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+    margin-top: 85px; background: rgba(239, 68, 68, 0.85); border: none;
+    color: white; padding: 6px 14px; border-radius: 12px; font-size: 10px;
+    font-weight: bold; pointer-events: auto; cursor: pointer;
+}
+
+/* SKOR VE TABLO MODALI */
+#scoreboard-bar {
+    position: absolute !important;
+    top: 10px !important;
+    left: 50% !important;
+    transform: translateX(-50%) scale(0.85) !important;
+    z-index: 2100 !important;
+}
+
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+<!-- ========================================== -->
+    <!-- 1. LOBİ ARAYÜZÜ (MENÜ EKRANI)              -->
+    <!-- ========================================== -->
+    <div id="lobby-menu-container">
+
+        <!-- Üst Profil ve Para BARI -->
+        <div class="top-bar">
+            <div class="user-profile-card">
+                <div class="avatar-box">👤</div>
+                <div class="user-info">
+                    <span class="user-name">AtesYolcusu</span>
+                    <span class="user-title">BUZDEVRİ</span>
+                </div>
+            </div>
+            
+            <div class="currencies-box">
+                <div class="currency-item coin">
+                    <span>🪙</span>
+                    <span id="lobby-coins">1,250</span>
+                </div>
+                <div class="currency-item gem">
+                    <span>💎</span>
+                    <span id="lobby-gems">450</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sol Dikey Menü -->
+        <div class="left-sidebar">
+            <!-- VIP Banner -->
+            <div class="vip-banner">
+                <div class="vip-badge-dot"></div>
+                <span class="vip-title">VIP KULÜBÜ</span>
+                <span class="vip-sub">Özel Ayrıcalıklar</span>
+            </div>
+
+            <!-- Sezon Pass -->
+            <div class="season-pass-card">
+                <div class="season-header">
+                    <span>SEZON BİLETİ</span>
+                    <span class="season-num">S1</span>
+                </div>
+                <div class="season-stars">★★★★★</div>
+            </div>
+
+            <!-- Dikey Buton Grubu -->
+            <div class="left-menu-buttons">
+                <button class="side-btn">
+                    <span class="btn-icon">🎖️</span>
+                    <span class="btn-text">CEPHANELİK</span>
+                </button>
+                <button class="side-btn">
+                    <span class="btn-icon">🛡️</span>
+                    <span class="btn-text">KLAN</span>
+                    <span class="dot-green"></span>
+                </button>
+                <button class="side-btn">
+                    <span class="btn-icon">🎁</span>
+                    <span class="btn-text">GÖREVLER</span>
+                </button>
+            </div>
+
+            <!-- En Alt Market Butonu -->
+            <button class="btn-market">
+                <span class="market-icon">🛒</span>
+                <span>MARKET</span>
+            </button>
+        </div>
+
+        <!-- Alt Orta Panel (Chat ve Savaş Kasaları) -->
+        <div class="bottom-center-panel">
+            <div class="chat-input-box">
+                <span class="chat-icon">💬</span>
+                <input type="text" class="chat-input" placeholder="Mesaj girin..." readonly />
+            </div>
+
+            <div class="crate-slots-container">
+                <!-- Kasa 1 -->
+                <div class="crate-slot">
+                    <div class="crate-action-btn">TIKLA VE AÇ</div>
+                    <div class="crate-timer">⏱️ 4 SAAT</div>
+                    <div class="crate-icon-box">📦</div>
+                    <div class="crate-name">Savaş Kasası II - K</div>
+                </div>
+
+                <!-- Kasa 2 (Aktif Açılan) -->
+                <div class="crate-slot active-unlock">
+                    <div class="crate-action-btn green-btn">⏱️ 1s 7d</div>
+                    <div class="crate-instant-open">Şimdi Aç 🪙 5</div>
+                    <div class="crate-icon-box">🎁</div>
+                    <div class="crate-name">Savaş Kasası II - K</div>
+                </div>
+
+                <!-- Kasa 3 -->
+                <div class="crate-slot">
+                    <div class="crate-action-btn">TIKLA VE AÇ</div>
+                    <div class="crate-timer">⏱️ 4 SAAT</div>
+                    <div class="crate-icon-box">📦</div>
+                    <div class="crate-name">Savaş Kasası II - K</div>
+                </div>
+
+                <!-- Kasa 4 -->
+                <div class="crate-slot">
+                    <div class="crate-action-btn">TIKLA VE AÇ</div>
+                    <div class="crate-timer">⏱️ 4 SAAT</div>
+                    <div class="crate-icon-box">📦</div>
+                    <div class="crate-name">Savaş Kasası III - K</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sağ Dikey Menü ve Başla Butonu -->
+        <div class="right-sidebar">
+            <div class="team-invite-box">
+                <button class="invite-add-btn">+</button>
+                <div class="invite-text">
+                    <span class="invite-title">Takıma Davet Et</span>
+                    <span class="invite-count">(0 / 4)</span>
+                </div>
+            </div>
+
+            <div class="event-banner">
+                <div class="event-tag">ETKİNLİKLERİ KAÇIRMA</div>
+                <div class="event-sub-tag">HEMEN KATIL!</div>
+            </div>
+
+            <div class="right-quick-buttons">
+                <button class="quick-circle-btn">
+                    <span class="q-icon">🏆</span>
+                    <span class="q-label">SIRALAMA</span>
+                </button>
+                <button class="quick-circle-btn">
+                    <span class="q-icon">🎡</span>
+                    <span class="q-label">ŞANSLI ÇARK</span>
+                </button>
+            </div>
+
+            <div class="start-group">
+                <div class="mode-selector-card">
+                    <div class="mode-header">XP ETKİNLİĞİ</div>
+                    <div class="mode-body">
+                        <span class="mode-name">SABOTAJ</span>
+                        <span class="mode-sub">Rastgele</span>
+                    </div>
+                    <div class="mode-icon">🎯</div>
+                </div>
+
+                <button class="btn-play-big" onclick="oyunaBasla()">
+                    <span>BAŞLA</span>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- 2. SADECE OYUN İÇİ ARAYÜZÜ (HUD & MODALLAR) -->
+    <!-- (Lobi Açıkken Tamamen Gizli)              -->
+    <!-- ========================================== -->
+    <div id="game-ui" style="display: none;">
+
+        <!-- Takım Seçim Penceresi (Sadece Oyuna Girince Çıkacak) -->
+        <div id="modal-team-select" class="team-select-container">
+            <h2 class="team-title">TAKIMINI SEÇ</h2>
+            <div class="team-buttons">
+                <button class="btn-team ct-team" onclick="takimSec('ct')">
+                    <div class="team-icon">🛡️</div>
+                    <div class="team-name">COUNTER-TERRORIST</div>
+                    <div class="team-sub">(Mavi Takım)</div>
+                </button>
+                <button class="btn-team tr-team" onclick="takimSec('tr')">
+                    <div class="team-icon">💣</div>
+                    <div class="team-name">TERRORIST</div>
+                    <div class="team-sub">(Kırmızı Takım)</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Üst Skor Barı -->
+        <div id="scoreboard-bar" class="game-scoreboard-bar">
+            <div class="score-team ct">🛡️ CT <span id="score-ct">0</span></div>
+            <div class="vs-badge">VS</div>
+            <div class="score-team tr"><span id="score-tr">0</span> 💣 TR</div>
+        </div>
+
+        <!-- Nişangah ve Hasar Efekti -->
+        <div id="crosshair"></div>
+        <div id="damage-vignette"></div>
+
+        <!-- Sniper Dürbün Ekranı -->
+        <div id="sniper-scope">
+            <div id="scope-crosshair-v"></div>
+            <div id="scope-crosshair-h"></div>
+        </div>
+
+        <!-- Sol Üst Can / Mermi / Skor HUD -->
+        <div id="hud-top-left">
+            <div class="hud-card">❤️ CAN: <span id="player-health">100</span></div>
+            <div class="hud-card">🔫 MERMİ: <span id="player-ammo">12 / 12</span></div>
+            <div class="hud-card">💀 SKOR: <span id="player-score">0</span></div>
+        </div>
+
+        <!-- Radar -->
+        <div id="radar-container"></div>
+
+        <!-- Silah Seçim Butonları -->
+        <div id="weapon-menu">
+            <button class="weapon-btn active">USP</button>
+            <button class="weapon-btn">AK-47</button>
+            <button class="weapon-btn">AWP</button>
+        </div>
+
+        <!-- Mobil Dokunmatik Kontroller -->
+        <div class="mobile-controls">
+            <!-- Sol Joystick Zone -->
+            <div id="joystick-zone">
+                <div id="joystick-knob"></div>
+            </div>
+
+            <!-- Sağ Aksiyon Butonları -->
+            <div class="action-buttons">
+                <button id="btn-reload" class="btn-action">DOLDUR</button>
+                <button id="btn-jump" class="btn-action">ZIPLA</button>
+                <button id="btn-scope" class="btn-action">DÜRBÜN</button>
+                <button id="btn-fire" class="btn-action">ATEŞ</button>
+            </div>
+        </div>
+
+        <!-- Menüye Dönüş / Duraklat Butonu -->
+        <button id="btn-pause" onclick="menuyeDon()">⏸️ MENÜ</button>
+
+    </div>
+    <script>
+    // ==========================================
+// 1. TEMEL GEÇİŞLER (LOBİ <-> OYUN & TAKIM SEÇİMİ)
+// ==========================================
+
+// BAŞLA Butonuna Basıldığında
+function oyunaBasla() {
+    const lobby = document.getElementById('lobby-menu-container');
+    const gameUI = document.getElementById('game-ui');
+    const teamSelectModal = document.getElementById('modal-team-select');
+
+    if (lobby) lobby.style.display = 'none';
+    if (gameUI) gameUI.style.display = 'block';
+    
+    // Takım seçim penceresini göster
+    if (teamSelectModal) {
+        teamSelectModal.style.display = 'flex';
+    }
+
+    console.log("Savaşa giriş yapıldı, takım seçimi bekleniyor.");
+}
+
+// Takım Seçildiğinde (CT veya TR)
+function takimSec(takim) {
+    const teamSelectModal = document.getElementById('modal-team-select');
+    
+    if (teamSelectModal) {
+        teamSelectModal.style.display = 'none';
+    }
+
+    if (takim === 'ct') {
+        alert("Counter-Terrorist (Mavi Takım) seçildi!");
+    } else if (takim === 'tr') {
+        alert("Terrorist (Kırmızı Takım) seçildi!");
+    }
+}
+
+// Oyundan Lobiye Dön Butonu (Pause/Menü)
+function menuyeDon() {
+    const lobby = document.getElementById('lobby-menu-container');
+    const gameUI = document.getElementById('game-ui');
+
+    if (gameUI) gameUI.style.display = 'none';
+    if (lobby) lobby.style.display = 'block';
+
+    console.log("Lobiye geri dönüldü.");
+}
+
+
+// ==========================================
+// 2. SAYFA YÜKLENDİĞİNDE DİNLENEN BUTONLAR (LOBİ & OYUN İÇİ)
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+
+    // --- LOBİ BUTONLARI ---
+    const btnVip = document.querySelector('.vip-banner');
+    if (btnVip) btnVip.onclick = () => alert("VIP Kulübü yakında aktif olacak!");
+
+    const btnPass = document.querySelector('.season-pass-card');
+    if (btnPass) btnPass.onclick = () => alert("Sezon Bilet Seviyesi: S1 (100 XP)");
+
+    const sideBtns = document.querySelectorAll('.side-btn');
+    if (sideBtns.length >= 3) {
+        sideBtns[0].onclick = () => alert("Cephanelik açılıyor... Silahlarınızı özelleştirin.");
+        sideBtns[1].onclick = () => alert("Klan Sayfası: Klanınız henüz bulunmuyor.");
+        sideBtns[2].onclick = () => alert("Günlük Görevler: 1/3 Tamamlandı.");
+    }
+
+    const btnMarket = document.querySelector('.btn-market');
+    if (btnMarket) btnMarket.onclick = () => alert("Market açılıyor... Skinler ve Kasalar satışta!");
+
+    const btnInvite = document.querySelector('.team-invite-box');
+    if (btnInvite) btnInvite.onclick = () => alert("Takım davet bağlantısı kopyalandı!");
+
+    const btnEvent = document.querySelector('.event-banner');
+    if (btnEvent) btnEvent.onclick = () => alert("Hafta Sonu 2X XP Etkinliği Aktif!");
+
+    const quickBtns = document.querySelectorAll('.quick-circle-btn');
+    if (quickBtns.length >= 2) {
+        quickBtns[0].onclick = () => alert("Liderlik Sıralaması: #1 AtesYolcusu");
+        quickBtns[1].onclick = () => alert("Şanslı Çark: Günlük 1 ücretsiz çevirme hakkınız var!");
+    }
+
+    const modeCard = document.querySelector('.mode-selector-card');
+    if (modeCard) modeCard.onclick = () => alert("Oyun Modu Seçimi: Sabotaj / Ölüm Maçı / Bomba Kurma");
+
+    // Savaş Kasaları Tıklamaları
+    const crateSlots = document.querySelectorAll('.crate-slot');
+    crateSlots.forEach((slot, index) => {
+        slot.onclick = () => {
+            alert(`${index + 1}. Savaş Kasası seçildi. Açmak için tıklayın!`);
+        };
+    });
+
+
+    // --- OYUN İÇİ AKSİYON BUTONLARI ---
+    const btnFire = document.getElementById('btn-fire');
+    if (btnFire) {
+        btnFire.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            console.log("Ateş edildi!");
+        });
+        btnFire.onclick = () => console.log("Ateş edildi!"); // Masaüstü/Tıklama testi için
+    }
+
+    const btnReload = document.getElementById('btn-reload');
+    if (btnReload) btnReload.onclick = () => console.log("Şarjör değiştiriliyor...");
+
+    const btnJump = document.getElementById('btn-jump');
+    if (btnJump) btnJump.onclick = () => console.log("Zıplandı!");
+
+    const btnScope = document.getElementById('btn-scope');
+    const sniperScope = document.getElementById('sniper-scope');
+    let scopeOpen = false;
+
+    if (btnScope && sniperScope) {
+        btnScope.onclick = () => {
+            scopeOpen = !scopeOpen;
+            sniperScope.style.display = scopeOpen ? 'block' : 'none';
+        };
+    }
+
+    // Silah Değiştirme Butonları (USP, AK-47, AWP)
+    const weaponButtons = document.querySelectorAll('.weapon-btn');
+    weaponButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+            weaponButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const selectedWeapon = btn.textContent.trim();
+            console.log("Seçilen Silah:", selectedWeapon);
+
+            if (btnScope) {
+                btnScope.style.display = (selectedWeapon === 'AWP') ? 'flex' : 'none';
+            }
+            
+            if (selectedWeapon !== 'AWP' && sniperScope) {
+                scopeOpen = false;
+                sniperScope.style.display = 'none';
+            }
+        });
+    });
+
+
+    // --- MOBİL JOYSTICK KONTROLÜ ---
+    const joystickZone = document.getElementById('joystick-zone');
+    const joystickKnob = document.getElementById('joystick-knob');
+
+    let joystickActive = false;
+    let joystickOrigin = { x: 0, y: 0 };
+    let moveInput = { x: 0, y: 0 };
+
+    if (joystickZone && joystickKnob) {
+        joystickZone.addEventListener('touchstart', (e) => {
+            joystickActive = true;
+            const touch = e.touches[0];
+            const rect = joystickZone.getBoundingClientRect();
+            joystickOrigin = {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2
+            };
+            updateJoystick(touch);
+        }, { passive: true });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!joystickActive) return;
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                const dist = Math.hypot(touch.clientX - joystickOrigin.x, touch.clientY - joystickOrigin.y);
+                if (dist < 120) {
+                    updateJoystick(touch);
+                    break;
+                }
+            }
+        }, { passive: true });
+
+        const stopJoystick = () => {
+            if (!joystickActive) return;
+            joystickActive = false;
+            joystickKnob.style.transform = `translate(-50%, -50%)`;
+            moveInput = { x: 0, y: 0 };
+        };
+
+        window.addEventListener('touchend', stopJoystick);
+        window.addEventListener('touchcancel', stopJoystick);
+
+        function updateJoystick(touch) {
+            const maxRadius = 35;
+            let deltaX = touch.clientX - joystickOrigin.x;
+            let deltaY = touch.clientY - joystickOrigin.y;
+            const distance = Math.hypot(deltaX, deltaY);
+
+            if (distance > maxRadius) {
+                deltaX = (deltaX / distance) * maxRadius;
+                deltaY = (deltaY / distance) * maxRadius;
+            }
+
+            joystickKnob.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
+            moveInput.x = deltaX / maxRadius;
+            moveInput.y = deltaY / maxRadius;
+        }
+    }
+});
+    </script>
+</body>
+</html>
