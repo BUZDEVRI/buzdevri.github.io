@@ -1,0 +1,2064 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>3D Uzay Stratejisi - Komuta Merkezi</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Three.js Kütüphanesi -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Firebase Gerçek Zamanlı Ağ Bağlantı Kütüphaneleri -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <style>
+  /* Genel Sıfırlama ve Gövde */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    user-select: none;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #050814;
+    color: #fff;
+}
+
+#space-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* OYUN ARAYÜZÜ (GAME UI OVERLAY) */
+#game-ui {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    pointer-events: none; /* Arka plandaki 3D sahneye tıklamayı engellemez */
+}
+
+#game-ui button {
+    pointer-events: auto; /* Butonlara tıklanabilmesini sağlar */
+}
+
+/* ÜST BAR */
+.top-bar {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    right: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    background: rgba(13, 22, 48, 0.85);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 12px;
+    padding: 6px 14px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.avatar {
+    font-size: 20px;
+    margin-right: 10px;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.username {
+    font-weight: bold;
+    font-size: 13px;
+    color: #00d4ff;
+    letter-spacing: 0.5px;
+}
+
+.level {
+    font-size: 11px;
+    color: #8a99ad;
+}
+
+.resources {
+    display: flex;
+    gap: 8px;
+}
+
+.res-item {
+    background: rgba(13, 22, 48, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: bold;
+    backdrop-filter: blur(8px);
+}
+
+/* YAN MENÜLER (SOL VE SAĞ) */
+.side-menu {
+    position: absolute;
+    top: 90px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.side-menu.left { left: 15px; }
+.side-menu.right { right: 15px; }
+
+/* 3D TASARIMLI BUTONLAR */
+.btn-side {
+    background: linear-gradient(135deg, rgba(20, 32, 66, 0.9), rgba(10, 16, 38, 0.9));
+    border: 1px solid #00d4ff;
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 212, 255, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    backdrop-filter: blur(5px);
+}
+
+.btn-side:active {
+    transform: scale(0.95);
+}
+
+.btn-gold {
+    border-color: #ffd700;
+    box-shadow: 0 4px 10px rgba(255, 215, 0, 0.2);
+}
+
+.badge {
+    background: #ff0055;
+    color: #fff;
+    font-size: 9px;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-weight: 800;
+}
+
+/* ALT BAR VE ANA EYLEM BUTONU */
+.bottom-bar {
+    position: absolute;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 85%;
+    max-width: 320px;
+}
+
+.btn-main-action {
+    width: 100%;
+    padding: 14px 20px;
+    background: linear-gradient(180deg, #00d4ff 0%, #0055ff 100%);
+    border: none;
+    border-radius: 14px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0, 150, 255, 0.5), inset 0 2px 2px rgba(255, 255, 255, 0.4);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    transition: all 0.2s ease;
+}
+
+.btn-main-action:active {
+    transform: scale(0.96);
+}
+
+/* MODAL EKRANI (MATCHMAKING) */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(3, 6, 15, 0.92); /* Arkadaki butonları tamamen gizlemek için mat karartma */
+    backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Ekrandaki her şeyin üstünde durmasını sağlar */
+}
+
+.matchmaking-card {
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    width: 90%;
+    max-width: 380px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 0, 85, 0.15);
+}
+
+.matchmaking-header h2 {
+    color: #ff3b5c;
+    font-size: 16px;
+    text-align: center;
+    letter-spacing: 0.5px;
+}
+
+.matchmaking-header p {
+    color: #94a3b8;
+    font-size: 12px;
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.enemy-list-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.enemy-slot {
+    display: flex;
+    align-items: center;
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 8px 12px;
+    border-radius: 10px;
+}
+
+.enemy-rank {
+    font-weight: bold;
+    color: #64748b;
+    font-size: 12px;
+    width: 24px;
+}
+
+.enemy-avatar {
+    font-size: 18px;
+    margin-right: 10px;
+}
+
+.enemy-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.enemy-name {
+    font-size: 13px;
+    font-weight: bold;
+    color: #f8fafc;
+}
+
+.enemy-level {
+    font-size: 10px;
+    color: #64748b;
+}
+
+.enemy-status {
+    font-size: 10px;
+    font-weight: bold;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+.enemy-status.boss {
+    background: rgba(255, 59, 92, 0.2);
+    color: #ff3b5c;
+    border: 1px solid rgba(255, 59, 92, 0.4);
+}
+
+.enemy-status.ready {
+    background: rgba(234, 179, 8, 0.15);
+    color: #eab308;
+    border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+.matchmaking-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-cancel {
+    flex: 1;
+    padding: 12px;
+    background: rgba(51, 65, 85, 0.8);
+    border: none;
+    border-radius: 10px;
+    color: #94a3b8;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-start-battle {
+    flex: 2;
+    padding: 12px;
+    background: linear-gradient(180deg, #ff3b5c 0%, #c01130 100%);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(255, 59, 92, 0.4);
+}
+/* Alt Bar Çift Buton Düzeni */
+.bottom-bar {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+    display: flex;
+    gap: 10px;
+}
+
+.btn-ranked-action {
+    flex: 1;
+    padding: 14px 10px;
+    background: linear-gradient(180deg, #ff9900 0%, #cc6600 100%);
+    border: none;
+    border-radius: 14px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(255, 153, 0, 0.4), inset 0 2px 2px rgba(255, 255, 255, 0.4);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    transition: all 0.2s ease;
+}
+
+.btn-ranked-action:active {
+    transform: scale(0.96);
+}
+
+/* Matchmaking Modal Rozet Alanı */
+.ranked-badge {
+    background: rgba(255, 153, 0, 0.15);
+    border: 1px solid rgba(255, 153, 0, 0.4);
+    color: #ffcc00;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 6px 12px;
+    border-radius: 20px;
+    margin: 8px auto 12px auto;
+    width: fit-content;
+}
+/* SAVAŞ SONU SONUÇ EKRANI STİLLERİ */
+.result-card {
+    background: rgba(15, 23, 42, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 24px;
+    width: 90%;
+    max-width: 360px;
+    padding: 24px;
+    text-align: center;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9);
+    animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modalPop {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.result-banner {
+    padding: 15px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+}
+
+.result-banner.victory {
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.05) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.result-banner.victory h1 {
+    color: #10b981;
+    font-size: 28px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+}
+
+.result-banner.defeat {
+    background: linear-gradient(180deg, rgba(239, 68, 68, 0.2) 0%, rgba(185, 28, 28, 0.05) 100%);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.result-banner.defeat h1 {
+    color: #ef4444;
+    font-size: 28px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+}
+
+.rp-change-box {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 15px;
+}
+
+.rp-label {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: bold;
+    letter-spacing: 1px;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.rp-value-group {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.rp-plus {
+    color: #10b981;
+    font-size: 20px;
+    font-weight: 800;
+}
+
+.rp-minus {
+    color: #ef4444;
+    font-size: 20px;
+    font-weight: 800;
+}
+
+.rp-total {
+    color: #cbd5e1;
+    font-size: 14px;
+}
+
+.rewards-box {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.reward-item {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.btn-continue {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+    transition: all 0.2s;
+}
+
+.btn-continue:active {
+    transform: scale(0.96);
+}
+/* GEMİ SEÇİM KARTLARI */
+.btn-ship {
+    border-color: #a855f7;
+    box-shadow: 0 4px 10px rgba(168, 85, 247, 0.2);
+}
+
+.ship-select-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ship-card {
+    display: flex;
+    align-items: center;
+    background: rgba(30, 41, 59, 0.6);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    padding: 10px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ship-card:hover {
+    border-color: rgba(0, 212, 255, 0.5);
+    background: rgba(30, 41, 59, 0.9);
+}
+
+.ship-card.active {
+    border-color: #00d4ff;
+    background: rgba(0, 212, 255, 0.15);
+}
+
+.ship-icon {
+    font-size: 22px;
+    margin-right: 12px;
+}
+
+.ship-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.ship-info h4 {
+    font-size: 13px;
+    color: #fff;
+}
+
+.ship-info span {
+    font-size: 10px;
+    color: #94a3b8;
+}
+
+.ship-status {
+    font-size: 10px;
+    font-weight: bold;
+    color: #00d4ff;
+    padding: 4px 8px;
+    background: rgba(0, 212, 255, 0.2);
+    border-radius: 6px;
+}
+/* CANLI AĞ EŞLEŞME STİLLERİ */
+.net-status-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 20px;
+    padding: 6px 14px;
+    margin: 8px auto 12px auto;
+    width: fit-content;
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #00d4ff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #00d4ff;
+    animation: pulse 1.2s infinite ease-in-out;
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    50% { transform: scale(1.4); opacity: 1; }
+    100% { transform: scale(0.8); opacity: 0.5; }
+}
+
+#matchmaking-status-text {
+    font-size: 11px;
+    color: #00d4ff;
+    font-weight: 600;
+}
+
+.net-timer {
+    font-size: 11px;
+    color: #94a3b8;
+    font-family: monospace;
+    font-weight: bold;
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
+    padding-left: 6px;
+}
+/* PROFİL MODAL STİLLERİ */
+.profile-edit-box {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+.profile-label {
+    font-size: 10px;
+    color: #94a3b8;
+    font-weight: bold;
+    letter-spacing: 1px;
+    display: block;
+    margin-bottom: 6px;
+}
+
+.profile-input-group {
+    display: flex;
+    gap: 8px;
+}
+
+.profile-input {
+    flex: 1;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(0, 212, 255, 0.4);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #fff;
+    font-weight: bold;
+    font-size: 13px;
+    outline: none;
+}
+
+.profile-input:focus {
+    border-color: #00d4ff;
+    box-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+}
+
+.btn-save-name {
+    background: #00d4ff;
+    border: none;
+    border-radius: 8px;
+    color: #0f172a;
+    font-weight: bold;
+    font-size: 11px;
+    padding: 0 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-save-name:active {
+    transform: scale(0.95);
+}
+
+.profile-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.stat-box {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 10px 6px;
+    text-align: center;
+}
+
+.stat-title {
+    font-size: 9px;
+    color: #64748b;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    font-size: 11px;
+    color: #00d4ff;
+    font-weight: bold;
+}
+/* EŞLEŞTİRME LOBİSİNDEKİ OYUNCU VURGUSU */
+.enemy-slot.player-slot {
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.5);
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+}
+
+.you-tag {
+    color: #10b981;
+    font-size: 10px;
+    font-weight: 800;
+    margin-left: 4px;
+}
+/* OYUN İÇİ HUD İSİM ETİKETİ */
+.player-hud-badge {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(0, 212, 255, 0.4);
+    padding: 8px 16px;
+    border-radius: 12px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+}
+
+.hud-ship-icon {
+    font-size: 20px;
+}
+
+.hud-player-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.hud-name {
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.hud-ship {
+    color: #00d4ff;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.btn-leave-battle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    color: #ef4444;
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 100;
+    transition: all 0.2s;
+}
+
+.btn-leave-battle:hover {
+    background: rgba(239, 68, 68, 0.4);
+}
+/* ARKADAŞ YAKALANDI BİLDİRİM ROZETİ */
+.friend-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid #10b981;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: bold;
+    color: #10b981;
+    margin-top: 6px;
+    animation: bounceIn 0.5s ease-out;
+}
+
+.friend-icon {
+    font-size: 12px;
+}
+
+@keyframes bounceIn {
+    0% { transform: scale(0.7); opacity: 0; }
+    70% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* ARKADAŞ SLOTU ÖZEL VURGUSU */
+.enemy-slot.friend-slot {
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.6);
+}
+
+.friend-tag {
+    color: #10b981;
+    font-size: 10px;
+    font-weight: 800;
+    margin-left: 4px;
+}
+/* Savaş İçi Leaderboard Tasarımı */
+.leaderboard-box {
+    position: fixed;
+    top: 70px;
+    left: 15px;
+    width: 220px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 8px;
+    padding: 10px;
+    color: #fff;
+    font-size: 11px;
+    z-index: 100;
+    backdrop-filter: blur(4px);
+}
+
+.lb-header {
+    text-align: center;
+    font-weight: bold;
+    color: #38bdf8;
+    margin-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 4px;
+}
+
+.lb-team-header {
+    font-size: 10px;
+    font-weight: bold;
+    margin-top: 4px;
+    margin-bottom: 2px;
+}
+
+.team-blue .lb-team-header { color: #38bdf8; }
+.team-red .lb-team-header { color: #f43f5e; }
+
+.lb-player-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 6px;
+    margin-bottom: 2px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.lb-player-item.is-me {
+    border: 1px solid #10b981;
+    background: rgba(16, 185, 129, 0.15);
+}
+
+.lb-player-item.is-friend {
+    border: 1px solid #38bdf8;
+    background: rgba(56, 189, 248, 0.15);
+}
+
+.lb-player-name {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+.lb-player-status {
+    font-size: 9px;
+    color: #10b981;
+}
+
+.lb-vs {
+    text-align: center;
+    font-weight: 900;
+    color: #f59e0b;
+    font-size: 10px;
+    margin: 2px 0;
+}
+
+</style>
+</head>
+<body>
+  <!-- 3D Uzay Sahnesi Tuvali -->
+<canvas id="space-canvas"></canvas>
+
+<!-- OYUN ARAYÜZÜ (LOBİ HUD) -->
+<div id="game-ui">
+
+    <!-- ÜST BAR -->
+    <div class="top-bar">
+        <div class="user-profile">
+            <div class="avatar">🚀</div>
+            <div class="user-info">
+                <!-- ID eklendi: İsim değişince burası da anlık güncellenecek -->
+                <span id="topbar-username" class="username">KOMUTAN</span>
+                <span class="level">LVL 12</span>
+            </div>
+        </div>
+        <div class="resources">
+            <div class="res-item">⚡ 1,500</div>
+            <div class="res-item">💎 420</div>
+            <div class="res-item">🛡️ 8,900</div>
+        </div>
+    </div>
+
+    <!-- SOL MENÜ -->
+    <div class="side-menu left">
+        <button class="btn-side" onclick="modalAc('modal-etkinlikler')">
+            <span class="badge">CANLI</span> 📅 ETKİNLİKLER
+        </button>
+        <button class="btn-side" onclick="openProfileModal()">🎖️ PROFİL</button>
+        <button class="btn-side btn-ship" onclick="modalAc('modal-gemiler')">🛸 GEMİ SEÇ</button>
+    </div>
+
+    <!-- SAĞ MENÜ -->
+    <div class="side-menu right">
+        <button class="btn-side btn-gold" onclick="modalAc('modal-magaza')">🛒 MAĞAZA</button>
+    </div>
+
+    <!-- ALT BAR (NORMAL VE DERECELİ SEÇENEKLERİ) -->
+    <div class="bottom-bar">
+        <button class="btn-main-action" onclick="savasaBasla('normal')">HIZLI SAVAŞ</button>
+        <button class="btn-ranked-action" onclick="savasaBasla('ranked')">🏆 DERECELİ SAVAŞ</button>
+    </div>
+
+</div>
+
+<!-- SAVAŞ EKRANI ARAYÜZÜ (3D SAVAŞ ANINDA ÇALIŞIR) -->
+<div id="battle-ui" style="display: none;">
+  <!-- SAVAŞ İÇİ CANLI SKOR TABLOSU (LEADERBOARD) -->
+<div id="battle-leaderboard" class="leaderboard-box">
+    <div class="lb-header">
+        <span class="lb-title">⚔️ 5vs5 SAVAŞ TABLOSU</span>
+    </div>
+    
+    <!-- Müttefik Takım (Mavi) -->
+    <div class="lb-team team-blue">
+        <div class="lb-team-header">DOST FİLO (5)</div>
+        <div id="blue-team-list" class="lb-player-list">
+            <!-- JS Tarafından Doldurulacak -->
+        </div>
+    </div>
+
+    <div class="lb-vs">VS</div>
+
+    <!-- Düşman Takım (Kırmızı) -->
+    <div class="lb-team team-red">
+        <div class="lb-team-header">DÜŞMAN FİLO (5)</div>
+        <div id="red-team-list" class="lb-player-list">
+            <!-- JS Tarafından Doldurulacak -->
+        </div>
+    </div>
+</div>
+
+    <div class="player-hud-badge">
+        <span class="hud-ship-icon">🚀</span>
+        <div class="hud-player-info">
+            <span id="hud-player-name" class="hud-name">KOMUTAN</span>
+            <span id="hud-ship-name" class="hud-ship">Avcı Alpha</span>
+        </div>
+    </div>
+    <button class="btn-leave-battle" onclick="savasiBitir(false)">SAVAŞTAN AYRIL</button>
+</div>
+
+<!-- ========================================== -->
+<!-- MODALLAR VE AÇILIR PENCERELER              -->
+<!-- ========================================== -->
+
+<!-- 1. SAVAŞ SONU SONUÇ EKRANI -->
+<div id="battle-result-modal" class="modal-overlay" style="display: none;">
+    <div class="result-card">
+        <div id="result-status-banner" class="result-banner victory">
+            <h1 id="result-title">VICTORY</h1>
+            <p id="result-subtitle">Düşman Filosu Yok Edildi!</p>
+        </div>
+
+        <div class="result-body">
+            <div id="result-rp-container" class="rp-change-box">
+                <span class="rp-label">DERECELİ PUANI (RP)</span>
+                <div class="rp-value-group">
+                    <span id="rp-change-text" class="rp-plus">+25 RP</span>
+                    <span id="rp-total-text" class="rp-total">(1,475 RP)</span>
+                </div>
+            </div>
+
+            <div class="rewards-box">
+                <div class="reward-item">⚡ <span id="reward-energy">+250</span></div>
+                <div class="reward-item">💎 <span id="reward-gems">+15</span></div>
+            </div>
+        </div>
+
+        <div class="result-actions">
+            <button class="btn-continue" onclick="savasSonucuKapat()">LOBİYE DÖN 🚀</button>
+        </div>
+    </div>
+</div>
+
+<!-- 2. CANLI AĞ EŞLEŞME EKRANI -->
+<div id="matchmaking-modal" class="modal-overlay" style="display: none;">
+    <div class="matchmaking-card">
+        <div class="matchmaking-header">
+            <h2 id="matchmaking-title">⚡ CANLI AĞ EŞLEŞMESİ</h2>
+            <p id="matchmaking-subtitle">Oyuncular Aranıyor...</p>
+            
+            <div id="matchmaking-status-box" class="net-status-box">
+                <span class="pulse-dot"></span>
+                <span id="matchmaking-status-text">Sunucuya bağlanılıyor...</span>
+                <span id="matchmaking-timer" class="net-timer">00:03</span>
+            </div>
+
+            <div id="ranked-info-badge" class="ranked-badge" style="display: none;">
+                <span id="player-rank-tier">🥇 Altın Ligi</span> | 
+                <span id="player-rank-points">1,450 RP</span>
+            </div>
+        </div>
+
+        <div class="enemy-list-vertical" id="enemy-list-container">
+            <!-- Rakipler JS tarafında doldurulur -->
+        </div>
+
+        <div class="matchmaking-actions">
+            <button class="btn-cancel" onclick="iptalEtAndAgiKapat()">İPTAL</button>
+            <button id="btn-start-battle-action" class="btn-start-battle" onclick="eslesmedenSavasaGec()" style="display: none;">SAVAŞI BAŞLAT 🚀</button>
+        </div>
+    </div>
+</div>
+
+<!-- 3. PROFİL DÜZENLEME MODALI -->
+<div id="modal-profil" class="modal-overlay" style="display: none;">
+    <div class="matchmaking-card">
+        <div class="matchmaking-header">
+            <h2>🎖️ KOMUTAN PROFİLİ</h2>
+            <p>Savaş Kimliğini Düzenle</p>
+        </div>
+
+        <div class="profile-edit-box">
+            <label class="profile-label">KOMUTAN ADI</label>
+            <div class="profile-input-group">
+                <input type="text" id="player-name-input" class="profile-input" maxlength="15" placeholder="Komutan adınızı girin...">
+                <button class="btn-save-name" onclick="oyuncuIsminiKaydet()">KAYDET</button>
+            </div>
+        </div>
+
+        <div class="profile-stats-grid">
+            <div class="stat-box">
+                <span class="stat-title">LİG PUANI</span>
+                <span id="profile-rp-val" class="stat-value">1,450 RP</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-title">LİG DÜZEYİ</span>
+                <span id="profile-rank-val" class="stat-value">🥇 Altın</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-title">SEÇİLİ GEMİ</span>
+                <span id="profile-ship-val" class="stat-value">Avcı Alpha</span>
+            </div>
+        </div>
+
+        <div class="matchmaking-actions" style="margin-top: 15px;">
+            <button class="btn-cancel" onclick="modalKapat('modal-profil')">KAPAT</button>
+        </div>
+    </div>
+</div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+<script>
+  // ==========================================
+// 1. GERÇEK ZAMANLI VERİ TABANI (FIREBASE)
+// ==========================================
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAW1Xh8lVhHCUaimrO9ILqvcRqxC2OKHzY",
+  authDomain: "meyve-oyunu-d8b38.firebaseapp.com",
+  databaseURL: "https://meyve-oyunu-d8b38-default-rtdb.firebaseio.com",
+  projectId: "meyve-oyunu-d8b38",
+  storageBucket: "meyve-oyunu-d8b38.firebasestorage.app",
+  messagingSenderId: "1084491198145",
+  appId: "1:1084491198145:web:cbcd3f1e37e2212efcee40",
+  measurementId: "G-D3YF0PRHJ5"
+};
+
+// Firebase Bağlantısını Başlat
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const database = firebase.database();
+
+// ==========================================
+// DERECELİ SİSTEMİ VE OYUNCU BİLGİLERİ
+// ==========================================
+let playerProfile = {
+    name: "KOMUTAN_" + Math.floor(Math.random() * 899 + 100), // Örn: KOMUTAN_482
+    level: 12,
+    rp: 1450
+};
+
+let friendProfile = {
+    name: "AteşYolcusu",
+    ship: "Avcı Alpha"
+};
+
+// OYUNCUNUN SEÇTİĞİ GEMİ BİLGİSİ
+let selectedShip = {
+    id: 'interceptor',
+    name: 'Avcı Alpha',
+    color: 0x00d4ff,
+    speed: 1.5,
+    damage: 25
+};
+
+// Lig Seviyeleri ve Puan Aralıkları
+const RANKS = [
+    { name: "🥉 Bronz Ligi", minRP: 0, maxRP: 999 },
+    { name: "🥈 Gümüş Ligi", minRP: 1000, maxRP: 1399 },
+    { name: "🥇 Altın Ligi", minRP: 1400, maxRP: 1799 },
+    { name: "💎 Elmas Ligi", minRP: 1800, maxRP: 2399 },
+    { name: "👑 Şampiyon Ligi", minRP: 2400, maxRP: 99999 }
+];
+
+// Oyuncunun Mevcut Ligini Hesaplayan Fonksiyon
+function getPlayerRank(rp) {
+    return RANKS.find(rank => rp >= rank.minRP && rp <= rank.maxRP) || RANKS[0];
+}
+
+// Dereceli / Normal Savaş Başlatma Tetiği
+let currentBattleMode = 'normal'; // 'normal' veya 'ranked'
+
+// ==========================================
+// 2. GENEL DEĞİŞKENLER VE KURULUM
+// ==========================================
+
+let scene, camera, renderer, mainShip, stars;
+let playerShipMesh = null; // Oyuncunun 3D Gemisi
+let allyShipMesh = null;   // Müttefik (Arkadaş) 3D Gemisi
+
+// Savaş Modu Değişkenleri
+let isBattleActive = false;
+let enemyFleet = [];          // 5 Düşman gemisini tutan dizi
+let selectedTargetIndex = 0;  // Kilitlenilen hedef indeksi (0 - 4)
+
+let playerLasers = [];        // Bizim fırlattığımız lazerler
+let enemyLasers = [];         // Düşmanların bize fırlattığı lazerler
+let enemyAttackTimer = 0;      // Düşman otomatik saldırı zamanlayıcısı
+let matchmakingTimer = null;
+let secondsPassed = 0;
+
+let userSessionId = "USER_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+
+let quickMatchState = {
+    searchStatus: 'IDLE',      // 'IDLE', 'SEARCHING', 'FRIEND_FOUND', 'READY'
+    matchId: null,             // Ortak eşleşme kimliği
+    isFriendConnected: false,  // Arkadaş ağa bağlandı mı?
+    friendReadyStatus: false   // Arkadaş savaşa hazır mı?
+};
+
+// ==========================================
+// THREE.JS 3D SAHNE VE MODEL OLUŞTURMA
+// ==========================================
+
+function init3DSpace() {
+    const canvas = document.getElementById('space-canvas');
+    if (!canvas) return;
+
+    // Sahne Oluşturma
+    scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x030712, 0.015);
+
+    // Kamera Ayarları
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 3, 10);
+
+    // Render Motoru
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+
+    // Işıklandırma (Sci-Fi Mavi & Turuncu Işıklar)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambientLight);
+
+    const blueLight = new THREE.PointLight(0x0284c7, 3, 50);
+    blueLight.position.set(-10, 10, -5);
+    scene.add(blueLight);
+
+    const orangeLight = new THREE.PointLight(0xf59e0b, 2, 50);
+    orangeLight.position.set(10, -5, 5);
+    scene.add(orangeLight);
+
+    // Arka Plan Yıldızları ve Oyuncu Gemisi
+    createStars();
+    createMainShip();
+
+    // Ekran Boyutu Değiştiğinde Uyarlama
+    window.addEventListener('resize', onWindowResize);
+
+    // Animasyon Döngüsünü Başlat
+    animate();
+}
+
+function createStars() {
+    const starGeo = new THREE.BufferGeometry();
+    const count = 1500;
+    const positions = new Float32Array(count * 3);
+
+    for (let i = 0; i < count * 3; i++) {
+        positions[i] = (Math.random() - 0.5) * 200;
+    }
+
+    starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const starMat = new THREE.PointsMaterial({ color: 0x38bdf8, size: 0.5 });
+    stars = new THREE.Points(starGeo, starMat);
+    scene.add(stars);
+}
+
+function createMainShip() {
+    mainShip = new THREE.Group();
+
+    const metalMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.3 });
+    const glowMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.8 });
+
+    // Ana Gövde
+    const bodyGeo = new THREE.ConeGeometry(2, 8, 5);
+    const body = new THREE.Mesh(bodyGeo, metalMat);
+    body.rotation.x = Math.PI / 2;
+    mainShip.add(body);
+
+    // Yan Kanatlar
+    const wingGeo = new THREE.BoxGeometry(7, 0.2, 3);
+    const wings = new THREE.Mesh(wingGeo, metalMat);
+    wings.position.set(0, 0, 1);
+    mainShip.add(wings);
+
+    // Kokpit Camı
+    const bridgeGeo = new THREE.BoxGeometry(1.2, 0.8, 2);
+    const bridge = new THREE.Mesh(bridgeGeo, glowMat);
+    bridge.position.set(0, 0.8, -0.5);
+    mainShip.add(bridge);
+
+    // İtiş Motorları
+    const engineGeo = new THREE.CylinderGeometry(0.5, 0.7, 1.5, 8);
+    const engine1 = new THREE.Mesh(engineGeo, glowMat);
+    engine1.position.set(-1.5, 0, 4);
+    engine1.rotation.x = Math.PI / 2;
+    mainShip.add(engine1);
+
+    const engine2 = engine1.clone();
+    engine2.position.set(1.5, 0, 4);
+    mainShip.add(engine2);
+
+    scene.add(mainShip);
+}
+
+function createPlayerShip3D() {
+    if (playerShipMesh) {
+        scene.remove(playerShipMesh);
+    }
+
+    let geometry;
+    if (selectedShip.id === 'dreadnought') {
+        geometry = new THREE.ConeGeometry(1.2, 3, 6);
+    } else {
+        geometry = new THREE.ConeGeometry(0.8, 2.5, 4);
+    }
+
+    const material = new THREE.MeshPhongMaterial({
+        color: selectedShip.color,
+        flatShading: true,
+        emissive: selectedShip.color,
+        emissiveIntensity: 0.2
+    });
+
+    playerShipMesh = new THREE.Mesh(geometry, material);
+    playerShipMesh.position.set(0, 0, 0);
+    playerShipMesh.rotation.x = Math.PI / 2;
+    
+    scene.add(playerShipMesh);
+}
+
+function spawnAllyShip3D(allyName) {
+    if (allyShipMesh) {
+        scene.remove(allyShipMesh);
+    }
+
+    const allyGeo = new THREE.ConeGeometry(1, 3, 5);
+    const allyMat = new THREE.MeshStandardMaterial({ 
+        color: 0x00d4ff,
+        emissive: 0x0284c7,
+        emissiveIntensity: 0.5,
+        roughness: 0.2, 
+        metalness: 0.8 
+    });
+    
+    allyShipMesh = new THREE.Mesh(allyGeo, allyMat);
+    allyShipMesh.position.set(4, 0, 0);
+    allyShipMesh.rotation.x = Math.PI / 2;
+    
+    scene.add(allyShipMesh);
+
+    const allyLight = new THREE.PointLight(0x00d4ff, 3, 10);
+    allyLight.position.set(4, 1, 0);
+    scene.add(allyLight);
+
+    console.log(`[3D Sahne] ${allyName} müttefik gemisi sahneye eklendi!`);
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+// ==========================================
+// 3. 5'Lİ DÜŞMAN FİLOSU SİSTEMİ
+// ==========================================
+
+function createEnemyFleet() {
+    clearEnemyFleet();
+
+    enemyFleet = [];
+    selectedTargetIndex = 0;
+
+    const positions = [
+        { x: -12, y: 0, z: -22 },
+        { x: -6,  y: 0, z: -18 },
+        { x: 0,   y: 0, z: -15 }, // Lider
+        { x: 6,   y: 0, z: -18 },
+        { x: 12,  y: 0, z: -22 }
+    ];
+
+    const enemyMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, metalness: 0.7, roughness: 0.4 });
+    const glowRed = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xd97706, emissiveIntensity: 0.9 });
+
+    positions.forEach((pos, index) => {
+        const enemyGroup = new THREE.Group();
+
+        const bodyGeo = new THREE.ConeGeometry(1.8, 6.5, 4);
+        const body = new THREE.Mesh(bodyGeo, enemyMat);
+        body.rotation.x = -Math.PI / 2;
+        enemyGroup.add(body);
+
+        const coreGeo = new THREE.SphereGeometry(0.7, 12, 12);
+        const core = new THREE.Mesh(coreGeo, glowRed);
+        core.position.set(0, 0, 0);
+        enemyGroup.add(core);
+
+        enemyGroup.position.set(pos.x, pos.y, pos.z);
+
+        enemyGroup.userData = {
+            id: index,
+            hp: 100,
+            maxHp: 100,
+            baseX: pos.x,
+            baseY: pos.y,
+            baseZ: pos.z,
+            isAlive: true
+        };
+
+        scene.add(enemyGroup);
+        enemyFleet.push(enemyGroup);
+    });
+
+    updateTargetHighlight();
+    updateFleetUI();
+}
+
+function clearEnemyFleet() {
+    enemyFleet.forEach(ship => {
+        if (ship) scene.remove(ship);
+    });
+    enemyFleet = [];
+}
+
+function hedefDegistir() {
+    if (enemyFleet.length === 0) return;
+
+    let searchCount = 0;
+    do {
+        selectedTargetIndex = (selectedTargetIndex + 1) % enemyFleet.length;
+        searchCount++;
+    } while (!enemyFleet[selectedTargetIndex].userData.isAlive && searchCount < enemyFleet.length);
+
+    updateTargetHighlight();
+}
+
+function updateTargetHighlight() {
+    enemyFleet.forEach((ship, index) => {
+        if (!ship.userData.isAlive) return;
+
+        if (index === selectedTargetIndex) {
+            ship.position.y = ship.userData.baseY + 1;
+            ship.scale.set(1.2, 1.2, 1.2);
+        } else {
+            ship.position.y = ship.userData.baseY;
+            ship.scale.set(1, 1, 1);
+        }
+    });
+}
+
+function updateFleetUI() {
+    const aliveCount = enemyFleet.filter(ship => ship.userData.isAlive).length;
+    const countDisplay = document.getElementById('enemy-count');
+    if (countDisplay) countDisplay.innerText = aliveCount;
+
+    const iconsContainer = document.getElementById('enemy-icons-container');
+    if (iconsContainer) {
+        const icons = iconsContainer.querySelectorAll('.fleet-ship-icon');
+        enemyFleet.forEach((ship, index) => {
+            if (icons[index]) {
+                if (ship.userData.isAlive) {
+                    icons[index].classList.add('active');
+                } else {
+                    icons[index].classList.remove('active');
+                }
+            }
+        });
+    }
+}
+
+// ==========================================
+// 4. CANLI OYUNCU TESPİTİ VE LOBİ YÖNETİMİ
+// ==========================================
+
+function savasaBasla(mode = 'normal') {
+    currentBattleMode = mode;
+    
+    if (mode === 'ranked') {
+        const modalTitle = document.getElementById('matchmaking-title');
+        const modalSubtitle = document.getElementById('matchmaking-subtitle');
+        const rankedBadge = document.getElementById('ranked-info-badge');
+
+        const currentRank = getPlayerRank(playerProfile.rp);
+        if (modalTitle) modalTitle.innerHTML = "🏆 DERECELİ FİLO EŞLEŞMESİ";
+        if (modalSubtitle) modalSubtitle.innerHTML = "Dengeli Lig Rakipleri Aranıyor...";
+        
+        const rankTierElem = document.getElementById('player-rank-tier');
+        const rankPointsElem = document.getElementById('player-rank-points');
+        if (rankTierElem) rankTierElem.innerText = currentRank.name;
+        if (rankPointsElem) rankPointsElem.innerText = `${playerProfile.rp} RP`;
+        if (rankedBadge) rankedBadge.style.display = 'block';
+
+        generateRankedEnemies(playerProfile.rp);
+        modalAc('matchmaking-modal');
+    } else {
+        const rankedBadge = document.getElementById('ranked-info-badge');
+        if (rankedBadge) rankedBadge.style.display = 'none';
+
+        hizliSavasAramaBaslat();
+    }
+}
+
+function hizliSavasAramaBaslat() {
+    quickMatchState.searchStatus = 'SEARCHING';
+    quickMatchState.isFriendConnected = false;
+    quickMatchState.friendReadyStatus = false;
+    quickMatchState.matchId = "MATCH_" + Math.floor(1000 + Math.random() * 9000);
+
+    const modalTitle = document.getElementById('matchmaking-title');
+    const modalSubtitle = document.getElementById('matchmaking-subtitle');
+    
+    if (modalTitle) modalTitle.innerText = "⚡ HIZLI SAVAŞ & ARKADAŞ ARAMA";
+    if (modalSubtitle) modalSubtitle.innerText = "Ağdaki arkadaşınız aranıyor ve eşleştiriliyor...";
+
+    modalAc('matchmaking-modal');
+    startQuickMatchSearchLoop();
+}
+
+function startQuickMatchSearchLoop() {
+    secondsPassed = 0;
+    
+    const timerElem = document.getElementById('matchmaking-timer');
+    const statusText = document.getElementById('matchmaking-status-text');
+    const startBtn = document.getElementById('btn-start-battle-action');
+    const friendBadge = document.getElementById('friend-found-badge');
+
+    if (startBtn) startBtn.style.display = 'none';
+    if (friendBadge) friendBadge.style.display = 'none';
+    if (timerElem) timerElem.innerText = "00:00";
+    if (statusText) statusText.innerText = "Canlı sunucuya bağlanılıyor...";
+
+    // 1. Kendi oyuncu verimizi Firebase'e yazıyoruz
+    const myLobbyRef = database.ref('quick_matches/lobby_1/players/' + userSessionId);
+    
+    myLobbyRef.set({
+        id: userSessionId,
+        name: playerProfile.name,
+        ship: selectedShip.name,
+        joinedAt: firebase.database.ServerValue.TIMESTAMP
+    });
+
+    // Sekme/Sayfa kapandığında oyuncuyu oda listesinden otomatik kaldır
+    myLobbyRef.onDisconnect().remove();
+
+    // 2. Savaş Başlatma Sinyalini Dinle
+    listenGameStartSignal();
+
+    // 3. Lobideki TÜM oyuncuları anlık olarak dinle
+    const allPlayersRef = database.ref('quick_matches/lobby_1/players');
+    
+    allPlayersRef.on('value', (snapshot) => {
+        const playersData = snapshot.val();
+        if (!playersData) return;
+
+        const playerList = Object.keys(playersData).map(key => ({
+            id: key,
+            ...playersData[key]
+        }));
+
+        // Kendimiz dışındaki diğer oyuncuyu (arkadaşı) bul
+        const otherPlayer = playerList.find(p => p.id !== userSessionId);
+
+        if (otherPlayer) {
+            friendProfile.name = otherPlayer.name;
+            friendProfile.ship = otherPlayer.ship;
+            quickMatchState.isFriendConnected = true;
+
+            if (statusText) statusText.innerText = `⚡ ${otherPlayer.name} BAGLANDI!`;
+
+            if (friendBadge) {
+                const friendText = document.getElementById('friend-name-text');
+                if (friendText) friendText.innerText = `${otherPlayer.name} Katıldı!`;
+                friendBadge.style.display = 'inline-flex';
+            }
+
+            renderLiveLobbyUI(playerProfile, otherPlayer);
+            if (startBtn) startBtn.style.display = 'inline-block';
+        } else {
+            renderSingleLobbyUI(playerProfile);
+        }
+    });
+
+    // Zamanlayıcı
+    clearInterval(matchmakingTimer);
+    matchmakingTimer = setInterval(() => {
+        secondsPassed++;
+        const mins = String(Math.floor(secondsPassed / 60)).padStart(2, '0');
+        const secs = String(secondsPassed % 60).padStart(2, '0');
+        if (timerElem) timerElem.innerText = `${mins}:${secs}`;
+    }, 1000);
+}
+function renderLiveLobbyUI(you, friend) {
+    const container = document.getElementById('enemy-list-container');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="enemy-slot">
+            <span class="enemy-rank">#1</span>
+            <div class="enemy-avatar">🚀</div>
+            <div class="enemy-info">
+                <span class="enemy-name">Amiral_Zorg</span>
+                <span class="enemy-level">Gemi: Zırhlı Titan | Ping: 24ms</span>
+            </div>
+            <span class="enemy-status boss">ODA LİDERİ</span>
+        </div>
+        <div class="enemy-slot player-slot">
+            <span class="enemy-rank">#2</span>
+            <div class="enemy-avatar">⭐</div>
+            <div class="enemy-info">
+                <span class="enemy-name">${you.name} <span class="you-tag">(SEN)</span></span>
+                <span class="enemy-level">Gemi: ${selectedShip.name} | Ping: 12ms</span>
+            </div>
+            <span class="enemy-status ready">HAZIR</span>
+        </div>
+        <div class="enemy-slot friend-slot">
+            <span class="enemy-rank">#3</span>
+            <div class="enemy-avatar">🤝</div>
+            <div class="enemy-info">
+                <span class="enemy-name">${friend.name} <span class="friend-tag">(CANLI OYUNCU)</span></span>
+                <span class="enemy-level">Gemi: ${friend.ship} | Ping: 18ms</span>
+            </div>
+            <span class="enemy-status ready">BAĞLANDI</span>
+        </div>
+    `;
+}
+
+function renderSingleLobbyUI(you) {
+    const container = document.getElementById('enemy-list-container');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="enemy-slot player-slot">
+            <span class="enemy-rank">#1</span>
+            <div class="enemy-avatar">⭐</div>
+            <div class="enemy-info">
+                <span class="enemy-name">${you.name} <span class="you-tag">(SEN)</span></span>
+                <span class="enemy-level">Gemi: ${selectedShip.name} | Ping: 12ms</span>
+            </div>
+            <span class="enemy-status ready">BEKLENİYOR...</span>
+        </div>
+    `;
+}
+
+// ==========================================
+// 5. SENKRONİZE SAVAŞ BAŞLATMA MANTIĞI
+// ==========================================
+
+function savasBaslatButonuTetikle() {
+    if (typeof database === 'undefined' || !database) {
+        console.error("Firebase bulunamadı!");
+        return;
+    }
+
+    database.ref('quick_matches/lobby_1/game_status').set({
+        isStarted: true,
+        startedAt: firebase.database.ServerValue.TIMESTAMP
+    });
+}
+
+function listenGameStartSignal() {
+    if (typeof database === 'undefined' || !database) return;
+
+    const gameStatusRef = database.ref('quick_matches/lobby_1/game_status');
+    
+    gameStatusRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        
+        if (data && data.isStarted && !isBattleActive) {
+            console.log("[Ağ] Savaş sinyali alındı! Her iki telefon da oyuna giriyor...");
+
+            const matchModal = document.getElementById('matchmaking-modal');
+            if (matchModal) matchModal.style.display = 'none';
+
+            const gameUI = document.getElementById('game-ui');
+            if (gameUI) gameUI.style.display = 'none';
+
+            const topBar = document.querySelector('.top-bar');
+            const sideLeft = document.querySelector('.side-menu.left');
+            const sideRight = document.querySelector('.side-menu.right');
+            const bottomBar = document.querySelector('.bottom-bar');
+
+            if (topBar) topBar.style.display = 'none';
+            if (sideLeft) sideLeft.style.display = 'none';
+            if (sideRight) sideRight.style.display = 'none';
+            if (bottomBar) bottomBar.style.display = 'none';
+
+            const battleUI = document.getElementById('battle-ui');
+            if (battleUI) battleUI.style.display = 'block';
+
+            isBattleActive = true;
+
+            const hudName = document.getElementById('hud-player-name');
+            const hudShip = document.getElementById('hud-ship-name');
+            if (hudName) hudName.innerText = playerProfile.name;
+            if (hudShip) hudShip.innerText = selectedShip.name;
+
+            if (typeof camera !== 'undefined') {
+                camera.position.set(0, 5, 12);
+                camera.lookAt(0, 0, -18);
+            }
+
+            createPlayerShip3D();
+            createEnemyFleet();
+
+            load5v5LeaderboardData();
+            listenBattleActions();
+        }
+    });
+}
+function load5v5LeaderboardData() {
+    const playersRef = database.ref('quick_matches/lobby_1/players');
+
+    // 'once' yerine 'on' kullanarak savaş başladıktan sonra da gelen arkadaşı tabloya canlı basıyoruz
+    playersRef.on('value', (snapshot) => {
+        const playersData = snapshot.val() || {};
+        
+        const playerList = Object.keys(playersData).map(key => ({
+            id: key,
+            ...playersData[key]
+        }));
+
+        console.log("[CANLI TABLO] Oyuncular Güncellendi:", playerList);
+        setup5v5LeaderboardAndShips(playerList);
+    });
+}
+function setup5v5LeaderboardAndShips(realPlayers) {
+    const blueListElem = document.getElementById('blue-team-list');
+    const redListElem = document.getElementById('red-team-list');
+
+    if (!blueListElem || !redListElem) return;
+
+    let blueHTML = '';
+    let redHTML = '';
+
+    // 1. Gerçek Oyuncuları Listeye Ekle
+    realPlayers.forEach((player) => {
+        const isMe = player.id === userSessionId;
+        const displayName = isMe ? `${player.name} (SEN)` : player.name;
+        const itemClass = isMe ? 'lb-player-item is-me' : 'lb-player-item is-friend';
+
+        blueHTML += `
+            <div class="${itemClass}">
+                <span class="lb-player-name">🚀 ${displayName}</span>
+                <span class="lb-player-status" style="color: #38bdf8;">CANLI</span>
+            </div>
+        `;
+
+        // Eğer oyundaki kişi siz değilseniz (müttefikinizse) ekrana onun 3D gemisini basıyoruz
+        if (!isMe) {
+            spawnAllyShip3D(player.name);
+            showToastNotification("🚀 Müttefik Katıldı!", `${player.name} ile aynı filodasınız!`);
+        }
+    });
+
+    // 2. Eksik Kalan Yerleri Bot ile Tamamla (Toplam 5 kişi olacak şekilde)
+    const blueBotsNeeded = 5 - realPlayers.length;
+    for (let i = 1; i <= blueBotsNeeded; i++) {
+        blueHTML += `
+            <div class="lb-player-item">
+                <span class="lb-player-name">🤖 Bot_${i}</span>
+                <span class="lb-player-status" style="color: #9ca3af;">HAZIR</span>
+            </div>
+        `;
+    }
+
+    // 3. Düşman Takımı (Kırmızı Takım) Oluştur
+    const enemyNames = ["Amiral_Zorg", "DarkNebula", "NovaCommander", "VoidStriker", "ShadowX"];
+    enemyNames.forEach((botName) => {
+        redHTML += `
+            <div class="lb-player-item">
+                <span class="lb-player-name">🎯 ${botName}</span>
+                <span class="lb-player-status" style="color: #f43f5e;">DÜŞMAN</span>
+            </div>
+        `;
+    });
+
+    // Arayüzü Güncelle
+    blueListElem.innerHTML = blueHTML;
+    redListElem.innerHTML = redHTML;
+}
+
+// ==========================================
+// 6. SAVAŞ MANTIĞI VE MEKANİKLERİ
+// ==========================================
+function savastanCik() {
+    isBattleActive = false;
+
+    // Firebase Canlı Dinleyicileri Kapat
+    database.ref('quick_matches/lobby_1/players').off();
+
+    const topBar = document.querySelector('.top-bar');
+    const sideLeft = document.querySelector('.side-menu.left');
+    const sideRight = document.querySelector('.side-menu.right');
+    const bottomBar = document.querySelector('.bottom-bar');
+
+    if (topBar) topBar.style.display = 'flex';
+    if (sideLeft) sideLeft.style.display = 'flex';
+    if (sideRight) sideRight.style.display = 'flex';
+    if (bottomBar) bottomBar.style.display = 'flex';
+
+    const battleUI = document.getElementById('battle-ui');
+    if (battleUI) battleUI.style.display = 'none';
+
+    clearEnemyFleet();
+    if (allyShipMesh) {
+        scene.remove(allyShipMesh);
+        allyShipMesh = null;
+    }
+
+    playerLasers.forEach(l => scene.remove(l));
+    enemyLasers.forEach(l => scene.remove(l));
+    playerLasers = [];
+    enemyLasers = [];
+
+    camera.position.set(0, 3, 10);
+    camera.lookAt(0, 0, 0);
+}
+
+function lazerAtesle() {
+    if (!isBattleActive || enemyFleet.length === 0) return;
+
+    const targetShip = enemyFleet[selectedTargetIndex];
+    if (!targetShip || !targetShip.userData.isAlive) return;
+
+    createLaserVisual(targetShip.position, 0x38bdf8);
+
+    database.ref('quick_matches/lobby_1/battle_actions').push({
+        type: 'FIRE',
+        shooterId: userSessionId,
+        targetIndex: selectedTargetIndex,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+}
+
+function createLaserVisual(targetPos, laserColor) {
+    const laserGeo = new THREE.CylinderGeometry(0.1, 0.1, 2.5, 8);
+    const laserMat = new THREE.MeshBasicMaterial({ color: laserColor });
+    const laser = new THREE.Mesh(laserGeo, laserMat);
+
+    laser.position.set(0, 0, 2);
+    laser.lookAt(targetPos);
+    laser.rotateX(Math.PI / 2);
+
+    laser.userData = {
+        targetPosition: targetPos.clone(),
+        targetIndex: selectedTargetIndex,
+        speed: 0.9
+    };
+
+    scene.add(laser);
+    playerLasers.push(laser);
+}
+
+function enemyAutoFire() {
+    if (!isBattleActive) return;
+
+    const aliveEnemies = enemyFleet.filter(ship => ship.userData.isAlive);
+    if (aliveEnemies.length === 0) return;
+
+    const randomEnemy = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
+
+    const laserGeo = new THREE.CylinderGeometry(0.1, 0.1, 2.5, 8);
+    const laserMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+    const laser = new THREE.Mesh(laserGeo, laserMat);
+
+    laser.position.copy(randomEnemy.position);
+    laser.lookAt(0, 0, 2);
+    laser.rotateX(Math.PI / 2);
+
+    scene.add(laser);
+    enemyLasers.push(laser);
+}
+
+function updateBattleElements() {
+    if (!isBattleActive) return;
+
+    for (let i = playerLasers.length - 1; i >= 0; i--) {
+        const laser = playerLasers[i];
+        const targetShip = enemyFleet[laser.userData.targetIndex];
+
+        if (targetShip && targetShip.userData.isAlive) {
+            const dir = new THREE.Vector3().subVectors(targetShip.position, laser.position).normalize();
+            laser.position.addScaledVector(dir, laser.userData.speed);
+
+            if (laser.position.distanceTo(targetShip.position) < 1.5) {
+                applyDamageToEnemy(targetShip, 35);
+                scene.remove(laser);
+                playerLasers.splice(i, 1);
+            }
+        } else {
+            laser.position.z -= 0.8;
+            if (laser.position.z < -35) {
+                scene.remove(laser);
+                playerLasers.splice(i, 1);
+            }
+        }
+    }
+
+    for (let i = enemyLasers.length - 1; i >= 0; i--) {
+        const laser = enemyLasers[i];
+        laser.position.z += 0.7;
+
+        if (laser.position.z > 2) {
+            scene.remove(laser);
+            enemyLasers.splice(i, 1);
+        }
+    }
+
+    enemyAttackTimer++;
+    if (enemyAttackTimer > 90) {
+        enemyAutoFire();
+        enemyAttackTimer = 0;
+    }
+
+    enemyFleet.forEach(ship => {
+        if (ship.userData.isAlive) {
+            ship.rotation.z += 0.005;
+            ship.position.y = ship.userData.baseY + Math.sin(Date.now() * 0.002 + ship.userData.id) * 0.3;
+        }
+    });
+}
+
+function applyDamageToEnemy(targetShip, damage) {
+    targetShip.userData.hp -= damage;
+
+    if (targetShip.children[0]) {
+        targetShip.children[0].material.color.setHex(0xffffff);
+        setTimeout(() => {
+            if (targetShip && targetShip.children[0]) {
+                targetShip.children[0].material.color.setHex(0x991b1b);
+            }
+        }, 100);
+    }
+
+    if (targetShip.userData.hp <= 0 && targetShip.userData.isAlive) {
+        targetShip.userData.isAlive = false;
+        scene.remove(targetShip);
+
+        updateFleetUI();
+
+        if (targetShip.userData.id === selectedTargetIndex) {
+            hedefDegistir();
+        }
+
+        const remainingEnemies = enemyFleet.filter(s => s.userData.isAlive).length;
+        if (remainingEnemies === 0) {
+            setTimeout(() => {
+                savasiBitir(true);
+            }, 300);
+        }
+    }
+}
+
+function listenBattleActions() {
+    const actionsRef = database.ref('quick_matches/lobby_1/battle_actions');
+
+    actionsRef.on('child_added', (snapshot) => {
+        const action = snapshot.val();
+        if (!action || !isBattleActive) return;
+
+        if (action.type === 'FIRE' && action.shooterId !== userSessionId) {
+            const targetShip = enemyFleet[action.targetIndex];
+            if (targetShip && targetShip.userData.isAlive) {
+                createLaserVisual(targetShip.position, 0x10b981);
+            }
+        }
+    });
+}
+
+function savasiBitir(isVictory) {
+    const battleUI = document.getElementById('battle-ui');
+    if (battleUI) battleUI.style.display = 'none';
+
+    const banner = document.getElementById('result-status-banner');
+    const title = document.getElementById('result-title');
+    const subtitle = document.getElementById('result-subtitle');
+    const rpContainer = document.getElementById('result-rp-container');
+    const rpChangeText = document.getElementById('rp-change-text');
+    const rpTotalText = document.getElementById('rp-total-text');
+
+    if (isVictory) {
+        if (banner) banner.className = "result-banner victory";
+        if (title) title.innerText = "ZAFER!";
+        if (subtitle) subtitle.innerText = "Düşman Filosu Yok Edildi!";
+    } else {
+        if (banner) banner.className = "result-banner defeat";
+        if (title) title.innerText = "YENİLGİ";
+        if (subtitle) subtitle.innerText = "Filoyla İrtibat Kesildi!";
+    }
+
+    if (currentBattleMode === 'ranked') {
+        if (rpContainer) rpContainer.style.display = 'block';
+
+        let rpGained = 0;
+        if (isVictory) {
+            rpGained = Math.floor(Math.random() * 10) + 20;
+            playerProfile.rp += rpGained;
+            if (rpChangeText) {
+                rpChangeText.className = "rp-plus";
+                rpChangeText.innerText = `+${rpGained} RP`;
+            }
+        } else {
+            rpGained = Math.floor(Math.random() * 8) + 12;
+            playerProfile.rp = Math.max(0, playerProfile.rp - rpGained);
+            if (rpChangeText) {
+                rpChangeText.className = "rp-minus";
+                rpChangeText.innerText = `-${rpGained} RP`;
+            }
+        }
+
+        if (rpTotalText) rpTotalText.innerText = `(${playerProfile.rp} RP)`;
+    } else {
+        if (rpContainer) rpContainer.style.display = 'none';
+    }
+
+    modalAc('battle-result-modal');
+}
+
+function savasSonucuKapat() {
+    modalKapat('battle-result-modal');
+    savastanCik();
+}
+
+function iptalEtAndAgiKapat() {
+    clearInterval(matchmakingTimer);
+    database.ref('quick_matches/lobby_1/players/' + userSessionId).remove();
+    database.ref('quick_matches/lobby_1/players').off();
+    database.ref('quick_matches/lobby_1/game_status').off();
+    modalKapat('matchmaking-modal');
+}
+
+// ==========================================
+// MODAL VE PROFİL YÖNETİMİ
+// ==========================================
+
+function modalAc(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.style.display = 'flex';
+}
+
+function modalKapat(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.style.display = 'none';
+}
+
+function openProfileModal() {
+    const input = document.getElementById('player-name-input');
+    const rpVal = document.getElementById('profile-rp-val');
+    const rankVal = document.getElementById('profile-rank-val');
+    const shipVal = document.getElementById('profile-ship-val');
+
+    if (input) input.value = playerProfile.name;
+    if (rpVal) rpVal.innerText = `${playerProfile.rp} RP`;
+    
+    if (rankVal) {
+        const currentRank = getPlayerRank(playerProfile.rp);
+        rankVal.innerText = currentRank.name;
+    }
+
+    if (shipVal && typeof selectedShip !== 'undefined') {
+        shipVal.innerText = selectedShip.name;
+    }
+
+    modalAc('modal-profil');
+}
+
+function oyuncuIsminiKaydet() {
+    const input = document.getElementById('player-name-input');
+    if (!input) return;
+
+    const newName = input.value.trim();
+    if (newName.length < 2) {
+        alert("Komutan adı en az 2 karakter olmalıdır!");
+        return;
+    }
+
+    playerProfile.name = newName;
+
+    const topbarName = document.getElementById('topbar-username');
+    if (topbarName) topbarName.innerText = playerProfile.name;
+
+    alert(`Komutan adı "${playerProfile.name}" olarak güncellendi!`);
+    modalKapat('modal-profil');
+}
+
+function showToastNotification(title, desc) {
+    const toast = document.getElementById('toast-notification');
+    const toastTitle = document.getElementById('toast-title');
+    const toastDesc = document.getElementById('toast-desc');
+
+    if (!toast) return;
+
+    if (toastTitle) toastTitle.innerText = title;
+    if (toastDesc) toastDesc.innerText = desc;
+
+    toast.classList.remove('toast-hidden');
+    toast.classList.add('toast-visible');
+
+    setTimeout(() => {
+        toast.classList.remove('toast-visible');
+        toast.classList.add('toast-hidden');
+    }, 3000);
+}
+
+// Main Render Döngüsü
+function animate() {
+    requestAnimationFrame(animate);
+
+    if (mainShip && !isBattleActive) {
+        mainShip.rotation.y += 0.005;
+        mainShip.position.y = Math.sin(Date.now() * 0.0015) * 0.3;
+    }
+
+    if (stars) {
+        stars.rotation.y -= 0.0005;
+    }
+
+    updateBattleElements();
+
+    if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+    }
+}
+
+// Sayfa Yüklenince Başlat
+window.onload = () => {
+    init3DSpace();
+};
+</script>
+</body>
+</html>
