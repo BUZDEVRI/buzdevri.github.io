@@ -1861,122 +1861,96 @@ function clearEnemyFleet() {
 }
 
 function spawnBattleShips(playerList = []) {
-    // Eski sahne elemanlarını temizle
     if (mainShip) { scene.remove(mainShip); mainShip = null; }
     if (playerShipMesh) { scene.remove(playerShipMesh); playerShipMesh = null; }
 
     clearEnemyFleet();
     clearAllyShips();
 
-    // 1. OYUNCULARI TAKIMLARA AYIR (İlk 5 Mavi, Sonraki 5 Kırmızı)
+    // 1. Oyuncuları Takımlara Ayır
     const blueTeam = [];
     const redTeam = [];
 
     playerList.forEach((player, index) => {
         if (index % 2 === 0) {
-            blueTeam.push(player); // Çift indisler Mavi Takım
+            blueTeam.push(player);
         } else {
-            redTeam.push(player);  // Tek indisler Kırmızı Takım
+            redTeam.push(player);
         }
     });
 
-    // Mavi Takımı 5 Kişiye Tamamla (Eksikse Bot Ekle)
-    let botCounter = 1;
+    // 5'er kişiye botlarla tamamla
+    let botIndex = 1;
     while (blueTeam.length < 5) {
-        blueTeam.push({ id: `bot_blue_${botCounter}`, name: `Bot_Mavi_${botCounter}`, isBot: true });
-        botCounter++;
+        blueTeam.push({ id: 'bot_blue_' + botIndex, name: 'Bot_Mavi_' + botIndex, isBot: true });
+        botIndex++;
     }
-
-    // Kırmızı Takımı 5 Kişiye Tamamla (Eksikse Bot Ekle)
-    botCounter = 1;
+    botIndex = 1;
     while (redTeam.length < 5) {
-        redTeam.push({ id: `bot_red_${botCounter}`, name: `Bot_Kırmızı_${botCounter}`, isBot: true });
-        botCounter++;
+        redTeam.push({ id: 'bot_red_' + botIndex, name: 'Bot_Kırmızı_' + botIndex, isBot: true });
+        botIndex++;
     }
 
-    // Savaş Tablosunu Güncelle
+    // Tabloyu Güncelle
     updateBattleLeaderboard(blueTeam, redTeam);
 
-    // 2. MAVİ TAKIM SPANW OLUŞTURMA (Z = 10)
-    const bluePositionsX = [-12, -6, 0, 6, 12];
-    
-    // Kendimizin takım sırasını veya yerini bul
-    let myTeamIndex = blueTeam.findIndex(p => p.id === userSessionId);
-    let amIBlue = true;
+    // Hangi takımdayım belirle
+    const amIBlue = blueTeam.some(p => p.id === userSessionId);
+    const myTeam = amIBlue ? blueTeam : redTeam;
+    const opponentTeam = amIBlue ? redTeam : blueTeam;
 
-    if (myTeamIndex === -1) {
-        // Eğer oyuncu Kırmızı takımdaysa
-        myTeamIndex = redTeam.findIndex(p => p.id === userSessionId);
-        amIBlue = false;
-    }
+    const posXList = [-12, -6, 0, 6, 12];
 
-    // Kendi Gemimizi Oluştur
-    playerShipMesh = createSpaceShipMesh(0x00ffff, true);
-    playerShipMesh.position.set(0, 0, 10);
-    
-    const savedName = localStorage.getItem('customPlayerName') || "ATESYOLCUSU";
-    const myTag = createShipNameTag(`${savedName} (SEN)`, '#00ffff');
-    myTag.name = "nameTag";
-    myTag.position.set(0, 2.5, 0);
-    playerShipMesh.add(myTag);
+    // 2. Kendi Takımını Yerleştir (Müttefikler - Z: 10)
+    myTeam.forEach((player, index) => {
+        const isSelf = player.id === userSessionId;
+        const meshColor = isSelf ? 0x00ffff : 0x0284c7;
+        const ship = createSpaceShipMesh(meshColor, isSelf);
+        ship.position.set(posXList[index], 0, 10);
 
-    scene.add(playerShipMesh);
+        const displayName = isSelf ? `${player.name} (SEN)` : player.name;
+        const tagColor = isSelf ? '#00ffff' : (player.isBot ? '#9ca3af' : '#00d2ff');
+        const tag = createShipNameTag(displayName, tagColor);
+        tag.position.set(0, 2.5, 0);
+        ship.add(tag);
 
-    // Müttefikleri Yerleştir (Mavi Takım Arkadaşları)
-    const allyTeam = amIBlue ? blueTeam : redTeam;
-    let allySlot = 0;
+        scene.add(ship);
 
-    allyTeam.forEach((player) => {
-        if (player.id === userSessionId) return; // Kendimizi atla
-
-        const posX = bluePositionsX[allySlot === 2 ? allySlot + 1 : allySlot]; // Ortayı (0) oyuncuya bıraktık
-        const allyMesh = createSpaceShipMesh(0x0284c7, false);
-        allyMesh.position.set(posX, 0, 10);
-
-        const tagColor = player.isBot ? '#9ca3af' : '#00d2ff';
-        const nameTag = createShipNameTag(player.name, tagColor);
-        nameTag.name = "nameTag";
-        nameTag.position.set(0, 2.5, 0);
-        allyMesh.add(nameTag);
-
-        scene.add(allyMesh);
-        allyShipsGroup.push(allyMesh);
-        allySlot++;
-        if (allySlot === 2) allySlot++; // Ortayı atla
+        if (isSelf) {
+            playerShipMesh = ship;
+        } else {
+            allyShipsGroup.push(ship);
+        }
     });
 
-    // 3. KIRMIZI TAKIM (GERÇEK DÜŞMANLAR) SPANW OLUŞTURMA (Z = -20)
-    const enemyTeam = amIBlue ? redTeam : blueTeam;
-    const enemyPositionsX = [-12, -6, 0, 6, 12];
-
-    enemyTeam.forEach((enemyPlayer, index) => {
+    // 3. Karşı Takımı Yerleştir (Gerçek Düşmanlar - Z: -20)
+    opponentTeam.forEach((enemy, index) => {
         const enemyMesh = createSpaceShipMesh(0xff0044, false);
-        enemyMesh.rotation.y = Math.PI; // Bize bakacak şekilde döndür
-        enemyMesh.position.set(enemyPositionsX[index], 0, -20);
+        enemyMesh.rotation.y = Math.PI; // Bize baksınlar
+        enemyMesh.position.set(posXList[index], 0, -20);
 
-        const tagColor = enemyPlayer.isBot ? '#fca5a5' : '#f43f5e';
-        const enemyTag = createShipNameTag(enemyPlayer.name, tagColor);
-        enemyTag.name = "nameTag";
-        enemyTag.position.set(0, 2.5, 0);
-        enemyMesh.add(enemyTag);
+        const tagColor = enemy.isBot ? '#fca5a5' : '#f43f5e';
+        const tag = createShipNameTag(enemy.name, tagColor);
+        tag.position.set(0, 2.5, 0);
+        enemyMesh.add(tag);
 
         scene.add(enemyMesh);
-        enemyShips.push({ 
-            id: enemyPlayer.id, 
-            name: enemyPlayer.name, 
-            mesh: enemyMesh, 
-            hp: 100, 
+        enemyShips.push({
+            id: enemy.id,
+            name: enemy.name,
+            mesh: enemyMesh,
+            hp: 100,
             isAlive: true,
-            isBot: !!enemyPlayer.isBot
+            isBot: !!enemy.isBot
         });
     });
 
-    // Kamera Açısını Ayarla
     if (camera) {
         camera.position.set(0, 12, 28);
         camera.lookAt(0, 0, -5);
     }
-                  }
+        }
+        
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
