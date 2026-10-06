@@ -1,0 +1,3104 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FARM MERGE BATTLE</title>
+
+<!-- Firebase: Gerçek zamanlı altyapı için hazır. Oyun Firebase olmadan da çalışır. -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:#101820;color:#fff}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.screen{position:fixed;inset:0;width:100%;height:100%;display:none;overflow:hidden}
+.screen.active{display:flex}
+
+/* ================= HOME ================= */
+#home-screen {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+
+    background-image: url("file_00000000f4e88210aee9f73cba807507.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+#home-screen:before{
+  content:"";position:absolute;inset:0;opacity:.18;
+  background-image:
+    linear-gradient(30deg,rgba(255,255,255,.08) 12%,transparent 12.5%,transparent 87%,rgba(255,255,255,.08) 87.5%),
+    linear-gradient(150deg,rgba(255,255,255,.05) 12%,transparent 12.5%,transparent 87%,rgba(255,255,255,.05) 87.5%);
+  background-size:44px 76px;pointer-events:none;
+}
+.game-ui-topbar{position:absolute;top:10px;left:10px;right:10px;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.profile-preview-card,.ui-stat-pill{
+  background:rgba(11,24,17,.88);border:2px solid #c7a83b;box-shadow:0 5px 18px #0008;border-radius:12px;
+}
+.profile-preview-card{display:flex;align-items:center;padding:7px 10px;gap:8px;min-width:145px}
+.profile-avatar{font-size:27px}.profile-info-mini{display:flex;flex-direction:column}
+.profile-name-text{font-size:13px;font-weight:900}.profile-title-text{font-size:8px;color:#e8ca55;margin-top:2px}
+.ui-currency-group{display:flex;gap:6px}.ui-stat-pill{display:flex;align-items:center;gap:4px;padding:6px 7px;font-weight:900;font-size:12px}
+.add-btn{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:#e6b83b;color:#17200f;font-weight:900;margin-left:2px}
+.side-menu-left{position:absolute;left:9px;top:105px;display:flex;flex-direction:column;gap:9px;z-index:5}
+.ui-side-btn{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:#172b1cdd;border:2px solid #d3ae3a;box-shadow:0 5px 14px #0008;font-size:21px}
+.home-center-content{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:80px;z-index:2}
+.game-title-box{padding:9px 18px;border-radius:16px;background:#102218dd;border:3px solid #e1bd46;box-shadow:0 8px 25px #0008}
+.game-title-box h1{margin:0;font-size:clamp(23px,7vw,40px);letter-spacing:2px;color:#f4d35e;text-shadow:2px 3px #000}
+.game-subtitle{margin:12px 0 18px;font-weight:900;color:#d9ead4;font-size:13px;text-align:center}
+.ui-epic-btn{border:3px solid #fff1a0;background:linear-gradient(#f6d45b,#b47718);color:#201706;border-radius:14px;padding:14px 38px;box-shadow:0 7px 0 #69420d,0 10px 25px #0008;font-weight:1000;font-size:16px}
+.ui-epic-btn:active{transform:translateY(5px);box-shadow:0 2px 0 #69420d}
+/* --- ALT OYUN MENÜSÜ (TAM EKRAN GENİŞLİĞİ) --- */
+.ui-bottom-nav {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+
+    width: 100% !important;
+    height: 68px !important;
+    margin: 0 !important;
+
+    padding: 6px 10px !important;
+    box-sizing: border-box !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-around !important;
+    gap: 4px !important;
+
+    /* Mobil Oyun Tasarım Dili (Koyu degrade, sarı oyun çizgisi) */
+    background: linear-gradient(180deg, #2c1d0c, #1a1005) !important;
+    border-top: 3px solid #f1c40f !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    border-radius: 20px 20px 0 0 !important;
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.8) !important;
+    z-index: 1000 !important;
+}
+
+/* Tekil Navigasyon Öğeleri */
+.ui-bottom-nav .ui-nav-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 2px 4px !important;
+    flex: 1 !important;
+    transition: transform 0.1s ease !important;
+}
+
+.ui-bottom-nav .ui-nav-item:active {
+    transform: scale(0.92) !important;
+}
+
+/* Menü İkonları Boyut Ayarı */
+.ui-bottom-nav .nav-custom-icon {
+    width: 24px !important;
+    height: 24px !important;
+    object-fit: contain !important;
+    margin-bottom: 2px !important;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6)) !important;
+}
+
+/* Menü Yazı Etiketleri */
+.ui-bottom-nav .nav-label {
+    color: #fff !important;
+    font-size: 9px !important;
+    font-weight: 900 !important;
+    text-shadow: 1px 1px 2px #000 !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    white-space: nowrap !important;
+}
+
+/* Klan veya Aktif Sekme Vurgusu */
+.ui-bottom-nav .ui-nav-item.active-clan {
+    background: rgba(142, 68, 173, 0.45) !important;
+    border: 2px solid #f1c40f !important;
+    border-radius: 10px !important;
+}
+
+.ui-bottom-nav .ui-nav-item.active-clan .nav-label {
+    color: #f1c40f !important;
+}
+
+/* Telefonlarda alt boşluk kalmaması için */
+@media (max-width: 600px) {
+    .ui-bottom-nav {
+        bottom: 0 !important;
+        height: 64px !important;
+        padding-bottom: 4px !important;
+    }
+}
+
+.ui-nav-item{min-width:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-size:22px;padding:2px 5px}
+.nav-label{font-size:8px;font-weight:900;color:#d9bd55;margin-top:3px}
+.nav-custom-icon{width:27px;height:27px;object-fit:contain}.guild-main-button{min-width:85px;padding:7px 8px;border:2px solid #e0bb43;border-radius:12px;background:linear-gradient(#274d3a,#10251a);color:#fff;display:flex;align-items:center;gap:5px}
+.guild-button-icon{font-size:24px}.guild-button-text{display:flex;flex-direction:column;line-height:1}.guild-button-text strong{font-size:10px}.guild-button-text small{font-size:7px;color:#e1c04f}.guild-button-arrow{font-size:22px;color:#e1c04f}
+
+/* ================= MODAL COMMON ================= */
+.game-modal-overlay,.game-modal,.settings-overlay,.guild-overlay{
+ position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;padding:12px;
+ background:rgba(0,0,0,.78);backdrop-filter:blur(4px)
+}
+.modal-card,.settings-card,.guild-card{
+ width:min(94vw,520px);max-height:92vh;overflow:auto;border-radius:18px;
+ background:linear-gradient(180deg,#183326,#0e1e16);border:2px solid #d4af3b;
+ box-shadow:0 15px 50px #000;color:#fff;padding:15px
+}
+.modal-head{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff22;padding-bottom:9px;margin-bottom:12px}
+.modal-head h2{margin:0;color:#f2ce52;font-size:18px}.close-x{border:0;background:#8d2727;color:#fff;border-radius:8px;width:30px;height:30px;font-weight:900}
+.primary-btn,.gold-btn,.danger-btn{border:2px solid #fff1a0;border-radius:9px;padding:9px 14px;font-weight:900}
+.primary-btn,.gold-btn{background:#d5aa32;color:#171209}.danger-btn{background:#8d2a2a;color:#fff}
+.muted{color:#9db0a1;font-size:11px}
+
+/* ================= MATCHMAKING ================= */
+.matchmaking-screen{align-items:center;justify-content:center;background:radial-gradient(circle,#294c32,#101b15 70%)}
+.mm-container{width:min(94vw,560px);padding:16px}
+.mm-top-bar{display:flex;align-items:center;gap:10px;background:#12251aeF;border:2px solid #c9a83c;border-radius:14px;padding:11px;box-shadow:0 7px 22px #0008}
+.mm-status-icon{font-size:28px}.mm-title{font-size:15px;font-weight:1000;color:#f3d15b}.mm-subtitle{font-size:9px;color:#a9c2af;margin-top:3px}.mm-live-dot{margin-left:auto;width:10px;height:10px;border-radius:50%;background:#2ecc71;box-shadow:0 0 12px #2ecc71;animation:pulse 1s infinite}
+.mm-vs-area{display:grid;grid-template-columns:1fr 75px 1fr;align-items:center;margin:25px 0}
+.mm-player-card{min-height:205px;border-radius:16px;padding:13px;text-align:center;border:2px solid #fff4;box-shadow:0 9px 25px #0009}
+.mm-player-blue{background:linear-gradient(#193e58,#10232f);border-color:#45a9df}.mm-player-red{background:linear-gradient(#552525,#291617);border-color:#d96565}
+.mm-card-label{font-size:8px;font-weight:900;color:#b8cbd2}.mm-avatar{font-size:48px;margin:12px 0}.mm-player-name{font-size:14px;font-weight:1000}.mm-level,.mm-trophy{font-size:10px;color:#d5dfd7;margin-top:6px}.mm-ready{display:inline-block;margin-top:10px;background:#1e9b5b;padding:5px 8px;border-radius:6px;font-size:8px;font-weight:900}.mm-searching{display:flex;justify-content:center;gap:5px;margin-top:18px}.mm-searching span{width:7px;height:7px;border-radius:50%;background:#f1c40f;animation:bounce 1s infinite}.mm-searching span:nth-child(2){animation-delay:.15s}.mm-searching span:nth-child(3){animation-delay:.3s}
+.mm-vs-section{position:relative;height:80px;display:grid;place-items:center}.mm-vs-badge{width:55px;height:55px;border-radius:50%;display:grid;place-items:center;background:#d5a82d;border:4px solid #ffe78d;color:#241a05;font-weight:1000;z-index:2;box-shadow:0 0 25px #e9bb45}.mm-energy-ring{position:absolute;border:2px solid #f1c40f;border-radius:50%;animation:ring 2s infinite}.ring-one{width:66px;height:66px}.ring-two{width:78px;height:78px;animation-delay:.6s;opacity:.4}
+.mm-search-box,.mm-range-box{background:#102119dd;border:1px solid #557060;border-radius:12px;padding:11px;margin-bottom:10px}.mm-search-box{display:flex;gap:12px;align-items:center}.mm-spinner{width:32px;height:32px;border-radius:50%;border:4px solid #ffffff22;border-top-color:#f1c40f;animation:spin 1s linear infinite}.mm-search-title{font-weight:900;font-size:12px}.mm-search-time{color:#f1c40f;font-size:11px;margin-top:3px}.mm-range-title{font-weight:900;font-size:11px;color:#f1c40f}.mm-range-line{display:flex;align-items:center;gap:8px;font-size:8px;margin-top:8px}.mm-range-bar{height:7px;background:#23362a;border-radius:5px;flex:1;position:relative}.mm-range-fill{position:absolute;inset:0 20% 0 20%;background:#e0b53d;border-radius:5px}.mm-range-dot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:13px;height:13px;background:#fff;border:3px solid #e0b53d;border-radius:50%}.mm-range-text{font-size:8px;color:#94a79a;text-align:center;margin-top:6px}.mm-cancel-btn{width:100%;border:2px solid #d66b62;border-radius:10px;background:#552421;color:#fff;padding:10px;font-weight:900}
+
+/* ================= GAME ================= */
+#game-screen{background:linear-gradient(180deg,#101d18,#1d3c25);flex-direction:column;align-items:center;overflow:auto}
+.arena-top-hud{width:min(96vw,650px);display:flex;align-items:center;justify-content:space-between;gap:7px;padding:9px 7px 4px}.arena-score-box{min-width:112px;padding:7px;border-radius:11px;border:2px solid #fff5;box-shadow:0 4px 14px #0008}.blue-side{background:#15364c;border-color:#4bafe4}.red-side{background:#4c2020;border-color:#df6565}.score-info{display:flex;flex-direction:column}.team-lbl{font-size:8px;color:#b9c9c0}.arena-vs-badge{font-weight:1000;background:#d7ad35;color:#201703;border-radius:50%;width:38px;height:38px;display:grid;place-items:center;border:3px solid #ffe795}.giant-scale-avatar{font-size:26px}.arena-turn-banner{width:min(94vw,610px);padding:5px;text-align:center}.arena-turn-banner>div:first-child{font-weight:1000;font-size:11px;color:#ffd85c}.arena-turn-track,.arena-time-track{height:5px;background:#0b130e;border-radius:5px;overflow:hidden}.arena-turn-track{margin-top:4px}.arena-turn-track>div,.arena-time-track>div{height:100%;width:100%;background:#e5b83e;transition:width .3s}.arena-mission-box{width:min(94vw,610px);display:flex;align-items:center;gap:8px;padding:8px;border-radius:10px;background:#12261add;border:1px solid #806c35;margin:4px 0 8px}.mission-icon{font-size:21px}.mission-title{font-size:8px;color:#aab9a9}.mission-counter-badge{margin-left:auto;background:#d1a934;color:#201804;border-radius:7px;padding:5px 8px;font-weight:1000;font-size:11px}
+.merge-grid{width:min(92vw,430px);aspect-ratio:1/1;display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding:7px;background:#102018;border:3px solid #b18d32;border-radius:15px;box-shadow:0 12px 35px #0009}
+.grid-cell{display:grid;place-items:center;border-radius:9px;background:linear-gradient(145deg,#41663f,#233b28);border:2px solid #5e8157;font-size:clamp(25px,8vw,43px);user-select:none;transition:.15s;box-shadow:inset 0 2px #ffffff16}
+.grid-cell.selected{transform:scale(.92);border-color:#ffe26c;box-shadow:0 0 15px #f1c40f,inset 0 0 15px #f1c40f44}.grid-cell.matched{animation:match .25s}
+.arena-emote-bar{display:flex;gap:7px;margin:7px}.emote-btn{width:39px;height:35px;border-radius:9px;display:grid;place-items:center;background:#15271c;border:1px solid #6f793c;font-size:18px}.arena-bottom-hud{width:min(94vw,610px);margin-top:auto;padding:6px 0 9px}.arena-time-track{margin-bottom:6px}.arena-footer-actions{display:flex;justify-content:space-between;align-items:center}.arena-exit-btn{border:1px solid #d2645b;background:#4c211e;color:#fff;border-radius:8px;padding:7px 9px;font-size:9px;font-weight:900}.arena-footer-actions span{font-size:10px;color:#f2d15a;font-weight:900}
+#emote-bubble{position:fixed;left:50%;top:48%;transform:translate(-50%,-50%) scale(0);opacity:0;font-size:55px;z-index:9999;transition:.25s;pointer-events:none}
+
+/* ================= SHOP ================= */
+.shop-balance{display:flex;gap:8px;margin-bottom:10px}.balance-pill{flex:1;padding:8px;background:#09150f;border:1px solid #5d6938;border-radius:9px;font-size:11px;font-weight:900}.store-tabs{display:flex;gap:5px;overflow:auto;margin-bottom:10px}.store-tab,.event-tab,.guild-tab{border:1px solid #65715e;background:#1b3023;color:#fff;border-radius:7px;padding:7px 9px;font-size:9px;font-weight:900;white-space:nowrap}.store-tab.active,.event-tab.active,.guild-tab.active{background:#d2a936;color:#171307;border-color:#ffe998}.store-product{display:grid;grid-template-columns:50px 1fr auto;align-items:center;gap:9px;background:#14281c;border:1px solid #405a46;border-radius:10px;padding:8px;margin:6px 0}.product-icon{font-size:30px}.product-name{font-size:11px;font-weight:900}.product-desc{font-size:8px;color:#9bb0a0;margin-top:3px}.buy-btn{border:1px solid #fff0a0;background:#d1aa39;color:#201705;border-radius:7px;padding:7px 8px;font-size:9px;font-weight:1000}
+
+/* ================= FRIENDS / EVENTS ================= */
+.friend-add{display:flex;gap:5px;margin-bottom:10px}.friend-add input,.guild-input,.settings-select{flex:1;background:#09140e;border:1px solid #596b5d;color:#fff;border-radius:8px;padding:9px;font-size:11px;outline:none}.friends-list{list-style:none;padding:0;margin:0}.friends-list li{display:flex;justify-content:space-between;align-items:center;padding:9px;background:#14271b;border-radius:8px;margin:5px 0;font-size:11px}.remove-friend-btn{background:#7d2d2d;color:#fff;border:0;border-radius:6px;padding:5px 7px;font-size:8px}.event-tabs{display:flex;gap:5px;overflow:auto;margin-bottom:10px}.event-card{background:#14291c;border:1px solid #4c654e;border-radius:11px;padding:11px;margin:7px 0}.event-card h3{margin:0;color:#f1cb53;font-size:13px}.event-card p{font-size:9px;color:#b0c1b5}.event-row{display:flex;justify-content:space-between;align-items:center}.event-time{font-size:9px;color:#f1c64d;font-weight:900}
+
+/* ================= GUILD ================= */
+.guild-tabs{display:flex;gap:5px;overflow:auto;margin-bottom:10px}.guild-tab-content{display:none}.guild-tab-content:first-of-type{display:block}.guild-status{padding:9px;border-radius:8px;background:#102319;border:1px solid #45604b;color:#e8ca55;font-size:10px;margin-bottom:9px}.guild-list{display:grid;gap:7px}.guild-item{display:flex;align-items:center;gap:9px;padding:9px;background:#14291d;border:1px solid #465f4c;border-radius:9px}.guild-logo{font-size:28px}.guild-item strong{font-size:11px}.guild-item small{display:block;color:#9caf9f;font-size:8px;margin-top:2px}.guild-item button{margin-left:auto}.logo-picker{display:flex;gap:8px;flex-wrap:wrap;margin:7px 0}.logo-choice{font-size:24px;background:#13281a;border:1px solid #4c654e;border-radius:8px;padding:6px}.logo-choice.selected{border-color:#f1c40f}
+
+/* ================= SETTINGS / PROFILE ================= */
+.settings-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #ffffff14}.settings-row label{font-size:11px;font-weight:900}.settings-row small{display:block;color:#91a598;font-size:8px;margin-top:3px}.toggle-setting{min-width:76px;border:0;border-radius:15px;padding:6px;background:#248b51;color:#fff;font-size:9px;font-weight:900}.toggle-setting.off{background:#6f2929}.profile-big{text-align:center;padding:8px}.profile-big .avatar{font-size:65px}.profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.stat-box{padding:10px;background:#102319;border:1px solid #455d4a;border-radius:8px;text-align:center}.stat-box b{display:block;color:#f1c84e;font-size:13px}.stat-box span{font-size:8px;color:#9cad9f}
+
+/* ================= MODE SELECTOR ================= */
+.mode-card{width:min(92vw,380px);background:linear-gradient(#193a27,#0d1b14);border:2px solid #d5af3d;border-radius:18px;padding:18px;text-align:center;box-shadow:0 15px 50px #000}.mode-card h2{margin:0;color:#f1cf59}.mode-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}.mode-btn{border:2px solid #64785f;background:#183023;color:#fff;border-radius:12px;padding:16px 7px;font-weight:1000}.mode-btn strong{display:block;font-size:17px;color:#f2cc52}.mode-btn small{font-size:8px;color:#aabcae}.mode-btn:hover{border-color:#f1c40f;background:#244832}
+
+/* ================= TOAST / VICTORY ================= */
+#store-message,#event-message,#guild-message{animation:toast .2s ease}
+.victory-box{text-align:center;background:linear-gradient(#294d2d,#112116);border:3px solid #f2ca4d;border-radius:18px;padding:24px;width:min(88vw,380px);box-shadow:0 15px 60px #000}.victory-icon{font-size:65px}.victory-box h2{color:#f2cd53;margin:7px 0}.victory-reward{font-weight:900;color:#fff;margin:12px}.victory-box p{font-size:10px;color:#a8b9ac}
+
+@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{50%{transform:scale(1.5);opacity:.5}}@keyframes bounce{50%{transform:translateY(-5px)}}@keyframes ring{50%{transform:scale(1.2);opacity:0}}@keyframes match{50%{transform:scale(1.15);filter:brightness(1.8)}}@keyframes toast{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@media(max-width:420px){.ui-bottom-nav{gap:1px}.ui-nav-item{min-width:45px}.nav-label{font-size:7px}.guild-main-button{min-width:75px}.mm-vs-area{grid-template-columns:1fr 55px 1fr}.mm-player-card{min-height:190px}.arena-score-box{min-width:105px}}
+.guild-main-button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #1b4f72, #145a32); /* Koyu şık bir oyun arka planı */
+    border: 3px solid #f1c40f; /* Ekran görüntüsündeki kalın sarı çerçeve */
+    border-radius: 14px;
+    padding: 8px 14px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+    transition: transform 0.1s ease, filter 0.2s ease;
+    width: 170px; /* Görseldeki orantılı boyut için */
+}
+
+.guild-main-button:active {
+    transform: scale(0.96);
+}
+
+.guild-button-icon {
+    font-size: 22px;
+    filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.8));
+}
+
+.guild-button-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.1;
+    color: #ffffff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.guild-button-text strong {
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    text-shadow: 1px 1px 2px #000;
+}
+
+.guild-button-text small {
+    font-size: 9px;
+    color: #f9e79f;
+    font-weight: bold;
+    text-shadow: 1px 1px 1px #000;
+}
+
+.guild-button-arrow {
+    font-size: 18px;
+    font-weight: bold;
+    color: #f1c40f;
+    text-shadow: 1px 1px 2px #000;
+}
+.nav-item {
+    background: transparent;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #ffffff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    gap: 2px;
+    padding: 4px;
+}
+
+.nav-icon {
+    font-size: 24px;
+    filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.8));
+}
+
+.nav-text {
+    font-size: 11px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px #000;
+}
+ #merge-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr); /* Sütun sayısı kesinlikle 5'te sabit kalır */
+  grid-template-rows: repeat(6, 1fr);    /* Satır sayısı kesinlikle 6'da sabit kalır */
+  width: 300%;
+  max-width: 380px; /* Telefon ekranında taşmayı ve genişlik oynamasını önleyen sabit sınır */
+  margin: 0 auto;
+}
+
+
+#merge-grid .animal-tile {
+    touch-action: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    cursor: pointer;
+}
+
+#merge-grid .animal-tile.selected {
+    transform: scale(1.05);
+    border-color: #ffd83d !important;
+    box-shadow: 0 0 15px rgba(255,216,61,.8);
+  }
+  /* TAŞ HAREKETİ */
+
+.animal-tile {
+    transition:
+        transform .18s ease,
+        box-shadow .18s ease,
+        opacity .18s ease;
+}
+
+.animal-tile.tile-moving {
+    transform: scale(1.08);
+    box-shadow:
+        0 0 18px rgba(255,220,60,.9);
+}
+/* =========================================
+   EŞLEŞME PATLAMA ANİMASYONU
+========================================= */
+
+.animal-tile.match-success {
+    animation:
+        matchExplosion 0.45s ease forwards !important;
+
+    z-index: 50 !important;
+    pointer-events: none !important;
+}
+
+
+@keyframes matchExplosion {
+
+    0% {
+        transform: scale(1);
+        opacity: 1;
+        filter: brightness(1);
+    }
+
+    25% {
+        transform: scale(1.25);
+        opacity: 1;
+        filter: brightness(2);
+    }
+
+    50% {
+        transform: scale(1.4);
+        opacity: 0.9;
+        filter: brightness(3);
+    }
+
+    75% {
+        transform: scale(0.7);
+        opacity: 0.5;
+    }
+
+    100% {
+        transform: scale(0);
+        opacity: 0;
+        filter: brightness(1);
+    }
+} 
+  #merge-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    gap: 6px;
+    width: 190%;
+    max-width: 450px;
+    aspect-ratio: 1 / 1;
+  }
+  #merge-grid .animal-tile {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Zafer Modal Arka Planı ve Giriş Animasyonu */
+#victory-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 10, 20, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: victoryFadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes victoryFadeIn {
+  0% { opacity: 0; transform: scale(0.7); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* Modal İçerik Kutusu */
+#victory-modal > div {
+  text-align: center;
+  background: linear-gradient(145deg, #1f293d, #0f172a);
+  padding: 40px 60px;
+  border-radius: 28px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), inset 0 2px 5px rgba(255, 255, 255, 0.15);
+  border: 3px solid #f59e0b;
+  max-width: 90%;
+  width: 400px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Şekilli ve Parlı Victory Başlığı */
+#victory-modal h1 {
+  font-size: 42px;
+  color: #fff;
+  margin: 0 0 10px 0;
+  font-family: 'Arial Black', sans-serif;
+  letter-spacing: 3px;
+  background: linear-gradient(to bottom, #ffd700, #ff8c00);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 3px 6px rgba(245, 158, 11, 0.5));
+  animation: victoryPulse 2s infinite ease-in-out;
+}
+
+@keyframes victoryPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+/* "Kazanan" Alt Yazısı */
+#victory-modal p {
+  font-size: 18px;
+  color: #94a3b8;
+  margin: 15px 0 8px 0;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Kazanan Oyuncu İsmi Kutusu */
+#victory-modal div[style*="background: #fff"] {
+  font-size: 26px !important;
+  color: #0f172a !important;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+  padding: 12px 25px !important;
+  border-radius: 14px !important;
+  font-weight: 900 !important;
+  display: inline-block !important;
+  box-shadow: 0 5px 15px rgba(245, 158, 11, 0.4) !important;
+  margin-top: 5px !important;
+  border: 2px solid #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Yeni Savaş / Kapat Butonu */
+#victory-modal button {
+  margin-top: 30px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  border: none;
+  padding: 14px 32px;
+  font-size: 17px;
+  font-weight: 800;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+  transition: all 0.2s ease;
+  letter-spacing: 0.5px;
+}
+
+#victory-modal button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(16, 185, 129, 0.6);
+  background: linear-gradient(135deg, #34d399, #10b981);
+}
+
+#victory-modal button:active {
+  transform: translateY(1px);
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- ================= ANA EKRAN ================= -->
+<div id="home-screen" class="screen active">
+  <div class="game-ui-topbar">
+    <div class="profile-preview-card" onclick="openProfileModal()">
+      <span class="profile-avatar">🐰</span>
+      <div class="profile-info-mini">
+        <span id="display-username" class="profile-name-text">Sefa</span>
+        <span class="profile-title-text">Çırak Çiftçi 🌾</span>
+      </div>
+    </div>
+    <div class="ui-currency-group">
+      <div class="ui-stat-pill" onclick="openShop()"><span>🪙</span><span id="home-gold">1,250</span><div class="add-btn">+</div></div>
+      <div class="ui-stat-pill" onclick="openShop()"><span>💎</span><span id="home-gem">45</span><div class="add-btn">+</div></div>
+    </div>
+  </div>
+
+  <div class="side-menu-left">
+    <div class="ui-side-btn" onclick="openDailyBonus()" title="Günlük Ödül">🎁</div>
+    <div class="ui-side-btn" onclick="openWheel()" title="Çarkıfelek">🎡</div>
+    <div class="ui-side-btn" onclick="openLeaderboard()" title="Sıralama">📋</div>
+  </div>
+
+  <div class="home-center-content">
+    
+    <div class="game-subtitle">Zorlu Çiftlik Savaşları Başlıyor!</div>
+    <button class="ui-epic-btn" onclick="startMatchmaking('5v5')"><span>SAVAŞA BAŞLA</span></button>
+  </div>
+
+  <div class="ui-bottom-nav">
+    <div class="ui-nav-item" onclick="openShopModal()"><span>🛒</span><span class="nav-label">Market</span></div>
+    <div class="ui-nav-item" onclick="openFriendsModal()"><span class="nav-icon">👥</span><span class="nav-label">Arkadaşlar</span></div>
+    <button onclick="openGuildScreen()" class="nav-item">
+    <span class="nav-icon">🏰</span>
+    <span class="nav-text">Klan</span>
+</button>
+
+
+    <div class="ui-nav-item" onclick="openEvents()"><span>🎉</span><span class="nav-label">Etkinlik</span></div>
+    <div class="ui-nav-item" onclick="openSettings()"><span>⚙️</span><span class="nav-label">Ayarlar</span></div>
+  </div>
+</div>
+
+<!-- ================= MATCHMAKING ================= -->
+<div id="matchmaking-screen" class="screen matchmaking-screen">
+  <div class="mm-container">
+    <div class="mm-top-bar">
+      <div class="mm-status-icon">⚔️</div>
+      <div class="mm-status-text"><div id="mm-title" class="mm-title">RAKİP ARANIYOR</div><div id="mm-subtitle" class="mm-subtitle">Sana uygun bir rakip bulunuyor...</div></div>
+      <div class="mm-live-dot"></div>
+    </div>
+    <div class="mm-vs-area">
+      <div class="mm-player-card mm-player-blue">
+        <div class="mm-card-label">OYUNCU</div>
+        <div class="mm-avatar" id="mm-my-avatar">👨‍🌾<span class="mm-online"></span></div>
+        <div id="matchmaking-player-name" class="mm-player-name">Sen</div>
+        <div class="mm-level">SEVİYE 12</div>
+        <div class="mm-trophy">🏆 <span id="matchmaking-player-trophy">1250</span></div>
+        <div class="mm-ready">✓ HAZIR</div>
+      </div>
+      <div class="mm-vs-section"><div class="mm-energy-ring ring-one"></div><div class="mm-energy-ring ring-two"></div><div class="mm-vs-badge"><span>VS</span></div></div>
+      <div class="mm-player-card mm-player-red">
+        <div class="mm-card-label">RAKİP</div>
+        <div class="mm-avatar mm-search-avatar"><span class="mm-question">?</span></div>
+        <div class="mm-player-name">ARANIYOR</div><div class="mm-level">SEVİYE ???</div><div class="mm-trophy">🏆 ???</div>
+        <div class="mm-searching"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+    <div class="mm-search-box"><div class="mm-spinner"></div><div class="mm-search-info"><div id="mm-search-title" class="mm-search-title">Rakip aranıyor...</div><div id="matchmaking-time" class="mm-search-time">00:00</div></div></div>
+    <div class="mm-range-box"><div class="mm-range-title">🎯 Eşleştirme Aralığı</div><div class="mm-range-line"><span>1100</span><div class="mm-range-bar"><div class="mm-range-fill"></div><div class="mm-range-dot"></div></div><span>1400</span></div><div class="mm-range-text">Benzer kupa seviyesindeki oyuncular aranıyor</div></div>
+    <button class="mm-cancel-btn" onclick="cancelMatchmaking()">✕ EŞLEŞTİRMEYİ İPTAL ET</button>
+  </div>
+</div>
+
+<!-- ================= EKRANIN ÜSTÜNDEKİ RAKİP BİLGİ BANNERI ================= -->
+<div id="matchmaking-top-banner" style="display: none; position: fixed; top: 10px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; z-index: 1001; background: linear-gradient(135deg, #78281f, #512e5f); border: 3px solid #f1c40f; border-radius: 16px; padding: 10px 14px; box-shadow: 0 8px 20px rgba(0,0,0,0.8); color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+    
+    <!-- Aranıyor Durumu -->
+    <div id="matching-status-view" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <div class="spinner" style="width: 20px; height: 20px; border: 3px solid #fff; border-top: 3px solid #f1c40f; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <span style="font-size: 13px; font-weight: 900; text-shadow: 1px 1px 2px #000;">Rakip Aranıyor (5v5)...</span>
+    </div>
+
+    <!-- Bulundu Durumu -->
+    <div id="matched-result-view" style="display: none; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="font-size: 22px;">⚔️</div>
+            <div>
+                <div style="font-size: 11px; color: #f9e79f; font-weight: bold;">Rakip Bulundu!</div>
+                <div id="enemy-clan-name" style="font-size: 13px; font-weight: 900; text-shadow: 1px 1px 2px #000;">Bozkurtlar Clan (5v5)</div>
+            </div>
+        </div>
+        <button onclick="closeMatchBanner()" style="background: #e74c3c; border: 2px solid #fff; color: white; border-radius: 8px; padding: 4px 8px; font-size: 10px; font-weight: bold; cursor: pointer;">KAPAT</button>
+    </div>
+
+</div>
+
+<!-- ================= GAME ================= -->
+<div id="game-screen" class="screen">
+  <!-- Bildirim kutusunu buraya da koyabilirsin -->
+  <div id="game-toast-container" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 10000; pointer-events: none;"></div>
+
+  <div class="arena-top-hud">
+    <div class="arena-score-box blue-side" style="display:flex;align-items:center;gap:8px"><span id="top-player-avatar" class="giant-scale-avatar">🐰</span><div class="score-info"><span id="player-name-display" class="team-lbl">Sefa</span><span id="player-score-box" style="font-size:13px;font-weight:bold">1800</span></div></div>
+    <div class="arena-vs-badge">VS</div>
+    <div class="arena-score-box red-side" style="display:flex;align-items:center;gap:8px"><div class="score-info" style="text-align:right"><span class="team-lbl" id="enemy-team-label">RAKİP</span><span id="enemy-score-box" style="font-size:13px;font-weight:bold">1850</span></div><span id="top-enemy-avatar" class="giant-scale-avatar">👑🐷</span></div>
+  </div>
+
+  <!-- 1V1 RAKİP BİLGİ PANELİ -->
+  <div id="matchmaking-top-banner" style="display: none; width: 100%; max-width: 480px; margin: 4px auto 8px auto; background: linear-gradient(135deg, #1b4f72, #2c3e50); border: 3px solid #f1c40f; border-radius: 16px; padding: 10px 14px; box-shadow: 0 8px 20px rgba(0,0,0,0.8); color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; z-index: 1001;">
+      <!-- Aranıyor Durumu -->
+      <div id="matching-status-view" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+          <div class="spinner" style="width: 20px; height: 20px; border: 3px solid #fff; border-top: 3px solid #f1c40f; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+          <span style="font-size: 13px; font-weight: 900; text-shadow: 1px 1px 2px #000;">Rakip Aranıyor (1v1)...</span>
+      </div>
+
+      <!-- Bulundu Durumu -->
+<div id="matched-result-view" style="display: none; align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="font-size: 22px;">👤⚔️</div>
+        <div>
+            <div style="font-size: 11px; color: #f9e79f; font-weight: bold;">Rakip Bulundu!</div>
+            <div id="enemy-clan-name" style="font-size: 13px; font-weight: 900; text-shadow: 1px 1px 2px #000;">Ahmet_Pro (Seviye 11)</div>
+        </div>
+    </div>
+    <button onclick="closeMatchBanner()" style="background: #e74c3c; border: 2px solid #fff; color: white; border-radius: 8px; padding: 4px 8px; font-size: 10px; font-weight: bold; cursor: pointer;">KAPAT</button>
+</div>
+</div>
+
+  <div class="arena-turn-banner"><div id="turn-indicator">🔥 SIRA SENDE - EZ GEÇ! 🔥</div><div class="arena-turn-track"><div id="turn-progress-fill"></div></div></div>
+  <div class="arena-mission-box"><span class="mission-icon">🎯</span><div><div class="mission-title">SAVAŞ HEDEFİ</div><div id="mission-desc" style="color:#f1c40f;font-weight:bold">Yükleniyor...</div></div><div class="mission-counter-badge" id="live-progress">0/2</div></div>
+  <div id="merge-grid" class="merge-grid"></div>
+  <div id="emote-bubble"></div>
+  <div class="arena-emote-bar"><div onclick="sendEmote('🔥')" class="emote-btn">🔥</div><div onclick="sendEmote('😎')" class="emote-btn">😎</div><div onclick="sendEmote('😂')" class="emote-btn">😂</div><div onclick="sendEmote('⚔️')" class="emote-btn">⚔️</div><div onclick="sendEmote('💀')" class="emote-btn">💀</div></div>
+  <div class="arena-bottom-hud"><div class="arena-time-track"><div id="time-progress-bar"></div></div><div class="arena-footer-actions"><button class="arena-exit-btn" onclick="returnHome()">⚡ ÇEKİL / ÇIKIŞ</button><span id="timer-text">SÜRE: 35s</span></div></div>
+  <button onclick="shuffleBoard()" style="background: #f1c40f; border: 2px solid #fff; color: #000; border-radius: 8px; padding: 10px; font-weight: bold; font-size: 14px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">🔀 TAHTAYI KARIŞTIR</button>
+</div>
+
+<!-- ================= MODE SELECTOR ================= -->
+<div id="mode-selector" class="game-modal-overlay">
+  <div class="mode-card">
+    <h2>⚔️ SAVAŞ MODU</h2>
+    <p class="muted">Savaşa başlamadan önce modunu seç.</p>
+    <div class="mode-options">
+      <button class="mode-btn" onclick="startMatchmaking('1v1')"><strong>1 VS 1</strong><small>Tek rakibe karşı</small></button>
+    </div>
+    <button class="danger-btn" onclick="closeModal('mode-selector')">İPTAL</button>
+  </div>
+</div>
+
+
+
+<!-- ================= SHOP ================= -->
+<div id="shop-modal" class="game-modal-overlay">
+  <div class="modal-card">
+    <div class="modal-head"><h2>🛒 MARKET</h2><button class="close-x" onclick="closeModal('shop-modal')">×</button></div>
+    <div class="shop-balance"><div class="balance-pill">🪙 <span id="store-gold">2500</span></div><div class="balance-pill">💎 <span id="store-gems">150</span></div></div>
+    <div class="store-tabs">
+      <button class="store-tab active" onclick="storeCategory('all',this)">HEPSİ</button>
+      <button class="store-tab" onclick="storeCategory('boost',this)">GÜÇLENDİRİCİ</button>
+      <button class="store-tab" onclick="storeCategory('chest',this)">SANDIK</button>
+      <button class="store-tab" onclick="storeCategory('gold',this)">ALTIN</button>
+      <button class="store-tab" onclick="storeCategory('special',this)">ÖZEL</button>
+    </div>
+    <div class="store-product" data-category="chest"><div class="product-icon">🎁</div><div><div class="product-name">Gizemli Sandık</div><div class="product-desc">Sürpriz ödül sandığı</div></div><button class="buy-btn" onclick="buyStoreItem('Gizemli Sandık','gold',500)">🪙 500</button></div>
+    <div class="store-product" data-category="boost"><div class="product-icon">⏱️</div><div><div class="product-name">Süre Uzatıcı</div><div class="product-desc">Savaş süresine destek</div></div><button class="buy-btn" onclick="buyStoreItem('Süre Uzatıcı','gem',20)">💎 20</button></div>
+    <div class="store-product" data-category="gold"><div class="product-icon">🪙</div><div><div class="product-name">Altın Paketi</div><div class="product-desc">Çiftlik hazinene altın ekle</div></div><button class="buy-btn" onclick="buyStoreItem('Altın Paketi','gem',10)">💎 10</button></div>
+    <div class="store-product" data-category="boost"><div class="product-icon">⚡</div><div><div class="product-name">Hızlandırıcı</div><div class="product-desc">Savaşta avantaj</div></div><button class="buy-btn" onclick="buyStoreItem('Hızlandırıcı','gem',30)">💎 30</button></div>
+    <div class="store-product" data-category="special"><div class="product-icon">💰</div><div><div class="product-name">Özel Paket</div><div class="product-desc">Büyük altın paketi</div></div><button class="buy-btn" onclick="buyStoreItem('Özel Paket','gold',750)">🪙 750</button></div>
+    <div class="store-product" data-category="special"><div class="product-icon">💎</div><div><div class="product-name">Nadir Ödül</div><div class="product-desc">Özel ödül paketi</div></div><button class="buy-btn" onclick="buyStoreItem('Nadir Ödül','gem',50)">💎 50</button></div>
+  </div>
+</div>
+
+<!-- ================= FRIENDS ================= -->
+<div id="friends-modal" class="game-modal-overlay">
+  <div class="modal-card">
+    <div class="modal-head"><h2>👥 ARKADAŞLAR</h2><button class="close-x" onclick="closeFriendsModal()">×</button></div>
+    <div class="friend-add"><input id="friend-username-input" placeholder="Kullanıcı adı"><button class="gold-btn" onclick="addFriend()">EKLE</button></div>
+    <ul id="friends-list" class="friends-list"></ul>
+  </div>
+</div>
+
+<!-- ================= EVENTS ================= -->
+<div id="events-modal" class="game-modal-overlay">
+  <div class="modal-card">
+    <div class="modal-head"><h2>🎉 ETKİNLİKLER</h2><button class="close-x" onclick="closeEventsModal()">×</button></div>
+    <div class="event-tabs">
+      <button class="event-tab active" onclick="filterEvents('all',this)">HEPSİ</button>
+      <button class="event-tab" onclick="filterEvents('competition',this)">YARIŞ</button>
+      <button class="event-tab" onclick="filterEvents('daily',this)">GÜNLÜK</button>
+      <button class="event-tab" onclick="filterEvents('special',this)">ÖZEL</button>
+    </div>
+    <div class="event-card" data-event-category="competition"><div class="event-row"><h3>🏁 Çiftlik Yarışı</h3><span class="event-time">23:59:59</span></div><p>Maçlara katıl, puan topla ve ödülleri kazan.</p><button class="gold-btn" onclick="joinEvent(1)">KATIL</button></div>
+    <div class="event-card" data-event-category="daily"><div class="event-row"><h3>🎁 Günlük Giriş Bonusu</h3><span class="event-time" id="event-time">23:59:59</span></div><p>Bugünün çiftlik ödülünü al.</p><button id="daily-reward-btn" class="gold-btn" onclick="claimDailyReward()">ÖDÜLÜ AL</button></div>
+    <div class="event-card" data-event-category="special"><div class="event-row"><h3>💎 Nadir Ürün Etkinliği</h3></div><p>Nadir ürünleri keşfet ve özel ödülleri topla.</p><button class="gold-btn" onclick="joinEvent(3)">KATIL</button></div>
+    <div class="event-card" data-event-category="competition"><div class="event-row"><h3>🪙 Altın Hasat</h3></div><p>En çok altını toplayan çiftçiler sıralamada yükselir.</p><button class="gold-btn" onclick="joinEvent(4)">KATIL</button></div>
+  </div>
+</div>
+
+     <!-- ================= GUILD ================= -->
+<div id="guild-screen" class="guild-overlay" style="display:none;">
+  <div class="guild-card">
+    <div class="modal-head">
+      <h2>🏰 KLAN SİSTEMİ</h2>
+      <button class="close-x" onclick="closeGuildScreen()">×</button>
+    </div>
+
+    <!-- EĞER BİR KLAN HATTI / ÜYELİĞİ VARSA BURASI GÖRÜNÜR (Klan Paneli & Sohbet) -->
+    <div id="active-guild-view" style="display:none;">
+      <div id="myGuildHeader" style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 10px; margin-bottom: 10px; text-align: center;">
+        <div id="active-guild-logo" style="font-size: 32px;">🐺</div>
+        <h3 id="active-guild-name" style="color: #f1c40f; margin: 5px 0;">Klan Adı</h3>
+        <p id="active-guild-desc" class="muted" style="font-size: 12px;">Açıklama...</p>
+      </div>
+
+      <!-- Klan Sohbet Alanı -->
+      <div class="guild-chat-container" style="background: #112211; border: 2px solid #27ae60; border-radius: 10px; height: 160px; display: flex; flex-direction: column; padding: 8px; margin-bottom: 10px;">
+        <div style="font-size: 11px; font-weight: bold; color: #2ecc71; margin-bottom: 4px; border-bottom: 1px solid #27ae60; padding-bottom: 2px;">💬 KLAN SOHBETİ</div>
+        <div id="guild-chat-messages" style="flex: 1; overflow-y: auto; font-size: 12px; text-align: left; display: flex; flex-direction: column; gap: 4px; padding-right: 4px;">
+          <!-- Sohbet mesajları buraya dinamik dolacak -->
+          <div style="color: #888; font-style: italic;">Sohbet yükleniyor...</div>
+        </div>
+        <div style="display: flex; gap: 6px; margin-top: 6px;">
+          <input id="guild-chat-input" class="guild-input" placeholder="Mesaj yaz..." style="margin: 0; font-size: 12px; padding: 6px;" />
+          <button class="gold-btn" style="padding: 6px 12px; font-size: 11px;" onclick="sendGuildMessage()">GÖNDER</button>
+        </div>
+      </div>
+
+      <button class="danger-btn" style="width:100%; font-size: 12px;" onclick="leaveGuild()">KLANDAN AYRIL</button>
+    </div>
+
+    <!-- EĞER KLANIN YOKSA GÖRÜNEN SEKMELER (Keşfet, Ara, Oluştur) -->
+    <div id="no-guild-view">
+      <div id="myGuildStatus" class="guild-status">Henüz bir klana katılmadın.</div>
+      <div class="guild-tabs">
+        <button class="guild-tab active" onclick="switchGuildTab('discover',this)">KEŞFET</button>
+        <button class="guild-tab" onclick="switchGuildTab('search',this)">ARA</button>
+        <button class="guild-tab" onclick="switchGuildTab('create',this)">OLUŞTUR</button>
+      </div>
+
+      <div id="guild-discover" class="guild-tab-content" style="display:block">
+        <div class="guild-list" id="discover-guild-list">
+          <!-- Arkadaşların kurduğu veya mevcut klanlar buraya listelenir -->
+        </div>
+      </div>
+
+      <div id="guild-search" class="guild-tab-content" style="display:none">
+        <input id="guild-search-input" class="guild-input" placeholder="Klan adı">
+        <button class="gold-btn" style="margin-top:7px; width:100%;" onclick="searchGuild()">ARA</button>
+        <div id="guild-search-result" class="guild-status" style="margin-top:10px;text-align:center">Bir Guild adı yaz.</div>
+      </div>
+
+      <div id="guild-create" class="guild-tab-content" style="display:none">
+        <input id="new-guild-name" class="guild-input" placeholder="Klan adı"><br><br>
+        <input id="new-guild-description" class="guild-input" placeholder="Klan açıklaması">
+        <p class="muted" style="margin: 8px 0 4px 0;">Logo seç</p>
+        <div class="logo-picker" style="display: flex; gap: 8px; justify-content: center; margin-bottom: 10px;">
+          <button class="logo-choice" onclick="selectGuildLogo('🐺')">🐺</button>
+          <button class="logo-choice" onclick="selectGuildLogo('🔥')">🔥</button>
+          <button class="logo-choice" onclick="selectGuildLogo('🌾')">🌾</button>
+          <button class="logo-choice" onclick="selectGuildLogo('👑')">👑</button>
+        </div>
+        <div class="settings-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <label style="font-size: 12px;">Gerekli Kupa</label>
+          <div>
+            <button class="gold-btn" onclick="changeGuildTrophy(-100)">−</button> 
+            <b id="guild-trophy">0</b> 
+            <button class="gold-btn" onclick="changeGuildTrophy(100)">+</button>
+          </div>
+        </div>
+        <button class="primary-btn" style="width:100%; margin-top:4px;" onclick="createGuild()">KLAN OLUŞTUR</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ================= SETTINGS ================= -->
+<div id="settings-modal" class="settings-overlay">
+  <div class="settings-card">
+    <div class="modal-head"><h2>⚙️ AYARLAR</h2><button class="close-x" onclick="closeModal('settings-modal')">×</button></div>
+    <div class="settings-row"><div><label>🔊 Ses</label><small>Oyun sesleri</small></div><button id="sound-toggle-btn" class="toggle-setting on" onclick="toggleGameSetting('sound')"><span class="toggle-circle"></span><b>AÇIK</b></button></div>
+    <div class="settings-row"><div><label>🎵 Müzik</label><small>Arka plan müziği</small></div><button id="music-toggle-btn" class="toggle-setting on" onclick="toggleGameSetting('music')"><span class="toggle-circle"></span><b>AÇIK</b></button></div>
+    <div class="settings-row"><div><label>📳 Titreşim</label><small>Mobil titreşim</small></div><button id="vibration-toggle-btn" class="toggle-setting on" onclick="toggleGameSetting('vibration')"><span class="toggle-circle"></span><b>AÇIK</b></button></div>
+    <div class="settings-row"><div><label>🔔 Bildirim</label><small>Oyun bildirimleri</small></div><button id="notification-toggle-btn" class="toggle-setting on" onclick="toggleGameSetting('notification')"><span class="toggle-circle"></span><b>AÇIK</b></button></div>
+    <div class="settings-row"><label>Dil</label><select class="settings-select" onchange="changeGameLanguage(this.value)"><option value="tr">Türkçe</option><option value="en">English</option></select></div>
+    <div class="settings-row"><label>Performans</label><select class="settings-select"><option>Yüksek</option><option>Orta</option><option>Düşük</option></select></div>
+  </div>
+</div>
+
+<!-- ================= PROFILE ================= -->
+<div id="profile-modal" class="game-modal-overlay">
+  <div class="modal-card">
+    <div class="modal-head"><h2>👤 ÇİFTÇİ PROFİLİ</h2><button class="close-x" onclick="closeModal('profile-modal')">×</button></div>
+    <div class="profile-big"><div class="avatar">🐰</div><input id="username-input" class="guild-input" value="Sefa" maxlength="18"></div>
+    <div class="profile-stats"><div class="stat-box"><b id="stat-trophy">1800</b><span>Kupa</span></div><div class="stat-box"><b id="stat-win">0</b><span>Galibiyet</span></div><div class="stat-box"><b id="stat-match">0</b><span>Maç</span></div></div>
+    <button class="primary-btn" style="width:100%;margin-top:12px" onclick="saveProfileData()">KAYDET</button>
+  </div>
+</div>
+
+<!-- ================= VICTORY ================= -->
+<div id="victory-modal" class="game-modal-overlay" style="display: none;">
+  <div class="victory-box">
+    <!-- İçerik JavaScript (triggerVictory fonksiyonu) tarafından otomatik doldurulacak -->
+  </div>
+</div>
+
+<script>
+/* =====================================================
+   FARM MERGE BATTLE - TEK DOSYA JS
+===================================================== */
+
+/* Firebase */
+const firebaseConfig={
+  apiKey:"AIzaSyAW1Xh8lVhHCUaimrO9ILqvcRqxC2OKHzY",
+  authDomain:"meyve-oyunu-d8b38.firebaseapp.com",
+  databaseURL:"https://meyve-oyunu-d8b38-default-rtdb.firebaseio.com",
+  projectId:"meyve-oyunu-d8b38",
+  storageBucket:"meyve-oyunu-d8b38.firebasestorage.app",
+  messagingSenderId:"1084491198145",
+  appId:"1:1084491198145:web:cbcd3f1e37e2212efcee40",
+  measurementId:"G-D3YF0PRHJ5"
+};
+try{
+  if(typeof firebase!=="undefined" && !firebase.apps.length) firebase.initializeApp(firebaseConfig);
+}catch(e){console.warn("Firebase başlatılamadı:",e)}
+const database=(typeof firebase!=="undefined"&&firebase.apps.length)?firebase.database():null;
+
+/* Data - Ultra Zorlaştırılmış ve Uzun Soluklu Çiftlik Görevleri */
+const fallbackAnimals = [
+ "🐑", "🌽", "🚜", "🐷", "🐥", "🐮", "🥚", "🍎", "🧀", "🍅", "🦙", "👑",
+  "🐶", "🐱", "🐦", "🦜", "🦆", "🫏",  "🐟", "🥒", "🦃", "🐓", "🐰", "🦊",
+   "🥕", "🍰",  "🍊", "🍇", "🍌", "🍐", "🍒", "🍓", "🌸"
+];
+
+
+const farmCharacters = [
+  {id: "rabbit", name: "Çırak Tavşan", base: "🐰", evolved: "👑🐰"},
+  {id: "goat", name: "Çevik Keçi", base: "🐐", evolved: "👑🐐"},
+  {id: "chick", name: "Minik Civciv", base: "🐥", evolved: "👑🐥"},
+  {id: "pig", name: "Kıdemli Domuz", base: "🐷", evolved: "👑🐷"},
+  {id: "kral", name: "kral taç",base: "👑", evolved: "👑"},
+];
+
+// Sayıları ve çeşitliliği katlanarak artırılmış, zorlu görev havuzu
+const farmMissions = [
+  // Kolay Görevler (Daha az sayı, hızlı eşleşme)
+  { difficulty: "KOLAY", idx: 1, count: 25, name: "25 Adet Koyun Yünü Topla (KOLAY) (🐑)" },
+  { difficulty: "KOLAY", idx: 8, count: 30, name: "30 Adet Elma topla (KOLAY) (🍎)" },
+  { difficulty: "KOLAY", idx: 7, count: 25, name: "25 Adet Yumurta Topla (KOLAY) (🥚)" },
+
+  // Orta Görevler (Dengeli)
+  { difficulty: "ORTA", idx: 13, count: 45, name: "45 Adet Köpek topla (ORTA) (🐶)" },
+  { difficulty: "ORTA", idx: 29, count: 50, name: "50 Adet Havuç topla Çapalama (ORTA) (🥕)" },
+  { difficulty: "ORTA", idx: 31, count: 50, name: "50 Adet Portakal topla (ORTA) (🍊)" },
+
+  // Zor ve Zorlayıcı Görevler (Yüksek adetler)
+  { difficulty: "ZOR", idx: 27, count: 70, name: "70 Adet Yaban Böğürtleni topla (ZOR) (🫐)" },
+  { difficulty: "ZOR", idx: 30, count: 60, name: "60 Adet Çilekli Pasta topla (ZOR) (🍰)" },
+  { difficulty: "ZOR", idx: 37, count: 75, name: "75 Adet Bahçe Çiçeği topla (ZOR) (🌸)" }
+];
+
+
+/* Globals */
+let board=[];
+let selectedTile=null;
+let playerScore=1800;
+let enemyScore=1850;
+let isPlayerTurn=true;
+let turnInterval=null;
+let gameTimerInterval = null;
+let currentTimeLeft = 14400; // 4 Saat (saniye cinsinden)
+let gameInterval=null;
+let matchmakingTimer=null;
+let matchmakingClock=null;
+let matchmakingRef=null;
+let pointerStartX = 0;
+let pointerStartY = 0;
+let activeDraggedIdx = null;
+let hasPointerSwiped = false;
+let touchStartX = 0;
+let touchStartY = 0;
+let isMovingTile = false;
+
+// Güvenli tanımlama (farmCharacters henüz yüklenmediyse hata vermez)
+let activeCharacter = (typeof farmCharacters !== 'undefined' && farmCharacters.length > 0) ? farmCharacters[0] : null;
+
+let myPlayerId="player_"+Math.random().toString(36).substr(2,9);
+let currentClan=null;
+let playerGuild=null;
+let guildTrophy=0;
+let selectedGuildLogo="🏰";
+let currentBattleMode="1v1";
+let targetAnimalIdx=0;
+let targetCount=2;
+let currentProgress=0;
+let storeGold=2500;
+let storeGems=150;
+let mergeCountStats=0;
+let statsWins=0;
+let statsMatches=0;
+let soundEnabled=true;
+let gameSettings={sound:true,music:true,vibration:true,notification:true};
+let eventSeconds=23*60*60+59*60+59;
+
+// Güvenli tanımlama (farmMissions henüz yüklenmediyse hata vermez)
+let randomMission = (typeof farmMissions !== 'undefined' && farmMissions.length > 0) 
+  ? farmMissions[Math.floor(Math.random() * farmMissions.length)] 
+  : null;
+
+/* Sound */
+let audioCtx = null;
+
+
+function playSound(type){
+  if(!soundEnabled) return;
+  
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if(type === "click") {
+      osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.05);
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.05);
+    } else {
+      // Genel açılış/kapanış veya işlem sesleri için
+      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5 notası
+      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.1);
+    }
+  } catch(e) {
+    console.log("Ses çalınamadı: ", e);
+  }
+  }
+function toggleGameSetting(type){
+  gameSettings[type]=!gameSettings[type];
+  if(type==="sound")soundEnabled=gameSettings[type];
+  const ids={sound:"sound-toggle-btn",music:"music-toggle-btn",vibration:"vibration-toggle-btn",notification:"notification-toggle-btn"};
+  const button=document.getElementById(ids[type]);
+  if(button){
+    button.classList.toggle("off",!gameSettings[type]);
+    button.classList.toggle("on",gameSettings[type]);
+    button.innerHTML='<span class="toggle-circle"></span><b>'+(gameSettings[type]?"AÇIK":"KAPALI")+"</b>";
+  }
+  if(type==="vibration"&&gameSettings.vibration&&navigator.vibrate)navigator.vibrate(20);
+}
+function toggleSound(){toggleGameSetting("sound")}
+
+/* Modal */
+function openModal(id){
+  playSound("click");
+  const m=document.getElementById(id);
+  if(m)m.style.display="flex";
+}
+function closeModal(id){
+  playSound("click");
+  const m=document.getElementById(id);
+  if(m)m.style.display="none";
+}
+function openShop(){openModal("shop-modal")}
+function openShopModal(){openModal("shop-modal")}
+function openFriends(){openFriendsModal()}
+function openSettings(){openModal("settings-modal")}
+function openProfile(){openProfileModal()}
+
+/* Quick buttons */
+function openDailyBonus(){
+  storeGold+=100;syncCurrencies();
+  showStoreMessage("🎁 Günlük ödül: +100 Altın!");
+}
+function openWheel(){showEventMessage("🎡 Çarkıfelek hazırlanıyor...")}
+function openLeaderboard(){showEventMessage("🏆 Sıralama tablosu yükleniyor...")}
+
+/* ================= MODE + MATCHMAKING ================= */
+let queueListenerRef = null;
+
+function startMatchmaking(mode = '1v1'){
+  currentBattleMode = "1v1";
+  closeModal("mode-selector");
+  clearMatchmaking();
+  
+  document.querySelectorAll(".screen").forEach(s=>{
+    s.classList.remove("active");
+    s.style.display="none";
+  });
+  
+  const mm = document.getElementById("matchmaking-screen");
+  if(!mm) return;
+  mm.style.display="flex";
+  mm.classList.add("active");
+
+  const name = localStorage.getItem("farm_username") || "Sefa";
+  
+  if(typeof myPlayerId === 'undefined' || !myPlayerId) {
+    window.myPlayerId = 'player_' + Math.random().toString(36).substring(2, 9);
+  }
+
+  document.getElementById("matchmaking-player-name").textContent = name;
+  document.getElementById("mm-my-avatar").textContent = activeCharacter ? activeCharacter.base : "🐰";
+  document.getElementById("mm-title").textContent = "1 VS 1 RAKİP ARANIYOR";
+  document.getElementById("mm-subtitle").textContent = "Sana uygun bire bir rakip bulunuyor...";
+  document.getElementById("mm-search-title").textContent = "Rakip aranıyor...";
+  document.getElementById("matchmaking-time").textContent = "00:00";
+
+  let elapsed = 0;
+  if(window.matchmakingClock) clearInterval(window.matchmakingClock);
+  window.matchmakingClock = setInterval(()=>{
+    elapsed++;
+    const m = Math.floor(elapsed/60), s = elapsed%60;
+    const el = document.getElementById("matchmaking-time");
+    if(el) el.textContent = String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+  }, 1000);
+
+  if(typeof database !== 'undefined' && database){
+    try{
+      const queueRef = database.ref("matchmaking_queue_1v1");
+      
+      // Kendi durumumuzu Firebase kuyruğuna yazıyoruz
+      const myRef = queueRef.child(myPlayerId);
+      matchmakingRef = myRef;
+      
+      myRef.set({
+        playerId: myPlayerId, 
+        name: name, 
+        mode: "1v1", 
+        createdAt: firebase.database.ServerValue.TIMESTAMP, 
+        status: "waiting"
+      });
+
+      queueListenerRef = queueRef;
+
+      // Kuyruktaki TÜM oyuncuları anlık olarak dinle
+      queueRef.on("value", (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+
+        let opponent = null;
+
+        // Kendimiz haricinde bekleyen birini arayalım
+        for (let id in data) {
+          if (id !== myPlayerId && data[id].status === "waiting") {
+            opponent = data[id];
+            break;
+          }
+        }
+
+        // Eğer bir rakip bulduysak ve odamız henüz atanmadıysa
+        if (opponent && !window.currentRoomId) {
+          // Çakışmayı önlemek için ortak oda ID'sini alfabetik olarak kesin bir şekilde sabitleyelim
+          const roomId = [myPlayerId, opponent.playerId].sort().join("_");
+          window.currentRoomId = roomId;
+          window.opponentPlayerId = opponent.playerId;
+
+          console.log("Rakip Eşleşti:", opponent.name);
+
+          if(window.matchmakingClock) clearInterval(window.matchmakingClock);
+          if(window.matchmakingTimer) clearTimeout(window.matchmakingTimer);
+          if(queueListenerRef) queueListenerRef.off("value");
+
+          // Kuyruktan kendimizi temizleyelim
+          myRef.remove();
+
+          document.getElementById("mm-search-title").textContent = "Rakip Bulundu: " + opponent.name + "!";
+          
+          setTimeout(() => {
+              triggerGameStart();
+              // Karşılıklı veri senkronizasyonunu başlat
+              startRoomSync();
+          }, 1000);
+        }
+      });
+
+      // 8 saniye içinde gerçek rakip bulunamazsa zaman aşımı (Bot / Akış güvenliği)
+      window.matchmakingTimer = setTimeout(() => {
+        if(queueListenerRef) queueListenerRef.off("value");
+        if(matchmakingRef) matchmakingRef.remove();
+        if(!window.currentRoomId) {
+            // Eğer eşleşme olmamışsa kendi ID'mizle tekli/bot moda geçebiliriz
+            window.currentRoomId = "solo_" + myPlayerId;
+        }
+        triggerGameStart();
+      }, 8000);
+
+    }catch(e){
+      console.warn("Firebase matchmaking hatası:", e);
+      window.matchmakingTimer = setTimeout(() => { triggerGameStart(); }, 3000);
+    }
+  } else {
+    window.matchmakingTimer = setTimeout(() => { triggerGameStart(); }, 3000);
+  }
+}
+
+// Oda içi senkronizasyonu başlatan ana fonksiyon
+function startRoomSync() {
+    if (!window.currentRoomId || !window.myPlayerId) return;
+
+    // 1. Kendi ilerlememizi düzenli olarak Firebase'e yaz
+    if (typeof window.syncInterval !== 'undefined') clearInterval(window.syncInterval);
+    window.syncInterval = setInterval(() => {
+        syncMyProgressToFirebase();
+    }, 1000);
+
+    // 2. Rakibin verilerini canlı dinle ve arayüze yansıt
+    if (window.opponentPlayerId) {
+        database.ref('rooms/' + window.currentRoomId + '/players/' + window.opponentPlayerId).on('value', (snapshot) => {
+            const oppData = snapshot.val();
+            if (oppData) {
+                console.log("Rakip Hamlesi Güncellendi:", oppData);
+                
+                // Rakip Skor Kutusu
+                const oppScoreBox = document.getElementById("opponent-score-box") || document.getElementById("enemy-score");
+                if (oppScoreBox) oppScoreBox.textContent = oppData.score || 0;
+
+                // Rakip İlerleme / Progress Kutusu veya Çubuğu
+                const oppProgressBar = document.getElementById("opponent-progress");
+                if (oppProgressBar) oppProgressBar.style.width = (oppData.progress || 0) + "%";
+
+                // Rakip İsim Alanı
+                const oppNameBox = document.getElementById("opponent-name");
+                if (oppNameBox) oppNameBox.textContent = oppData.name;
+            }
+        });
+    }
+}
+
+// Kendi verilerimizi Firebase'e gönderen fonksiyon
+function syncMyProgressToFirebase() {
+    const currentName = localStorage.getItem("farm_username") || "Sefa";
+    if (typeof database !== 'undefined' && window.currentRoomId && window.myPlayerId) {
+        database.ref('rooms/' + window.currentRoomId + '/players/' + window.myPlayerId).set({
+            score: typeof playerScore !== 'undefined' ? playerScore : 0,
+            progress: typeof currentProgress !== 'undefined' ? currentProgress : 0,
+            name: currentName,
+            updatedAt: firebase.database.ServerValue.TIMESTAMP
+        });
+    }
+}
+
+// 1v1 Banner Kontrolü ve Sahte Rakip Üretici
+function start1v1MatchBanner() {
+    let banner = document.getElementById('matchmaking-top-banner');
+    let statusView = document.getElementById('matching-status-view');
+    let resultView = document.getElementById('matched-result-view');
+    let enemyName = document.getElementById('enemy-clan-name');
+
+    if (!banner) return;
+
+    banner.style.display = 'block';
+    if(statusView) statusView.style.display = 'flex';
+    if(resultView) resultView.style.display = 'none';
+
+    setTimeout(() => {
+        const fake1v1Enemies = [
+            "Ahmet_Pro (Seviye 11)", 
+            "MehmetKing (Seviye 13)", 
+            "CanerTS (Seviye 10)", 
+            "ÇiftlikKralı (Seviye 12)"
+        ];
+        let randomOpponent = fake1v1Enemies[Math.floor(Math.random() * fake1v1Enemies.length)];
+
+        if (enemyName) {
+            enemyName.innerText = randomOpponent;
+        }
+
+        if(statusView) statusView.style.display = 'none';
+        if(resultView) resultView.style.display = 'flex';
+    }, 2000);
+}
+
+// Banner Kapatma Fonksiyonu
+function closeMatchBanner() {
+    let banner = document.getElementById('matchmaking-top-banner');
+    if (banner) {
+        banner.style.display = 'none';
+    }
+}
+
+// Temizleme ve İptal Fonksiyonları
+function clearMatchmaking(){
+  if(matchmakingTimer){clearTimeout(matchmakingTimer); matchmakingTimer=null;}
+  if(matchmakingClock){clearInterval(matchmakingClock); matchmakingClock=null;}
+  if(matchmakingRef){
+    try{matchmakingRef.remove()}catch(e){}
+    matchmakingRef=null;
+  }
+}
+
+function cancelMatchmaking(){
+  clearMatchmaking();
+  returnHome();
+}
+
+/* ================= GAME START / HOME ================= */
+function triggerGameStart() {
+
+  /* =====================================
+     SAVAŞI TEMİZLE VE BAŞLAT
+  ===================================== */
+
+  if (typeof clearMatchmaking === "function") {
+    clearMatchmaking();
+  }
+
+  isPlayerTurn = true;
+  isGameActive = true;
+
+  battleActive = true;
+  battleFinished = false;
+
+  battlePlayerProgress = 0;
+  battleEnemyProgress = 0;
+
+  isMovingTile = false;
+  selectedTile = null;
+
+
+  /* =====================================
+     OYUNCU ADI
+  ===================================== */
+
+  const name =
+    localStorage.getItem("farm_username") || "Sefa";
+
+  document
+    .querySelectorAll(
+      "#matchmaking-player-name,#display-username,#player-name-display"
+    )
+    .forEach(el => {
+
+      if (el) {
+        el.textContent = name;
+      }
+
+    });
+
+
+  /* =====================================
+     OYUNCU KARAKTERİ
+  ===================================== */
+
+  const a =
+    document.getElementById("top-player-avatar");
+
+  if (
+    a &&
+    typeof activeCharacter !== "undefined" &&
+    activeCharacter
+  ) {
+
+    a.textContent =
+      activeCharacter.base;
+
+  }
+
+
+  /* =====================================
+     RAKİP
+  ===================================== */
+
+  const enemy =
+    document.getElementById("top-enemy-avatar");
+
+  if (enemy) {
+
+    enemy.textContent = "👑🐷";
+
+  }
+
+
+  /* =====================================
+     EKRANLAR
+  ===================================== */
+
+  document
+    .querySelectorAll(".screen")
+    .forEach(s => {
+
+      s.classList.remove("active");
+
+      s.style.display = "none";
+
+    });
+
+
+  const game =
+    document.getElementById("game-screen");
+
+
+  if (game) {
+
+    game.style.display = "flex";
+
+    game.style.pointerEvents = "auto";
+
+    game.classList.add("active");
+
+  }
+
+
+  const grid =
+    document.getElementById("merge-grid");
+
+
+  if (grid) {
+
+    grid.style.pointerEvents = "auto";
+
+  }
+
+
+  /* =====================================
+     PUANLAR
+  ===================================== */
+
+  playerScore = 1800;
+
+  enemyScore = 1850;
+
+
+  const pScoreBox =
+    document.getElementById(
+      "player-score-box"
+    );
+
+  if (pScoreBox) {
+
+    pScoreBox.textContent =
+      playerScore;
+
+  }
+
+
+  const eScoreBox =
+    document.getElementById(
+      "enemy-score-box"
+    );
+
+  if (eScoreBox) {
+
+    eScoreBox.textContent =
+      enemyScore;
+
+  }
+
+
+  /* =====================================
+     RAKİP ZORLUK
+     KOLAY
+  ===================================== */
+
+  opponentDifficulty = "KOLAY";
+
+  opponentScoreRate = 0.8;
+
+
+  /* =====================================
+     SAVAŞ GÖREVİ
+     KOLAY GÖREV
+  ===================================== */
+
+  const animalCount =
+    typeof animals !== "undefined" &&
+    Array.isArray(animals) &&
+    animals.length > 0
+      ? animals.length
+      : fallbackAnimals.length;
+
+  // Eğer bir Firebase odasındaysak, görevi ortak belirleyebiliriz
+  // Şimdilik çakışmayı önlemek için oda liderinin belirlediği veya ortak ID'yi baz alalım:
+  if (window.currentRoomId && !window.currentRoomId.startsWith("solo_")) {
+    // Oda içi ortak görev indexi (Room ID'den türetilmiş ortak bir rastgelelik veya sabit başlangıç)
+    // Örnek olarak oda ID'sinin karakter toplamına göre ortak bir hayvan seçelim:
+    let roomIdSum = 0;
+    for(let i=0; i<window.currentRoomId.length; i++) {roomIdSum += window.currentRoomId.charCodeAt(i);}
+    battleTargetAnimal = roomIdSum % animalCount;
+  } else {
+    battleTargetAnimal = Math.floor(Math.random() * animalCount);
+  }
+
+  targetAnimalIdx = battleTargetAnimal;
+
+  battleTarget = 60;
+  targetCount = 60;
+  currentProgress = 0;
+
+
+  /*
+   * Mevcut hayvanlardan rastgele hedef seç
+   */
+
+  battleTargetAnimal =
+    Math.floor(
+      Math.random() * animalCount
+    );
+
+
+  targetAnimalIdx =
+    battleTargetAnimal;
+
+
+  /*
+   * Görev 30 adet
+   */
+
+  battleTarget = 60;
+
+  targetCount = 60;
+
+  currentProgress = 0;
+
+
+  /* =====================================
+     GÖREV METNİ
+  ===================================== */
+
+  const targetEmoji = getAnimalEmoji(battleTargetAnimal);
+  const missionText = `60 Adet ${targetEmoji} Topla`;
+
+  currentMission = {
+    text: missionText,
+    count: 30, // UI gösterimi için
+    idx: battleTargetAnimal,
+    difficulty: "KOLAY"
+  };
+
+  const mDesc = document.getElementById("mission-desc");
+  if (mDesc) {
+    mDesc.innerHTML = `
+      <span style="color:#2ecc71; font-weight:bold;">[1V1 ÖZEL]</span>
+      ${missionText}
+    `;
+  }
+
+  const lProg = document.getElementById("live-progress");
+  if (lProg) {
+    lProg.textContent = "0/60";
+  }
+
+  if (typeof updateBattleMissionUI === "function") {
+    updateBattleMissionUI();
+  }
+
+  /* =====================================
+     YENİ SAVAŞ GÖREVİ UI
+  ===================================== */
+
+  if (
+    typeof updateBattleMissionUI ===
+    "function"
+  ) {
+
+    updateBattleMissionUI();
+
+  }
+
+
+  /* =====================================
+     RAKİP OTOMATİK BAŞLASIN
+  ===================================== */
+
+  if (
+    typeof startEnemyBattle ===
+    "function"
+  ) {
+
+    startEnemyBattle();
+
+  }
+
+/* =====================================
+     RAKİP YÖNETİMİ (GERÇEK OYUNCU VS BOT)
+  ===================================== */
+
+  // Eğer gerçek bir arkadaşla eşleştiyseniz botu başlatmak yerine,
+  // arkadaşınızın ilerlemesini dinlemeye başlayalım!
+  if (window.currentRoomId && !window.currentRoomId.startsWith("solo_")) {
+    console.log("Gerçek oyuncu modu aktif, rakip dinleniyor...");
+    if (typeof window.opponentPlayerId !== 'undefined' && window.opponentPlayerId) {
+       // Arkadaşınızın verilerini canlı dinle
+       listenToOpponentProgress(window.opponentPlayerId);
+    }
+    // Oda içi senkronizasyonu başlat
+    if (typeof startRoomSync === "function") {
+       startRoomSync();
+    }
+  } else {
+    // Solo / Bot modundaysanız normal yapay zeka rakibi başlat
+    if (typeof startEnemyBattle === "function") {
+      startEnemyBattle();
+    }
+  }
+  /* =====================================
+     TAHTAYI OLUŞTUR
+  ===================================== */
+
+  setTimeout(() => {
+
+    if (
+      typeof initBoard ===
+      "function"
+    ) {
+
+      initBoard();
+
+    }
+
+
+    if (
+      typeof renderBoard ===
+      "function"
+    ) {
+
+      renderBoard();
+
+    }
+
+
+    /* TIMER */
+
+    if (
+      typeof startTimer ===
+      "function"
+    ) {
+
+      startTimer();
+
+    }
+
+
+    /* TUR SİSTEMİ */
+
+    if (
+      typeof startTurnLoop ===
+      "function"
+    ) {
+
+      startTurnLoop();
+
+    }
+
+  }, 100);
+    }
+
+// 5v5 İçin Oyun İçi Rakip Bulma Fonksiyonu
+function triggerInGame5v5Matchmaking() {
+    let banner = document.getElementById('in-game-enemy-banner');
+    let searchingView = document.getElementById('in-game-searching');
+    let foundView = document.getElementById('in-game-found');
+    let teamNameEl = document.getElementById('active-enemy-team-name');
+
+    if (!banner) return;
+
+    banner.style.display = 'block';
+    if(searchingView) searchingView.style.display = 'flex';
+    if(foundView) foundView.style.display = 'none';
+
+    setTimeout(() => {
+        const teamList = [
+            "Bozkurtlar Clan (5v5)",
+            "Anadolu Kaplanları (5v5)",
+            "Gölge Savaşçıları (5v5)",
+            "Fırtına Çiftliği (5v5)",
+            "Mega Donanma (5v5)"
+        ];
+        let chosenTeam = teamList[Math.floor(Math.random() * teamList.length)];
+
+        if(teamNameEl) {
+            teamNameEl.innerText = chosenTeam;
+        }
+
+        if(searchingView) searchingView.style.display = 'none';
+        if(foundView) foundView.style.display = 'flex';
+
+    }, 2000);
+}
+
+function returnHome(){
+  if(typeof gameInterval !== 'undefined' && gameInterval){clearInterval(gameInterval);gameInterval=null}
+  if(typeof turnInterval !== 'undefined' && turnInterval){clearInterval(turnInterval);turnInterval=null}
+  clearMatchmaking();
+  selectedTile=null;
+  document.querySelectorAll(".screen").forEach(s=>{
+    s.classList.remove("active");
+    s.style.display="none";
+  });
+  const home=document.getElementById("home-screen");
+  if(home){
+    home.style.display="flex";
+    home.classList.add("active");
+  }
+  if(typeof syncCurrencies === 'function') syncCurrencies();
+}
+
+/* =====================================================
+   FARM MERGE BATTLE - MATCH 3
+   5x5 MOBİL KAYDIRMA + TIKLAMA
+===================================================== */
+
+
+
+/* =====================================================
+   EMOJI
+===================================================== */
+
+function getAnimalEmoji(v) {
+  if (typeof animals !== 'undefined' && Array.isArray(animals) && animals[v]) {
+    return animals[v];
+  }
+  return fallbackAnimals[v % fallbackAnimals.length] || "🐾";
+}
+/* =====================================================
+   TAHTA OLUŞTUR
+===================================================== */
+function initBoard() {
+    const grid = document.getElementById("merge-grid");
+    if (!grid) return;
+
+    const count =
+        typeof animals !== "undefined" &&
+        Array.isArray(animals) &&
+        animals.length > 0
+            ? animals.length
+            : fallbackAnimals.length;
+
+    let bestBoard = null;
+    let bestMoves = -1;
+
+    // Tahtayı birkaç kez oluşturup en fazla hamle bulunanı seç
+    for (let attempt = 0; attempt < 100; attempt++) {
+
+        const testBoard = new Array(25).fill(null);
+
+        for (let i = 0; i < 25; i++) {
+
+            let value;
+
+            do {
+                // Savaş sırasında hedef hayvanı daha sık üret
+                if (
+                    typeof battleActive !== "undefined" &&
+                    battleActive &&
+                    Math.random() < 0.35
+                ) {
+                    value = battleTargetAnimal;
+                } else {
+                    value = Math.floor(Math.random() * count);
+                }
+
+                testBoard[i] = value;
+
+            } while (createsMatch(testBoard, i));
+        }
+
+        const moves = countPossibleMoves(testBoard);
+
+        if (moves > bestMoves) {
+            bestMoves = moves;
+            bestBoard = testBoard.slice();
+        }
+
+        // Kolay eşleşme için yeterli hamle varsa dur
+        if (moves >= 90) break;
+    }
+
+    // 25 hücrenin tamamını garanti et
+    board = (bestBoard || []).slice(0, 25);
+
+    while (board.length < 12) {
+        board.push(
+            typeof battleActive !== "undefined" &&
+            battleActive &&
+            Math.random() < 0.01
+                ? battleTargetAnimal
+                : Math.floor(Math.random() * count)
+        );
+    }
+
+    // Boş hücre kalmasını engelle
+    for (let i = 0; i < 40; i++) {
+        if (board[i] === null || board[i] === undefined) {
+            board[i] = Math.floor(Math.random() * count);
+        }
+    }
+
+    selectedTile = null;
+    isMovingTile = false;
+
+    renderBoard();
+          }
+  function createsMatch(testBoard, index) {
+
+    const value =
+        testBoard[index];
+
+    const row =
+        Math.floor(index / 5);
+
+    const col =
+        index % 5;
+
+
+    /* YATAY */
+
+    if (
+        col >= 2 &&
+        testBoard[index - 1] === value &&
+        testBoard[index - 2] === value
+    ) {
+        return true;
+    }
+
+
+    /* DİKEY */
+
+    if (
+        row >= 2 &&
+        testBoard[index - 5] === value &&
+        testBoard[index - 10] === value
+    ) {
+        return true;
+    }
+
+
+    return false;
+  }
+  function hasMatchAt(index) {
+
+    const row = Math.floor(index / 5);
+    const col = index % 5;
+
+    const value = board[index];
+
+    if (value == null) return false;
+
+
+    /* YATAY */
+
+    let horizontal = 1;
+
+    let c = col - 1;
+
+    while (
+        c >= 0 &&
+        board[row * 5 + c] === value
+    ) {
+        horizontal++;
+        c--;
+    }
+
+    c = col + 1;
+
+    while (
+        c < 5 &&
+        board[row * 5 + c] === value
+    ) {
+        horizontal++;
+        c++;
+    }
+
+    if (horizontal >= 3) {
+        return true;
+    }
+
+
+    /* DİKEY */
+
+    let vertical = 1;
+
+    let r = row - 1;
+
+    while (
+        r >= 0 &&
+        board[r * 5 + col] === value
+    ) {
+        vertical++;
+        r--;
+    }
+
+    r = row + 1;
+
+    while (
+        r < 5 &&
+        board[r * 5 + col] === value
+    ) {
+        vertical++;
+        r++;
+    }
+
+    return vertical >= 3;
+  }
+  function hasMatchAtBoard(
+    testBoard,
+    index
+) {
+
+    const value =
+        testBoard[index];
+
+    if (value == null) {
+        return false;
+    }
+
+
+    const row =
+        Math.floor(index / 5);
+
+    const col =
+        index % 5;
+
+
+    /* YATAY */
+
+    let count = 1;
+
+
+    for (
+        let c = col - 1;
+        c >= 0 &&
+        testBoard[row * 5 + c] === value;
+        c--
+    ) {
+        count++;
+    }
+
+
+    for (
+        let c = col + 1;
+        c < 5 &&
+        testBoard[row * 5 + c] === value;
+        c++
+    ) {
+        count++;
+    }
+
+
+    if (count >= 3) {
+        return true;
+    }
+
+
+    /* DİKEY */
+
+    count = 1;
+
+
+    for (
+        let r = row - 1;
+        r >= 0 &&
+        testBoard[r * 5 + col] === value;
+        r--
+    ) {
+        count++;
+    }
+
+
+    for (
+        let r = row + 1;
+        r < 5 &&
+        testBoard[r * 5 + col] === value;
+        r++
+    ) {
+        count++;
+    }
+
+
+    return count >= 3;
+  }
+function countPossibleMoves(testBoard) {
+
+    let possible = 0;
+
+
+    for (let i = 0; i < 25; i++) {
+
+        const row =
+            Math.floor(i / 5);
+
+        const col =
+            i % 5;
+
+
+        /* SAĞ */
+
+        if (col < 4) {
+
+            if (
+                createsMatchAfterSwap(
+                    testBoard,
+                    i,
+                    i + 1
+                )
+            ) {
+                possible++;
+            }
+        }
+
+
+        /* AŞAĞI */
+
+        if (row < 4) {
+
+            if (
+                createsMatchAfterSwap(
+                    testBoard,
+                    i,
+                    i + 5
+                )
+            ) {
+                possible++;
+            }
+        }
+    }
+
+
+    return possible;
+}
+  function createsMatchAfterSwap(
+    testBoard,
+    a,
+    b
+) {
+
+    const copy =
+        testBoard.slice();
+
+
+    [
+        copy[a],
+        copy[b]
+    ] = [
+        copy[b],
+        copy[a]
+    ];
+
+
+    return hasMatchAtBoard(
+        copy,
+        a
+    ) ||
+    hasMatchAtBoard(
+        copy,
+        b
+    );
+  }
+/* =====================================================
+   TAHTAYI ÇİZ
+===================================================== */
+function renderBoard() {
+  const grid = document.getElementById("merge-grid");
+  if(!grid) return;
+  grid.innerHTML = "";
+  
+  if(!board || board.length === 0) {
+    initBoard();
+    return;
+  }
+  
+  board.forEach((v, i) => {
+    const tile = document.createElement("div");
+    tile.className = "grid-cell animal-tile";
+    
+    // Seçili taşı sarı çerçeve ile parlat
+    if(selectedTile === i) {
+      tile.classList.add("selected");
+      tile.style.border = "3px solid #f1c40f";
+      tile.style.boxShadow = "0 0 10px #f1c40f";
+    } else {
+      tile.style.border = "none";
+      tile.style.boxShadow = "none";
+    }
+    
+    tile.textContent = getAnimalEmoji(v);
+    tile.style.pointerEvents = "auto";
+    tile.style.cursor = "pointer";
+    tile.dataset.index = i;
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    tile.addEventListener("touchstart", (e) => {
+      if(!e.touches || e.touches.length === 0) return;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, {passive: true});
+
+    tile.addEventListener("touchend", (e) => {
+      e.preventDefault(); // Çift tetiklenmeyi engelle
+      if(!e.changedTouches || e.changedTouches.length === 0) return;
+      
+      const touch = e.changedTouches[0];
+      const diffX = touch.clientX - touchStartX;
+      const diffY = touch.clientY - touchStartY;
+      
+      let targetIdx = i;
+      const minSwipeDistance = 12; // Hassas kaydırma eşiği
+      
+      if(Math.abs(diffX) > Math.abs(diffY)) {
+        if(diffX > minSwipeDistance && i % 5 < 4) targetIdx = i + 1; // Sağa kaydır
+        else if(diffX < -minSwipeDistance && i % 5 > 0) targetIdx = i - 1; // Sola kaydır
+      } else {
+        if(diffY > minSwipeDistance && i < 20) targetIdx = i + 5; // Aşağı kaydır
+        else if(diffY < -minSwipeDistance && i >= 5) targetIdx = i - 5; // Yukarı kaydır
+      }
+      
+      if(targetIdx !== i) {
+        handleSwipeMove(i, targetIdx);
+        selectedTile = null;
+      } else {
+        handleTileClick(i);
+      }
+    }, {passive: false});
+
+    tile.onclick = (e) => {
+      if(e.detail === 0) return;
+      handleTileClick(i);
+    };
+
+    grid.appendChild(tile);
+  });
+}
+/* =====================================================
+   KOMŞU TAŞ KONTROLÜ
+===================================================== */
+
+function adjacent(a, b) {
+  let row1 = Math.floor(a / 5), col1 = a % 5;
+  let row2 = Math.floor(b / 5), col2 = b % 5;
+  return Math.abs(row1 - row2) + Math.abs(col1 - col2) === 1;
+}                                            
+
+/* =====================================================
+   EŞLEŞMELERİ BUL
+===================================================== */
+// Tahtayı Karıştırma Fonksiyonu
+function shuffleBoard() {
+  const grid = document.getElementById("merge-grid");
+  if (!grid) return;
+  
+  const maxIdx = (typeof animals !== 'undefined' && animals.length > 0) ? animals.length : fallbackAnimals.length;
+  const totalCells = 30;
+  let newBoard = [];
+
+  for (let i = 0; i < totalCells; i++) {
+    let v;
+    if (typeof targetAnimalIdx !== 'undefined' && targetAnimalIdx != null && Math.random() < 0.12) {
+      v = targetAnimalIdx;
+    } else {
+      v = Math.floor(Math.random() * maxIdx);
+    }
+    newBoard.push(v);
+  }
+
+  board = newBoard;
+  selectedTile = null;
+  isMovingTile = false;
+  isPlayerTurn = true;
+  
+  if (typeof renderBoard === 'function') {
+    renderBoard();
+  }
+
+  // ÇÖZÜM: Karıştırdıktan sonra da eşleşmeleri kontrol et ve patlat
+  if (typeof resolveMatches === 'function') {
+    setTimeout(resolveMatches, 100);
+  }
+}
+
+
+function hasValidMoves() {
+  const rows = 6;
+  cols = 5;
+  
+  // Tüm taşları geçici olarak simüle edip bir hamle yapıldığında eşleşme çıkıp çıkmayacağına bakabiliriz
+  // Veya en pratik yoldan: Herhangi iki yan yana taşı yer değiştirip test edelim
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      let idx = r * cols + c;
+      
+      // Sağdaki ile yer değiştirme simülasyonu
+      if (c < cols - 1) {
+        let rightIdx = r * cols + (c + 1);
+        swapTilesSimulation(idx, rightIdx);
+        let matches = findMatches();
+        swapTilesSimulation(idx, rightIdx); // Geri al
+        if (matches.length > 0) return true;
+      }
+      
+      // Aşağıdaki ile yer değiştirme simülasyonu
+      if (r < rows - 1) {
+        let downIdx = (r + 1) * cols + c;
+        swapTilesSimulation(idx, downIdx);
+        let matches = findMatches();
+        swapTilesSimulation(idx, downIdx); // Geri al
+        if (matches.length > 0) return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Simülasyon için yardımcı swap fonksiyonu
+function swapTilesSimulation(i, j) {
+  let temp = board[i];
+  board[i] = board[j];
+  board[j] = temp;
+    }
+// Hatasız ve Kesin Çalışan Eşleşme Kontrolü
+function findMatches() {
+  const matches = [];
+  const rows = 6;
+  const cols = 5;
+
+  // Yatay eşleşmeleri kontrol et (3'lü veya daha fazla)
+  for (let r = 0; r < rows; r++) {
+    let c = 0;
+    while (c < cols) {
+      let val = board[r * cols + c];
+      if (val === null || val === undefined) {
+        c++;
+        continue;
+      }
+      
+      let matchLength = 1;
+      while (c + matchLength < cols && board[r * cols + (c + matchLength)] === val) {
+        matchLength++;
+      }
+      
+      if (matchLength >= 3) {
+        for (let i = 0; i < matchLength; i++) {
+          let idx = r * cols + (c + i);
+          if (!matches.includes(idx)) matches.push(idx);
+        }
+      }
+      c += matchLength;
+    }
+  }
+
+  // Dikey eşleşmeleri kontrol et (3'lü veya daha fazla)
+  for (let c = 0; c < cols; c++) {
+    let r = 0;
+    while (r < rows) {
+      let val = board[r * cols + c];
+      if (val === null || val === undefined) {
+        r++;
+        continue;
+      }
+      
+      let matchLength = 1;
+      while (r + matchLength < rows && board[(r + matchLength) * cols + c] === val) {
+        matchLength++;
+      }
+      
+      if (matchLength >= 3) {
+        for (let i = 0; i < matchLength; i++) {
+          let idx = (r + i) * cols + c;
+          if (!matches.includes(idx)) matches.push(idx);
+        }
+      }
+      r += matchLength;
+    }
+  }
+
+  return matches;
+}
+
+
+/* =====================================================
+   KAYDIRARAK TAŞ DEĞİŞTİR
+===================================================== */
+function handleSwipeMove(from, to) {
+
+    if (isMovingTile) return;
+
+    if (
+        typeof isPlayerTurn !== "undefined" &&
+        !isPlayerTurn
+    ) {
+        return;
+    }
+
+    if (!adjacent(from, to)) {
+        return;
+    }
+
+
+    isMovingTile = true;
+
+    selectedTile = null;
+
+
+    /* TAŞLARI DEĞİŞTİR */
+
+    [
+        board[from],
+        board[to]
+    ] = [
+        board[to],
+        board[from]
+    ];
+
+
+    renderBoard();
+
+
+    setTimeout(() => {
+
+        const matches =
+            findMatches();
+
+
+        /* =====================================
+           GERÇEK EŞLEŞME VAR
+        ===================================== */
+
+        if (matches.length >= 3) {
+
+            resolveMatches();
+
+            return;
+        }
+
+
+        /* =====================================
+           EŞLEŞME YOK
+           GERİ ALMA YOK
+        ===================================== */
+
+        renderBoard();
+
+        isMovingTile = false;
+
+
+    }, 200);
+}
+/* =====================================================
+   TIKLAMA İLE TAŞ DEĞİŞTİR
+===================================================== */
+function handleTileClick(index) {
+
+    if (isMovingTile) return;
+
+    if (
+        typeof isPlayerTurn !== "undefined" &&
+        !isPlayerTurn
+    ) {
+        return;
+    }
+
+    if (typeof resolveMatches === 'function') {
+  resolveMatches();
+}
+
+
+
+    if (selectedTile === null) {
+
+        selectedTile = index;
+
+        renderBoard();
+
+        return;
+    }
+
+
+    if (selectedTile === index) {
+
+        selectedTile = null;
+
+        renderBoard();
+
+        return;
+    }
+
+
+    if (
+        adjacent(
+            selectedTile,
+            index
+        )
+    ) {
+
+        const from =
+            selectedTile;
+
+        selectedTile = null;
+
+        handleSwipeMove(
+            from,
+            index
+        );
+
+        return;
+    }
+
+
+    selectedTile = index;
+
+    renderBoard();
+}
+/* =====================================================
+   EŞLEŞMELERİ PATLAT
+===================================================== */
+function resolveMatches() {
+
+    const matches = findMatches();
+
+    if (!matches || matches.length === 0) {
+        isMovingTile = false;
+        return;
+    }
+
+    console.log("EŞLEŞME:", matches);
+
+    /* =====================================
+       EŞLEŞEN TAŞLARI PATLAT
+    ===================================== */
+
+    matches.forEach(index => {
+
+        const tile = document.querySelector(
+            `.animal-tile[data-index="${index}"]`
+        );
+
+        if (tile) {
+
+            tile.classList.add("match-success");
+
+            /* Animasyonun kesin görünmesi için */
+            tile.style.animation =
+                "matchExplosion .45s ease forwards";
+
+            tile.style.zIndex = "50";
+        }
+
+
+        /* Görev ilerlemesi */
+
+        if (
+            typeof targetAnimalIdx !== "undefined" &&
+            board[index] === targetAnimalIdx
+        ) {
+
+            if (
+                typeof currentProgress !== "undefined"
+            ) {
+                currentProgress++;
+            }
+        }
+
+    });
+
+
+    // --- CANLI SAYACI VE GÖREV BİTİŞ KONTROLÜNÜ BURAYA EKLEYELİM ---
+    const lProg = document.getElementById("live-progress");
+    if (lProg && typeof targetCount !== "undefined") {
+        lProg.textContent = currentProgress + "/" + targetCount;
+    }
+
+    // Görev bittiyse zaferi tetikle!
+    if (typeof targetCount !== "undefined" && currentProgress >= targetCount) {
+        isGameActive = false;
+        triggerVictory();
+        return; // Oyun bittiği için geri kalan patlama akışını durdurabiliriz
+    }
+    // -------------------------------------------------------------
+
+
+    const points =
+        matches.length * 10;
+
+
+    /* =====================================
+       PATLAMA ANİMASYONUNU BEKLE
+    ===================================== */
+
+    setTimeout(() => {
+
+        /* EŞLEŞEN TAŞLARI SİL */
+
+        matches.forEach(index => {
+            board[index] = null;
+        });
+
+
+        /*
+         * Önce boş hücreleri göster
+         */
+        renderBoard();
+
+
+        /* =================================
+           TAŞLARI AŞAĞI DÜŞÜR
+        ================================= */
+
+        setTimeout(() => {
+
+            for (
+                let col = 0;
+                col < 5;
+                col++
+            ) {
+
+                const values = [];
+
+
+                /* Mevcut taşları alttan topla */
+
+                for (
+                    let row = 4;
+                    row >= 0;
+                    row--
+                ) {
+
+                    const value =
+                        board[row * 5 + col];
+
+                    if (
+                        value !== null &&
+                        value !== undefined
+                    ) {
+
+                        values.push(value);
+                    }
+                }
+
+
+                /* Aşağıdan yukarı doldur */
+
+                for (
+                    let row = 4;
+                    row >= 0;
+                    row--
+                ) {
+
+                    if (values.length > 0) {
+
+                        board[row * 5 + col] =
+                            values.shift();
+
+                    } else {
+
+                        board[row * 5 + col] =
+                            randomAnimal();
+
+                    }
+                }
+            }
+
+
+            renderBoard();
+
+
+            /* =================================
+               PUAN
+            ================================= */
+
+            if (
+                typeof playerScore === "undefined"
+            ) {
+                playerScore = 0;
+            }
+
+            playerScore += points;
+
+
+            const scoreBox =
+                document.getElementById(
+                    "player-score-box"
+                );
+
+            if (scoreBox) {
+                scoreBox.textContent =
+                    playerScore;
+            }
+
+
+            if (
+                typeof mergeCountStats !==
+                "undefined"
+            ) {
+                mergeCountStats += points;
+            }
+
+
+            if (
+                typeof updateMissionProgress ===
+                "function"
+            ) {
+                updateMissionProgress();
+            }
+
+
+            /* =================================
+               ZİNCİR EŞLEŞME
+            ================================= */
+
+            setTimeout(() => {
+
+                const newMatches =
+                    findMatches();
+
+
+                if (
+                    newMatches &&
+                    newMatches.length >= 3
+                ) {
+
+                    resolveMatches();
+
+                } else {
+
+                    isMovingTile = false;
+                }
+
+            }, 200);
+
+
+        }, 150);
+
+
+    }, 450);
+}
+
+/* =====================================================
+   RASTGELE YENİ TAŞ
+===================================================== */
+
+function randomAnimal() {
+
+    const count =
+        typeof animals !== "undefined" &&
+        Array.isArray(animals) &&
+        animals.length > 0
+            ? animals.length
+            : fallbackAnimals.length;
+
+    /* Görev taşı biraz daha sık gelsin */
+    if (
+        typeof battleActive !== "undefined" &&
+        battleActive &&
+        Math.random() < 0.30
+    ) {
+        return battleTargetAnimal;
+    }
+
+    return Math.floor(Math.random() * count);
+}
+  function updateMissionProgress() {
+  const p = document.getElementById("live-progress");
+  if(p) {
+    const target = (typeof targetCount !== 'undefined') ? targetCount : 50;
+    const current = (typeof currentProgress !== 'undefined') ? currentProgress : 0;
+    p.textContent = Math.min(current, target) + "/" + target;
+  }
+
+  // Görev tamamlandığında zafer durumu
+  if(typeof targetCount !== 'undefined' && typeof currentProgress !== 'undefined' && currentProgress >= targetCount) {
+    console.log("Tebrikler! Zorlu savaş görevi başarıyla tamamlandı!");
+    // Ekranı zafer durumuna getirme kodları buraya eklenebilir
+  }
+  }
+/* ================= TIMER / TURN ================= */
+function startTimer() {
+  // Eğer eski bir sayaç varsa temizle
+  if(gameTimerInterval) clearInterval(gameTimerInterval);
+  
+  currentTimeLeft = 14400; // 4 saatten başlat
+  
+  gameTimerInterval = setInterval(() => {
+    currentTimeLeft--;
+    
+    // Sağ alttaki SÜRE yazısını güncelleyen kısım
+    // Ekran görüntüsünde sağ altta "SÜRE: 35s" yazan yeri bulup günceller
+    const timeDisplay = document.querySelector(".satis-sure, [id*='time'], [id*='sure']") || document.querySelector("div:contains('SÜRE:')"); 
+    
+    // Alternatif olarak doğrudan class veya id ile güncelleyebilirsin:
+    // Örn: document.getElementById("timer-text").textContent = formatTime(currentTimeLeft);
+    
+    // Otomatik olarak sayfadaki "SÜRE:" yazan elementi bulup güncellemesi için:
+    document.querySelectorAll("*").forEach(el => {
+      if(el.textContent.startsWith("SÜRE:")) {
+        let h = Math.floor(currentTimeLeft / 3600);
+        let m = Math.floor((currentTimeLeft % 3600) / 60);
+        let s = currentTimeLeft % 60;
+        el.textContent = `SÜRE: ${h > 0 ? h + 's ' : ''}${m}d ${s}s`;
+      }
+    });
+
+    if(currentTimeLeft <= 0) {
+      clearInterval(gameTimerInterval);
+      // Süre bittiğinde yapılacaklar
+    }
+  }, 1000);
+}
+function startTurnLoop(){
+  isPlayerTurn=true;updateTurnIndicator();
+  if(turnInterval)clearInterval(turnInterval);
+  turnInterval=setInterval(()=>{
+    if(gameTimer<=0)return;
+    isPlayerTurn=!isPlayerTurn;
+    updateTurnIndicator();
+    if(!isPlayerTurn)executeEnemyMove();
+  },6000);
+}
+function updateTurnIndicator(){
+  const el=document.getElementById("turn-indicator"),fill=document.getElementById("turn-progress-fill");
+  if(!el)return;
+  if(isPlayerTurn){el.textContent="🔥 SIRA SENDE - EZ GEÇ! 🔥";if(fill)fill.style.width="100%"}
+  else{el.textContent="⏳ RAKİBİN SIRASI...";if(fill)fill.style.width="45%"}
+}
+function enemyTurn() {
+  if(isPlayerTurn) return;
+  
+  setTimeout(() => {
+    if(isPlayerTurn) return;
+    const candidates = [];
+    for(let i = 0; i < 25; i++) {
+      const neighbors = [];
+      if(i % 5 < 4) neighbors.push(i + 1);
+      if(i % 5 > 0) neighbors.push(i - 1);
+      if(i < 20) neighbors.push(i + 5);
+      if(i >= 5) neighbors.push(i - 5);
+      
+      neighbors.forEach(j => {
+        if(i < j) {
+          [board[i], board[j]] = [board[j], board[i]];
+          if(findMatches().length) candidates.push([i, j]);
+          [board[i], board[j]] = [board[j], board[i]];
+        }
+      });
+    }
+    
+    const move = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : [Math.floor(Math.random() * 24), Math.floor(Math.random() * 24) + 1];
+    let a = move[0], b = move[1];
+    if(a < 0 || a >= 25 || b < 0 || b >= 25 || !adjacent(a, b)) return;
+    
+    [board[a], board[b]] = [board[b], board[a]];
+    const enemyMatches = findMatches();
+    let gain = enemyMatches.length * 9 + Math.floor(Math.random() * 15);
+    
+    if(!enemyMatches.length) {
+      [board[a], board[b]] = [board[b], board[a]];
+    } else {
+      enemyMatches.forEach(i => board[i] = null);
+      for(let c = 0; c < 5; c++) {
+        const vals = [];
+        for(let r = 4; r >= 0; r--) if(board[r * 5 + c] != null) vals.push(board[r * 5 + c]);
+        for(let r = 4; r >= 0; r--) board[r * 5 + c] = vals[4 - r] ?? randomAnimal();
+      }
+    }
+    
+    enemyScore += gain;
+    const eScoreBox = document.getElementById("enemy-score-box");
+    if(eScoreBox) eScoreBox.textContent = enemyScore;
+    
+    // 🟢 Tahtayı güncelleyen ve ekranda görünmesini sağlayan komut burada!
+    renderBoard();
+  }, 700);
+}
+
+/* ================= VICTORY ================= */
+function triggerVictory() {
+  if (gameInterval) { clearInterval(gameInterval); gameInterval = null; }
+  if (turnInterval) { clearInterval(turnInterval); turnInterval = null; }
+  
+  // İstatistikleri ve altınları güncelle
+  if (typeof statsWins !== 'undefined') {
+    statsWins++;
+    localStorage.setItem("farm_wins", statsWins);
+  }
+  if (typeof storeGold !== 'undefined') storeGold += 100;
+  if (typeof playerScore !== 'undefined') playerScore += 25;
+  if (typeof syncCurrencies === 'function') syncCurrencies();
+
+  // Kazanan oyuncunun adını al
+  const winnerName = localStorage.getItem("farm_username") || "Kral Sefa";
+
+  const m = document.getElementById("victory-modal");
+  if (m) {
+    m.innerHTML = `
+      <div style="text-align: center; background: linear-gradient(145deg, #1f293d, #0f172a); padding: 35px 45px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7); border: 3px solid #f59e0b; width: 85%; max-width: 380px;">
+        
+        <div style="font-size: 50px; margin-bottom: 5px; filter: drop-shadow(0 4px 8px rgba(245, 158, 11, 0.4));">🏆</div>
+        
+        <!-- WINNER Yazısı -->
+        <h1 style="font-size: 38px; margin: 0 0 5px 0; font-family: 'Arial Black', sans-serif; letter-spacing: 2px; background: linear-gradient(to bottom, #ffd700, #ff8c00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">WINNER</h1>
+        
+        <p style="font-size: 14px; color: #94a3b8; margin: 10px 0 3px 0; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">Kazanan Savaşçı</p>
+        <div style="font-size: 22px; color: #fff; background: linear-gradient(135deg, #f59e0b, #d97706); padding: 8px 20px; border-radius: 12px; font-weight: 900; display: inline-block; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4); margin-bottom: 15px; border: 2px solid #fef3c7;">
+          👑 ${winnerName} 👑
+        </div>
+
+        <div style="display: flex; justify-content: center; gap: 15px; margin: 15px 0 20px 0; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px;">
+          <span style="color: #fbbf24; font-weight: bold; font-size: 15px;">🪙 +100 Altın</span>
+          <span style="color: #f87171; font-weight: bold; font-size: 15px;">🏆 +25 Kupa</span>
+        </div>
+
+        <button onclick="closeVictoryModal()" style="width: 100%; background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none; padding: 12px 0; font-size: 16px; font-weight: 800; border-radius: 50px; cursor: pointer; box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4); transition: 0.2s;">
+          ÇİFTLİĞE DÖN
+        </button>
+        
+      </div>
+    `;
+    m.style.display = "flex";
+    m.style.zIndex = "99999";
+  }
+}
+
+
+
+function triggerDefeatByTime(){
+  if(gameInterval){clearInterval(gameInterval);gameInterval=null}
+  if(turnInterval){clearInterval(turnInterval);turnInterval=null}
+  showEventMessage("⏰ Süre bitti! Maç sona erdi.");
+  setTimeout(returnHome,1400);
+}
+function closeVictoryModal(){
+  const m=document.getElementById("victory-modal");if(m)m.style.display="none";
+  returnHome();
+}
+
+/* ================= EMOTE ================= */
+function sendEmote(emoji){
+  const bubble=document.getElementById("emote-bubble");if(!bubble)return;
+  bubble.textContent=emoji;
+  bubble.style.transform="translate(-50%,-50%) scale(1.5)";
+  bubble.style.opacity="1";
+  setTimeout(()=>{bubble.style.transform="translate(-50%,-50%) scale(0)";bubble.style.opacity="0"},1800);
+}
+
+/* ================= PROFILE ================= */
+function openProfileModal(){
+  const m=document.getElementById("profile-modal");if(!m)return;
+  m.style.display="flex";
+  document.getElementById("username-input").value=localStorage.getItem("farm_username")||"Sefa";
+  document.getElementById("stat-trophy").textContent=playerScore||1800;
+  document.getElementById("stat-win").textContent=statsWins;
+  document.getElementById("stat-match").textContent=statsMatches;
+}
+function saveProfileData(){
+  let name=(document.getElementById("username-input").value||"Sefa").trim();
+  if(!name)name="Sefa";
+  localStorage.setItem("farm_username",name);
+  document.querySelectorAll("#display-username,#player-name-display,#matchmaking-player-name").forEach(e=>e.textContent=name);
+  closeModal("profile-modal");
+}
+
+/* ================= FRIENDS ================= */
+function openFriendsModal(){openModal("friends-modal");renderFriendsList()}
+function closeFriendsModal(){closeModal("friends-modal")}
+function addFriend(){
+  const input=document.getElementById("friend-username-input"),username=input.value.trim();
+  if(!username){showEventMessage("⚠️ Kullanıcı adı gir!");return}
+  let friends=JSON.parse(localStorage.getItem("farm_friends")||"[]");
+  if(friends.includes(username)){showEventMessage("ℹ️ Bu kişi zaten arkadaşın.");return}
+  friends.push(username);localStorage.setItem("farm_friends",JSON.stringify(friends));input.value="";renderFriendsList();
+}
+function removeFriend(username){
+  let friends=JSON.parse(localStorage.getItem("farm_friends")||"[]").filter(x=>x!==username);
+  localStorage.setItem("farm_friends",JSON.stringify(friends));renderFriendsList();
+}
+function renderFriendsList(){
+  const list=document.getElementById("friends-list");if(!list)return;
+  const friends=JSON.parse(localStorage.getItem("farm_friends")||"[]");
+  list.innerHTML="";
+  if(!friends.length){list.innerHTML="<li style='justify-content:center;color:#aaa'>Henüz arkadaşınız yok.</li>";return}
+  friends.forEach(friend=>{
+    const li=document.createElement("li");
+    const span=document.createElement("span");span.textContent="👤 "+friend;
+    const btn=document.createElement("button");btn.className="remove-friend-btn";btn.textContent="Çıkar";btn.onclick=()=>removeFriend(friend);
+    li.append(span,btn);list.appendChild(li);
+  });
+}
+
+/* ================= SHOP ================= */
+function syncCurrencies(){
+  ["store-gold","home-gold"].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=Number(storeGold).toLocaleString("tr-TR")});
+  ["store-gems","home-gem"].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=Number(storeGems).toLocaleString("tr-TR")});
+}
+function buyStoreItem(item,currency,price){
+  if(currency==="gold"){
+    if(storeGold<price){showStoreMessage("❌ Yeterli altının yok!");return}
+    storeGold-=price;
+  }
+  if(currency==="gem"){
+    if(storeGems<price){showStoreMessage("❌ Yeterli elmasın yok!");return}
+    storeGems-=price;
+  }
+  syncCurrencies();
+  showStoreMessage("✅ "+item+" satın alındı!");
+}
+function storeCategory(category,button){
+  document.querySelectorAll(".store-tab").forEach(t=>t.classList.remove("active"));
+  if(button)button.classList.add("active");
+  document.querySelectorAll(".store-product").forEach(p=>{
+    p.style.display=(category==="all"||p.dataset.category===category)?"grid":"none";
+  });
+}
+function showStoreMessage(message){
+  const old=document.getElementById("store-message");if(old)old.remove();
+  const box=document.createElement("div");box.id="store-message";box.textContent=message;
+  Object.assign(box.style,{position:"fixed",left:"50%",top:"20%",transform:"translateX(-50%)",zIndex:99999,padding:"11px 18px",borderRadius:"10px",background:"#142417",border:"2px solid #d9b53d",color:"#fff",fontWeight:"900",fontSize:"12px",boxShadow:"0 8px 30px rgba(0,0,0,.6)"});
+  document.body.appendChild(box);setTimeout(()=>box.remove(),1800);
+}
+
+/* ================= EVENTS ================= */
+function openEvents(){openModal("events-modal")}
+function closeEventsModal(){closeModal("events-modal")}
+function filterEvents(category,button){
+  document.querySelectorAll(".event-tab").forEach(t=>t.classList.remove("active"));
+  if(button)button.classList.add("active");
+  document.querySelectorAll(".event-card").forEach(c=>c.style.display=(category==="all"||c.dataset.eventCategory===category)?"block":"none");
+}
+function joinEvent(id){showEventMessage(id===1?"🎉 Çiftlik Yarışı'na katıldın!":"🎉 Etkinliğe katıldın!")}
+function claimDailyReward(){
+  const b=document.getElementById("daily-reward-btn");
+  if(!b)return;
+  if(b.classList.contains("claimed")){showEventMessage("⏳ Günlük ödülü zaten aldın!");return}
+  b.classList.add("claimed");b.textContent="ALINDI ✓";storeGold+=100;syncCurrencies();showEventMessage("🎁 Günlük ödülün alındı! +100 🪙");
+}
+function showEventMessage(message){
+  const old=document.getElementById("event-message");if(old)old.remove();
+  const box=document.createElement("div");box.id="event-message";box.textContent=message;
+  Object.assign(box.style,{position:"fixed",left:"50%",top:"18%",transform:"translateX(-50%)",zIndex:99999,padding:"11px 18px",borderRadius:"10px",background:"#142417",border:"2px solid #d8b33c",color:"#fff",fontWeight:"900",fontSize:"11px",boxShadow:"0 8px 30px rgba(0,0,0,.6)"});
+  document.body.appendChild(box);setTimeout(()=>box.remove(),1800);
+}
+setInterval(()=>{
+  if(eventSeconds>0)eventSeconds--;
+  const h=Math.floor(eventSeconds/3600),m=Math.floor((eventSeconds%3600)/60),s=eventSeconds%60;
+  const t=document.getElementById("event-time");if(t)t.textContent=String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+},1000);
+
+// ================= GELİŞMİŞ KLAN VE SOHBET SİSTEMİ =================
+
+let selectedLogoSymbol = '🐺';
+
+function openGuildScreen() {
+  const modal = document.getElementById("guild-screen");
+  if(modal) modal.style.display = "flex";
+  
+  // Kullanıcının klan durumunu kontrol et ve arayüzü güncelle
+  checkUserGuildStatus();
+}
+
+function closeGuildScreen() {
+  const modal = document.getElementById("guild-screen");
+  if(modal) modal.style.display = "none";
+}
+
+function switchGuildTab(tab, button){
+  document.querySelectorAll(".guild-tab").forEach(b => b.classList.remove("active"));
+  if(button) button.classList.add("active");
+  document.querySelectorAll(".guild-tab-content").forEach(c => c.style.display = "none");
+  const target = document.getElementById("guild-" + tab);
+  if(target) target.style.display = "block";
+}
+
+function selectGuildLogo(logo){
+  selectedLogoSymbol = logo;
+  showGuildMessage("Logo seçildi: " + logo);
+}
+
+function changeGuildTrophy(value){
+  if(typeof guildTrophy !== 'undefined') {
+    guildTrophy = Math.max(0, Math.min(5000, guildTrophy + value));
+    const e = document.getElementById("guild-trophy");
+    if(e) e.textContent = guildTrophy;
+  }
+}
+
+// Kullanıcının klanı var mı yok mu kontrol eder, varsa sohbeti açar
+function checkUserGuildStatus() {
+  const userGuild = localStorage.getItem("my_guild_data");
+  
+  const activeView = document.getElementById("active-guild-view");
+  const noGuildView = document.getElementById("no-guild-view");
+
+  if(userGuild) {
+    // Klanı varsa doğrudan klan detayını ve sohbeti göster
+    if(activeView) activeView.style.display = "block";
+    if(noGuildView) noGuildView.style.display = "none";
+
+    const guildData = JSON.parse(userGuild);
+    const logoEl = document.getElementById("active-guild-logo");
+    const nameEl = document.getElementById("active-guild-name");
+    const descEl = document.getElementById("active-guild-desc");
+
+    if(logoEl) logoEl.textContent = guildData.logo || "🐺";
+    if(nameEl) nameEl.textContent = guildData.name;
+    if(descEl) descEl.textContent = guildData.description || "Açıklama yok.";
+    
+    loadGuildChatMessages(guildData.name);
+  } else {
+    // Klanı yoksa keşfet ekranını göster
+    if(activeView) activeView.style.display = "none";
+    if(noGuildView) noGuildView.style.display = "block";
+    loadDiscoverGuilds();
+  }
+}
+
+// Keşfet sekmesinde kurulan klanları listele
+function loadDiscoverGuilds() {
+  const listContainer = document.getElementById("discover-guild-list");
+  if(!listContainer) return;
+
+  let guilds = JSON.parse(localStorage.getItem("all_game_guilds") || "[]");
+  
+  if(guilds.length === 0) {
+    listContainer.innerHTML = `<div class="muted" style="text-align:center; padding: 20px;">Henüz kurulmuş bir klan yok. İlk klanı sen oluşturabilirsin!</div>`;
+    return;
+  }
+
+  listContainer.innerHTML = "";
+  guilds.forEach(g => {
+    let item = document.createElement("div");
+    item.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; margin-bottom: 6px;";
+    item.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 20px;">${g.logo}</span>
+        <div>
+          <div style="font-weight: bold; font-size: 13px; color: #f1c40f;">${g.name}</div>
+          <div style="font-size: 10px; color: #ccc;">Lider: ${g.leader}</div>
+        </div>
+      </div>
+      <button class="gold-btn" style="padding: 4px 10px; font-size: 11px;" onclick="joinGuild('${g.name}')">KATIL</button>
+    `;
+    listContainer.appendChild(item);
+  });
+}
+
+function createGuild() {
+  const nameInput = document.getElementById("new-guild-name");
+  const descInput = document.getElementById("new-guild-description");
+  
+  const name = nameInput ? nameInput.value.trim() : "";
+  const description = descInput ? descInput.value.trim() : "";
+  const playerName = localStorage.getItem("farm_username") || "Sefa";
+
+  if(!name) {
+    showGuildMessage("⚠️ Klan adı yazmalısın!");
+    return;
+  }
+  if(name.length < 3) {
+    showGuildMessage("⚠️ Klan adı en az 3 karakter olmalı!");
+    return;
+  }
+
+  const newGuild = {
+    name: name,
+    description: description,
+    logo: selectedLogoSymbol,
+    leader: playerName,
+    trophy: typeof guildTrophy !== 'undefined' ? guildTrophy : 0
+  };
+
+  let allGuilds = JSON.parse(localStorage.getItem("all_game_guilds") || "[]");
+  // Aynı isimde klan var mı kontrol et
+  if(!allGuilds.some(g => g.name === name)) {
+    allGuilds.push(newGuild);
+    localStorage.setItem("all_game_guilds", JSON.stringify(allGuilds));
+  }
+
+  localStorage.setItem("my_guild_data", JSON.stringify(newGuild));
+  showGuildMessage("🏰 " + selectedLogoSymbol + " " + name + " oluşturuldu!");
+  checkUserGuildStatus();
+}
+
+function joinGuild(name) {
+  let allGuilds = JSON.parse(localStorage.getItem("all_game_guilds") || "[]");
+  let target = allGuilds.find(g => g.name === name);
+  
+  if(target) {
+    localStorage.setItem("my_guild_data", JSON.stringify(target));
+  } else {
+    // Listede direkt bulunamazsa bile hızlı katılım nesnesi oluştur
+    let fallbackGuild = { name: name, logo: "🏰", description: "Katılınan klan", leader: "Bilinmiyor" };
+    localStorage.setItem("my_guild_data", JSON.stringify(fallbackGuild));
+  }
+
+  showGuildMessage("🏰 " + name + " klanına katıldın!");
+  checkUserGuildStatus();
+}
+
+function leaveGuild() {
+  if(confirm("Klandan ayrılmak istediğine emin misin?")) {
+    localStorage.removeItem("my_guild_data");
+    showGuildMessage("⚠️ Klandan ayrıldın.");
+    checkUserGuildStatus();
+  }
+}
+
+function searchGuild(){
+  const input = document.getElementById("guild-search-input");
+  const result = document.getElementById("guild-search-result");
+  const name = input.value.trim();
+  if(!name){ result.innerHTML = "🔎<br><br>Bir Guild adı yaz."; return; }
+  
+  result.innerHTML = "";
+  const strong = document.createElement("strong"); strong.style.color = "#f1c40f"; strong.textContent = "🏰 " + name;
+  const br = document.createElement("br");
+  const small = document.createElement("span"); small.style.color = "#8eb6d0"; small.style.fontSize = "8px"; small.textContent = "Guild bulundu.";
+  const btn = document.createElement("button"); btn.className = "gold-btn"; btn.style.marginTop = "8px"; btn.textContent = "KATIL"; btn.onclick = () => joinGuild(name);
+  result.append(strong, br, small, document.createElement("br"), btn);
+}
+
+// Klan İçi Sohbet Fonksiyonları
+function sendGuildMessage() {
+  const input = document.getElementById("guild-chat-input");
+  if(!input || !input.value.trim()) return;
+
+  const text = input.value.trim();
+  const playerName = localStorage.getItem("farm_username") || "Sefa";
+  
+  let userGuild = JSON.parse(localStorage.getItem("my_guild_data") || "{}");
+  if(!userGuild.name) return;
+
+  let chatKey = "guild_chat_" + userGuild.name;
+  let messages = JSON.parse(localStorage.getItem(chatKey) || "[]");
+
+  messages.push({ 
+    sender: playerName, 
+    text: text, 
+    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+  });
+  
+  localStorage.setItem(chatKey, JSON.stringify(messages));
+  input.value = "";
+  loadGuildChatMessages(userGuild.name);
+}
+function showGuildMessage(text) {
+  const container = document.getElementById("game-toast-container");
+  if(!container) return;
+  
+  const msg = document.createElement("div");
+  msg.innerText = text;
+  msg.style.cssText = "background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 8px; margin-top: 5px; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: opacity 0.3s ease;";
+  
+  container.appendChild(msg);
+  
+  setTimeout(() => {
+    msg.style.opacity = "0";
+    setTimeout(() => msg.remove(), 300);
+  }, 2000);
+}
+
+function loadGuildChatMessages(guildName) {
+  const chatContainer = document.getElementById("guild-chat-messages");
+  if(!chatContainer) return;
+
+  let chatKey = "guild_chat_" + guildName;
+  let messages = JSON.parse(localStorage.getItem(chatKey) || "[]");
+
+  if(messages.length === 0) {
+    chatContainer.innerHTML = `<div style="color: #888; font-style: italic; text-align: center; margin-top: 15px;">Henüz mesaj yok. İlk mesajı sen yaz!</div>`;
+    return;
+  }
+
+  chatContainer.innerHTML = "";
+  messages.forEach(m => {
+    let msgDiv = document.createElement("div");
+    msgDiv.style.cssText = "background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 6px; word-break: break-word; margin-bottom: 2px;";
+    msgDiv.innerHTML = `<span style="color: #f1c40f; font-weight: bold;">${m.sender}:</span> ${m.text} <span style="font-size: 8px; color: #aaa; float: right; margin-top: 3px;">${m.time}</span>`;
+    chatContainer.appendChild(msgDiv);
+  });
+
+  chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+function showGuildMessage(message){
+  const old = document.getElementById("guild-message"); if(old) old.remove();
+  const box = document.createElement("div"); box.id = "guild-message"; box.textContent = message;
+  Object.assign(box.style, {position:"fixed", left:"50%", top:"18%", transform:"translateX(-50%)", zIndex:99999, padding:"11px 18px", borderRadius:"10px", background:"#10283a", border:"2px solid #f1c40f", color:"#fff", fontWeight:"900", fontSize:"11px", boxShadow:"0 8px 30px rgba(0,0,0,.7)"});
+  document.body.appendChild(box); setTimeout(() => box.remove(), 1800);
+}
+
+
+/* ================= LANGUAGE ================= */
+function changeGameLanguage(language){
+  console.log("Oyun dili:",language==="tr"?"Türkçe":"English");
+}
+
+/* ================= CHARACTER ================= */
+function selectCharacter(charId){
+  const found=farmCharacters.find(c=>c.id===charId);
+  if(found)activeCharacter=found;
+}
+
+/* ================= STARTUP ================= */
+document.addEventListener("DOMContentLoaded",()=>{
+  const saved=localStorage.getItem("farm_username")||"Sefa";
+  const wins=Number(localStorage.getItem("farm_wins")||0);
+  const matches=Number(localStorage.getItem("farm_matches")||0);
+  statsWins=wins;statsMatches=matches;
+  document.getElementById("display-username").textContent=saved;
+  document.getElementById("player-name-display").textContent=saved;
+  document.getElementById("username-input").value=saved;
+  syncCurrencies();
+});
+  
+</script>
+</body>
+</html>
