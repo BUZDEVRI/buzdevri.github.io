@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SocialBoost - Medya Takipçi Paneli</title>
+<style>
+    *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif}
+    body{background:#0f172a;color:#f8fafc;min-height:100vh;display:flex;flex-direction:column}
+    
+    header{background:#1e293b;padding:15px 30px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #334155}
+    .logo{font-size:20px;font-weight:bold;color:#38bdf8}
+    .balance{background:#0284c7;padding:6px 14px;border-radius:20px;font-size:14px;font-weight:600}
+
+    .container{max-width:1100px;margin:30px auto;padding:0 20px;flex:1;width:100%}
+    
+    .hero{text-align:center;margin-bottom:30px}
+    .hero h1{font-size:28px;margin-bottom:10px;color:#f1f5f9}
+    .hero p{color:#94a3b8;font-size:14px}
+
+    .categories{display:flex;justify-content:center;gap:10px;margin-bottom:25px;flex-wrap:wrap}
+    .cat-btn{background:#1e293b;border:1px solid #475569;color:#cbd5e1;padding:8px 18px;border-radius:8px;cursor:pointer;font-weight:600;transition:0.2s}
+    .cat-btn.active, .cat-btn:hover{background:#0284c7;border-color:#0284c7;color:#fff}
+
+    .grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:20px}
+    .card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;text-align:center;transition:0.2s;position:relative;overflow:hidden}
+    .card:hover{transform:translateY(-4px);border-color:#0284c7}
+    .badge{position:absolute;top:12px;right:12px;background:#e11d48;color:#fff;font-size:10px;padding:3px 8px;border-radius:4px;font-weight:bold}
+    .card h3{font-size:18px;margin-bottom:8px;color:#f8fafc}
+    .card .count{font-size:22px;font-weight:bold;color:#38bdf8;margin-bottom:12px}
+    .card .price{font-size:20px;color:#4ade80;font-weight:bold;margin-bottom:15px}
+    .card input{width:100%;padding:10px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff;margin-bottom:12px;font-size:13px}
+    .buy-btn{width:100%;background:linear-gradient(135deg, #0284c7, #0369a1);border:none;padding:10px;border-radius:8px;color:#fff;font-weight:bold;cursor:pointer;transition:0.2s}
+    .buy-btn:hover{opacity:0.9}
+
+    /* Modal / Bildirim */
+    #notification{position:fixed;bottom:20px;right:20px;background:#10b981;color:#fff;padding:12px 20px;border-radius:8px;font-weight:bold;box-shadow:0 4px 12px rgba(0,0,0,0.3);display:none;z-index:1000;animation:fadeIn 0.3s}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<header>
+    <div class="logo">⚡ SocialBoost TR</div>
+    <div class="balance">Bakiye: ₺250.00</div>
+</header>
+
+<div class="container">
+    <div class="hero">
+        <h1>Sosyal Medya Büyüme Paneli</h1>
+        <p>TikTok, Instagram ve diğer platformlar için anında teslimatlı yüksek kaliteli paketler.</p>
+    </div>
+
+    <div class="categories">
+        <button class="cat-btn active" onclick="filterCat('tiktok')">🎵 TikTok</button>
+        <button class="cat-btn" onclick="filterCat('instagram')">📸 Instagram</button>
+        <button class="cat-btn" onclick="filterCat('youtube')">▶️ YouTube</button>
+    </div>
+
+    <div class="grid" id="product-grid">
+        <!-- Kartlar dinamik yüklenecek -->
+    </div>
+</div>
+
+<div id="notification">İşlem Başarılı! Siparişiniz işleme alındı.</div>
+
+<script>
+const products = [
+    {category: 'tiktok', title: 'TikTok Takipçi', count: '1,000 Takipçi', price: '₺49.99', popular: true},
+    {category: 'tiktok', title: 'TikTok İzlenme', count: '10,000 İzlenme', price: '₺19.99', popular: false},
+    {category: 'tiktok', title: 'TikTok Canlı Yayın Beğeni', count: '5,000 Beğeni', price: '₺34.99', popular: false},
+    {category: 'instagram', title: 'Instagram Takipçi', count: '1,000 Takipçi', price: '₺59.99', popular: true},
+    {category: 'instagram', title: 'Instagram Beğeni', count: '2,500 Beğeni', price: '₺24.99', popular: false},
+    {category: 'youtube', title: 'YouTube Abone', count: '500 Abone', price: '₺119.99', popular: true}
+];
+
+function renderProducts(cat){
+    const grid = document.getElementById('product-grid');
+    grid.innerHTML = '';
+    
+    products.filter(p => p.category === cat).forEach(p => {
+        grid.innerHTML += `
+            <div class="card">
+                ${p.popular ? '<div class="badge">Popüler</div>' : ''}
+                <h3>${p.title}</h3>
+                <div class="count">${p.count}</div>
+                <div class="price">${p.price}</div>
+                <input type="text" placeholder="Kullanıcı Adı veya Link">
+                <button class="buy-btn" onclick="buyPackage('${p.title}')">Hemen Satın Al</button>
+            </div>
+        `;
+    });
+}
+
+function filterCat(cat){
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    renderProducts(cat);
+}
+
+function buyPackage(title){
+    const notif = document.getElementById('notification');
+    notif.textContent = `"${title}" paketi başarıyla satın alındı!`;
+    notif.style.display = 'block';
+    setTimeout(() => { notif.style.display = 'none'; }, 3000);
+}
+
+// İlk açılış
+renderProducts('tiktok');
+</script>
+
+</body>
+</html>
