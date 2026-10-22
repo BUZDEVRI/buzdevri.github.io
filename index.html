@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoiceRoom - HTML5 Game Embedding & Instant Play Webview</title>
+<!-- PeerJS Kütüphanesi -->
+<script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+<style>
+    *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif}
+    body{background:#0f172a;color:#f8fafc;min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden}
+
+    /* DISCORD ANA ARAYÜZÜ */
+    #discord-app{display:flex;height:100vh;width:100vw;overflow:hidden;position:relative}
+    .app-layout{display:flex;height:100%;width:100%;flex-direction:row;}
+
+    /* En Sol Sunucu Sütunu (Discord Mobil Tarzı İkonlar) */
+    .server-rail{width:72px;background:#111827;border-right:1px solid #1f2937;display:flex;flex-direction:column;align-items:center;padding-top:12px;gap:8px;flex-shrink:0;overflow-y:auto}
+    .server-icon{width:48px;height:48px;border-radius:50%;background:#1e293b;display:flex;align-items:center;justify-content:center;color:#f8fafc;font-weight:bold;cursor:pointer;transition:0.2s;border:2px solid transparent;overflow:hidden;font-size:16px}
+    .server-icon:hover, .server-icon.active{border-radius:16px;background:#0284c7;border-color:#38bdf8}
+    .server-icon img{width:100%;height:100%;object-fit:cover}
+    .server-icon.home-btn{background:#10b981;color:#fff}
+    .server-icon.add-btn{background:#1f2937;color:#10b981;font-size:20px}
+    .server-icon.add-btn:hover{background:#10b981;color:#fff}
+    .rail-divider{width:32px;height:2px;background:#334155;border-radius:1px;margin:4px 0}
+
+    /* Sol Sidebar (Sunucu Başlığı & Kanallar) */
+    .sidebar{width:240px;background:#1e293b;border-right:1px solid #334155;display:flex;flex-direction:column;flex-shrink:0}
+    .server-header{padding:15px;border-bottom:1px solid #334155;font-weight:bold;color:#f8fafc;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+    
+    /* Arama Çubuğu */
+    .search-bar-container{padding:10px 12px;background:#1e293b}
+    .search-input{width:100%;background:#0f172a;border:none;border-radius:6px;padding:6px 10px;color:#fff;font-size:12px;outline:none}
+
+    .channel-list{padding:8px 12px;flex:1;overflow-y:auto}
+    .channel-category{font-size:11px;font-weight:bold;color:#64748b;margin:10px 0 6px 0;letter-spacing:0.5px;display:flex;justify-content:space-between;align-items:center}
+    .channel-item{padding:8px 10px;border-radius:6px;cursor:pointer;margin-bottom:3px;font-size:13px;color:#94a3b8;display:flex;align-items:center;gap:8px;transition:0.2s}
+    .channel-item:hover, .channel-item.active{background:#334155;color:#f1f5f9}
+
+    
+/* ORTA ANA ALAN - DÜZELTME */
+.main-content {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    background: #0f172a;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.content-area {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    padding: 15px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+.view-section {
+    display: none;
+    flex: 1 0 auto;
+    min-width: 0;
+    flex-direction: column;
+}
+
+.view-section.active {
+    display: flex !important;
+}
+
+/* OYUN KATALOĞU */
+#view-games {
+    width: 100%;
+    flex: 1 0 auto;
+    min-height: 300px;
+    visibility: visible;
+    opacity: 1;
+}
+
+#view-games .play-store-header,
+#view-games .platform-tabs,
+#view-games .game-grid {
+    flex-shrink: 0;
+}
+
+/* OYUN ALANI */
+#game-player-box {
+    display: none;
+    width: 100%;
+    height: 500px;
+    min-height: 300px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #000;
+    margin-bottom: 20px;
+}
+
+#game-player-frame {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border: none;
+}
+
+/* KARTLAR */
+#game-grid-container {
+    display: grid;
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(min(220px, 100%), 1fr)
+    );
+    gap: 15px;
+    width: 100%;
+}
+
+#game-grid-container .game-store-card {
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+    .content-area {
+        padding: 10px;
+    }
+
+    #game-player-box {
+        height: 350px;
+        min-height: 250px;
+    }
+
+    #game-grid-container {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+}
+
+    /* Mağaza Kartları Grid Tasarımı */
+    .game-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:15px;margin-top:10px}
+    .game-store-card{background:#1e293b;border:1px solid #334155;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;transition:0.2s;cursor:pointer}
+    .game-store-card:hover{border-color:#10b981;transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,0.4)}
+    .game-card-top{display:flex;align-items:center;gap:12px;}
+    .game-card-top img{width:54px;height:54px;border-radius:12px;object-fit:cover;}
+    .game-meta h4{font-size:14px;color:#f8fafc;margin-bottom:2px;}
+    .game-meta span{font-size:11px;color:#94a3b8;}
+    .game-rating{font-size:11px;color:#fbbf24;margin-top:2px;}
+    
+    .instant-play-btn{background:linear-gradient(135deg, #10b981, #059669);color:#fff;border:none;padding:8px 12px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:12px;text-align:center;transition:0.2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+    .instant-play-btn:hover{opacity:0.9;transform:scale(1.02);}
+
+    /* Medya & Video İzleme Alanı */
+    .video-container{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;background:#000;margin-bottom:15px}
+    .video-container iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}
+    .video-input-group{display:flex;gap:8px;margin-bottom:12px}
+    
+    input[type="text"], textarea{padding:8px 10px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff;font-size:13px;flex:1}
+    textarea{resize:vertical;min-height:90px;font-family:inherit;}
+    button{background:linear-gradient(135deg, #0284c7, #0369a1);border:none;padding:8px 12px;border-radius:8px;color:#fff;font-weight:bold;cursor:pointer;font-size:13px}
+    button:hover{opacity:0.9}
+
+    .media-grid, .bot-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:12px;margin-top:10px}
+    .media-card, .bot-card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px;cursor:pointer;transition:0.2s;text-align:center}
+    .media-card:hover, .bot-card:hover{border-color:#38bdf8;transform:translateY(-2px)}
+    .media-card img{width:100%;height:80px;object-fit:cover;border-radius:6px;margin-bottom:6px}
+    .bot-card h4{font-size:13px;color:#f8fafc;margin-bottom:4px}
+    .bot-card p{font-size:11px;color:#94a3b8;margin-bottom:8px}
+
+    /* iFrame Wrapper */
+    .iframe-wrapper{flex:1;width:100%;height:100%;min-height:300px;border-radius:12px;overflow:hidden;border:1px solid #334155;background:#000}
+    .iframe-wrapper iframe{width:100%;height:100%;border:none}
+
+    /* Mağaza Grid */
+    .shop-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:15px}
+    .shop-card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:15px;text-align:center}
+    .shop-card h3{font-size:14px;margin-bottom:6px;color:#f8fafc}
+    .shop-card .price{font-size:16px;color:#4ade80;font-weight:bold;margin-bottom:10px}
+
+    /* Alt Ses Kontrol Paneli (Varsayılan Kapalı) */
+    .voice-control-bar{background:#172033;padding:10px 15px;display:none;justify-content:space-between;align-items:center;border-top:1px solid #334155}
+    .ctrl-btn{background:#334155;border:none;padding:6px 10px;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;font-size:12px}
+    .ctrl-btn.muted{background:#ef4444}
+
+    /* OYUN İÇİ OVERLAY WIDGET */
+    .overlay-widget {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: rgba(30, 41, 59, 0.85);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        border-radius: 12px;
+        padding: 10px 15px;
+        display: none;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        z-index: 998;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .overlay-widget:hover { border-color: #38bdf8; background: rgba(30, 41, 59, 0.95); }
+    .overlay-avatar { width: 32px; height: 32px; border-radius: 50%; background: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 2px solid #10b981; }
+    .overlay-info { display: flex; flex-direction: column; }
+    .overlay-name { font-size: 12px; font-weight: bold; color: #f8fafc; }
+    .overlay-status { font-size: 10px; color: #10b981; }
+
+    /* Modal (Popup) Styling */
+    .modal-overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);justify-content:center;align-items:center;z-index:999}
+    .modal-content{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;width:90%;max-width:420px;text-align:center}
+    .modal-content h3{margin-bottom:12px;color:#38bdf8}
+
+    /* MOBİL İÇİN DİKEY UYARLAMA (RESPONSIVE) */
+    @media (max-width: 768px) {
+        body { overflow: auto; height: auto; }
+        #discord-app { height: auto; min-height: 100vh; overflow: visible; }
+        .app-layout { flex-direction: column; height: auto; }
+        .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid #334155; }
+        .server-rail { width: 100%; height: 64px; flex-direction: row; overflow-x: auto; padding: 0 10px; }
+        .main-content { height: auto; min-height: 60vh; }
+        .content-area { overflow: visible; }
+        .overlay-widget { top: 10px; right: 10px; padding: 6px 10px; }
+        .game-player-wrapper { height: 350px; }
+    }
+  
+
+
+</style>
+</head>
+<body>
+
+<!-- DISCORD ARAYÜZÜ -->
+<div id="discord-app">
+
+    <!-- OYUN İÇİ NON-DIEGETIC OVERLAY WIDGET -->
+    <div class="overlay-widget" id="overlay-widget-box" onclick="toggleOverlayMenu()" title="Discord Overlay Aç/Kapat">
+        <div class="overlay-avatar">🎙️</div>
+        <div class="overlay-info">
+            <span class="overlay-name" id="overlay-username">Bağlı</span>
+            <span class="overlay-status">● Ses Aktif</span>
+        </div>
+    </div>
+
+    <div class="app-layout">
+        
+        <!-- 1. EN SOL SUNUCU SÜTUNU -->
+        <div class="server-rail" id="server-rail-container">
+            <div class="server-icon home-btn active" title="Anasayfa / Keşif" onclick="switchHome()">🏠</div>
+            <div class="rail-divider"></div>
+            <div class="server-icon add-btn" title="Yeni Sunucu Kur" onclick="openCreateServerModal()">+</div>
+        </div>
+
+        <!-- 2. SOL KANAL LİSTESİ VE KATEGORİLER -->
+        <div class="sidebar">
+            <div class="server-header">
+                <span id="server-name-title">VoiceRoom Anasayfa</span>
+                <span>▼</span>
+            </div>
+
+            <!-- Arama Çubuğu -->
+            <div class="search-bar-container">
+                <input type="text" class="search-input" placeholder="🔍 Rechercher / Ara...">
+            </div>
+
+            <!-- DİNAMİK KANALLAR LİSTESİ -->
+            <div class="channel-list" id="channel-list-container">
+                <div class="server-channels-group" id="channels-home">
+                    <div class="channel-category">HTML5 GAME EMBEDDING</div>
+                    <div class="channel-item active" onclick="switchView('games', this)"># 🎮-html5-instant-webview</div>
+                    <div class="channel-item" onclick="switchView('video', this)"># 🎬-medya-odasi</div>
+                    <div class="channel-item" onclick="switchView('iframe', this)"># 🌐-ozel-iframe</div>
+                    <div class="channel-item" onclick="switchView('shop', this)"># 🛒-sunucu-magazasi</div>
+                    <div class="channel-item" onclick="switchView('bots', this)"># 🤖-bot-yonetimi</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. ORTA ANA ALAN -->
+        <div class="main-content">
+            <div class="top-bar">
+                <h3 id="current-view-title" style="font-size:15px;color:#f1f5f9;">🎮 HTML5 Game Embedding - Instant Play Webview</h3>
+                <div style="font-size:12px;color:#10b981;">● HTML5 WebGL Cloud Active</div>
+            </div>
+
+            <div class="content-area">
+                                <!-- HTML5 GAME EMBEDDING & INSTANT PLAY WEBVIEW GÖRÜNÜMÜ -->
+                <div id="view-games" class="view-section active">
+                    
+                    <!-- GameSnacks Üst Mor Banner ve Mağazaya Dön Butonu -->
+                    <div style="background: linear-gradient(135deg, #6366f1, #a855f7); padding: 18px 20px; border-radius: 16px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(99,102,241,0.3);">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="background: #fff; width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">🎮</div>
+                            <div>
+                                <h2 style="color: #fff; font-size: 18px; font-weight: 800; letter-spacing: 0.5px;">gamesnacks</h2>
+                                <p style="color: #e0e7ff; font-size: 11px;">Instant Play Webview Cloud</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="add-game-trigger-btn" onclick="openAddGameModal()" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.4);">➕ Oyun Ekle</button>
+                        </div>
+                    </div>
+
+                    <!-- Kategori Sekmeleri (All, New, Multiplayer, Puzzle, Arcade, Board) -->
+                    <div class="platform-tabs" style="margin-bottom: 20px; overflow-x: auto; white-space: nowrap; padding-bottom: 5px;">
+                        <button class="platform-btn active" onclick="filterGames('all', this)" style="border-radius: 20px; padding: 6px 16px;">All</button>
+                        <button class="platform-btn" onclick="filterGames('new', this)" style="border-radius: 20px; padding: 6px 16px;">New</button>
+                        <button class="platform-btn" onclick="filterGames('multiplayer', this)" style="border-radius: 20px; padding: 6px 16px;">Multiplayer</button>
+                        <button class="platform-btn" onclick="filterGames('puzzle', this)" style="border-radius: 20px; padding: 6px 16px;">Puzzle</button>
+                        <button class="platform-btn" onclick="filterGames('arcade', this)" style="border-radius: 20px; padding: 6px 16px;">Arcade</button>
+                        <button class="platform-btn" onclick="filterGames('board', this)" style="border-radius: 20px; padding: 6px 16px;">Board</button>
+                    </div>
+
+                    <!-- Canlı Oyun Oynama Alanı & Instant Yükleyici -->
+                    <div class="game-player-wrapper" id="game-player-box" style="display:none; margin-bottom: 25px;">
+                        <div class="instant-loader" id="instant-loader-box" style="display:none;">
+                            <div class="instant-badge">⚡ HTML5 INSTANT PLAY WEBVIEW</div>
+                            <h3 id="instant-game-title" style="color:#f8fafc;margin-bottom:8px;">Oyun Hazırlanıyor...</h3>
+                            <p style="color:#94a3b8;font-size:12px;">Yükleme yapmadan anında başlatılıyor.</p>
+                        </div>
+                        <iframe id="game-player-frame" src=""></iframe>
+                    </div>
+
+                    <!-- Büyük Öne Çıkan Kartlar (Zoo Boom & Blox Slider) -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 15px; margin-bottom: 25px;" id="featured-games-container">
+                        
+                        <!-- Zoo Boom -->
+                        <div style="background: #1e293b; border: 1px solid #334155; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; cursor: pointer; transition: 0.2s;" onclick="playInstantGame('Zoo Boom', 'https://html5.gamedistribution.com/rvvASMiM/a8e022f03f3942b0833cb9d06b1297ac/')">
+                            <img src="https://img.gamedistribution.com/a8e022f03f3942b0833cb9d06b1297ac-512x384.jpeg" alt="Zoo Boom" style="width: 100%; height: 160px; object-fit: cover;">
+                            <div style="padding: 15px; display: flex; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <h4 style="font-size: 15px; color: #f8fafc; font-weight: 700; margin-bottom: 2px;">Zoo Boom</h4>
+                                    <span style="font-size: 11px; color: #94a3b8;">Puzzle & Eşleştirme</span>
+                                </div>
+                                <button style="background: #6366f1; color: white; border: none; padding: 8px 22px; border-radius: 20px; font-weight: bold; font-size: 13px; cursor: pointer;">Play</button>
+                            </div>
+                        </div>
+
+                        <!-- Blox Slider -->
+                        <div style="background: #1e293b; border: 1px solid #334155; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; cursor: pointer; transition: 0.2s;" onclick="playInstantGame('Blox Slider', 'https://html5.gamedistribution.com/rvvASMiM/a804a99187314d3ba1a967c7e5ac5555/')">
+                            <img src="https://img.gamedistribution.com/a804a99187314d3ba1a967c7e5ac5555-512x384.jpeg" alt="Blox Slider" style="width: 100%; height: 160px; object-fit: cover;">
+                            <div style="padding: 15px; display: flex; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <h4 style="font-size: 15px; color: #f8fafc; font-weight: 700; margin-bottom: 2px;">Blox Slider</h4>
+                                    <span style="font-size: 11px; color: #94a3b8;">Zeka & Bulmaca</span>
+                                </div>
+                                <button style="background: #6366f1; color: white; border: none; padding: 8px 22px; border-radius: 20px; font-weight: bold; font-size: 13px; cursor: pointer;">Play</button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Tüm Oyunlar (All Games) - Zengin Çoklu Oyun Kataloğu -->
+                    <div style="margin-top: 10px;">
+                        <h3 style="font-size: 18px; color: #f8fafc; font-weight: 800; margin-bottom: 15px; letter-spacing: 0.3px;">All games</h3>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px;" id="game-grid-container">
+                            
+                            <!-- Smarty Bubbles -->
+                            <div class="game-store-card" data-category="puzzle" onclick="playInstantGame('Smarty Bubbles', 'https://html5.gamedistribution.com/rvvASMiM/06e788c775d74ff7b711e9f13dd4e8e8/')" style="background: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #334155; cursor: pointer; transition: 0.2s;">
+                                <img src="https://img.gamedistribution.com/06e788c775d74ff7b711e9f13dd4e8e8-512x384.jpeg" alt="Smarty Bubbles" style="width: 100%; height: 90px; object-fit: cover;">
+                                <div style="padding: 8px; text-align: center;">
+                                    <h4 style="font-size: 11px; color: #f8fafc; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Smarty Bubbles</h4>
+                                </div>
+                            </div>
+
+                            <!-- Parking Rush -->
+                            <div class="game-store-card" data-category="arcade" onclick="playInstantGame('Parking Rush', 'https://html5.gamedistribution.com/rvvASMiM/5e73059f137e4da6883216c528f1b626/')" style="background: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #334155; cursor: pointer; transition: 0.2s;">
+                                <img src="https://img.gamedistribution.com/5e73059f137e4da6883216c528f1b626-512x384.jpeg" alt="Parking Rush" style="width: 100%; height: 90px; object-fit: cover;">
+                                <div style="padding: 8px; text-align: center;">
+                                    <h4 style="font-size: 11px; color: #f8fafc; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Parking Rush</h4>
+                                </div>
+                            </div>
+
+                            <!-- Retro Drift -->
+                            <div class="game-store-card" data-category="arcade" onclick="playInstantGame('Retro Drift', 'https://html5.gamedistribution.com/rvvASMiM/f63cb3bd937e4e1388b776a3928e3b7b/')" style="background: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #334155; cursor: pointer; transition: 0.2s;">
+                                <img src="https://img.gamedistribution.com/f63cb3bd937e4e1388b776a3928e3b7b-512x384.jpeg" alt="Retro Drift" style="width: 100%; height: 90px; object-fit: cover;">
+                                <div style="padding: 8px; text-align: center;">
+                                    <h4 style="font-size: 11px; color: #f8fafc; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Retro Drift</h4>
+                                </div>
+                            </div>
+
+                            <!-- Bullet Party 2 -->
+                            <div class="game-store-card" data-category="multiplayer" onclick="playInstantGame('Bullet Party 2', 'https://html5.gamedistribution.com/rvvASMiM/7e89139f4fbc460395724b91f1a58df1/')" style="background: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #334155; cursor: pointer; transition: 0.2s;">
+                                <img src="https://img.gamedistribution.com/7e89139f4fbc460395724b91f1a58df1-512x384.jpeg" alt="Bullet Party" style="width: 100%; height: 90px; object-fit: cover;">
+                                <div style="padding: 8px; text-align: center;">
+                                    <h4 style="font-size: 11px; color: #f8fafc; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Bullet Party</h4>
+                                </div>
+                            </div>
+
+                            <!-- Onet Connect -->
+                            <div class="game-store-card" data-category="puzzle" onclick="playInstantGame('Onet Connect', 'https://html5.gamedistribution.com/rvvASMiM/c30b2e8fb7a34fa18c011e40c812d4d3/')" style="background: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #334155; cursor: pointer; transition: 0.2s;">
+                                <img src="https://img.gamedistribution.com/c30b2e8fb7a34fa18c011e40c812d4d3-512x384.jpeg" alt="Onet Connect" style="width: 100%; height: 90px; object-fit: cover;">
+                                <div style="padding: 8px; text-align: center;">
+                                    <h4 style="font-size: 11px; color: #f8fafc; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Onet Connect</h4>
+                                </div>
+                            </div>
+
+                            <!-- Moto X3M -->
+                            <div class="game-store-card" data-category="arcade" onclick="playInstantGame('Moto X3M', 'https://html5.gamedistribution.com/rvvASMiM/d2c1613b567746409893d56f4e1f76d4/')" style="background: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #334155; cursor: pointer; transition: 0.2s;">
+                                <img src="https://img.gamedistribution.com/d2c1613b567746409893d56f4e1f76d4-512x384.jpeg" alt="Moto X3M" style="width: 100%; height: 90px; object-fit: cover;">
+                                <div style="padding: 8px; text-align: center;">
+                                    <h4 style="font-size: 11px; color: #f8fafc; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Moto X3M</h4>
+                                </div>
+                            </div>
+
+                            <!-- Krunker.io -->
+                            <div class="game-store-card" data-category="multiplayer" onclick="playInstantGame('Krunker.io', 'https://krunker.io')" style="background: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #334155; cursor: pointer; transition: 0.2s;">
+                                <img src="https://assets.krunker.io/img/favicon.png" alt="Krunker" style="width: 100%; height: 90px; object-fit: cover; background: #0f172a; padding: 15px;">
+                                <div style="padding: 8px; text-align: center;">
+                                    <h4 style="font-size: 11px; color: #f8fafc; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Krunker.io</h4>
+                                </div>
+                            </div>
+
+                            <!-- Slither.io -->
+                            <div class="game-store-card" data-category="multiplayer" onclick="playInstantGame('Slither.io', 'https://slither.io')" style="background: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #334155; cursor: pointer; transition: 0.2s;">
+                                <img src="https://slither.io/s/favicon.png" alt="Slither" style="width: 100%; height: 90px; object-fit: cover; background: #0f172a; padding: 15px;">
+                                <div style="padding: 8px; text-align: center;">
+                                    <h4 style="font-size: 11px; color: #f8fafc; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Slither.io</h4>
+                                </div>
+                            </div>
+
+                            <!-- 2048 Klasik -->
+                            <div class="game-store-card" data-category="puzzle" onclick="playInstantGame('2048 Klasik', 'https://play2048.co/')" style="background: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #334155; cursor: pointer; transition: 0.2s;">
+                                <img src="https://play2048.co/favicon.ico" alt="2048" style="width: 100%; height: 90px; object-fit: cover; background: #0f172a; padding: 15px;">
+                                <div style="padding: 8px; text-align: center;">
+                                    <h4 style="font-size: 11px; color: #f8fafc; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">2048 Klasik</h4>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                            
+                <!-- MEDYA İZLEME GÖRÜNÜMÜ -->
+                <div id="view-video" class="view-section">
+                    <div class="platform-tabs">
+                        <button class="platform-btn active" onclick="setPlatform('youtube', this)">🔴 YouTube</button>
+                        <button class="platform-btn" onclick="setPlatform('twitch', this)">🟣 Twitch</button>
+                        <button class="platform-btn" onclick="setPlatform('kick', this)">🟢 Kick</button>
+                        <button class="platform-btn" onclick="setPlatform('tiktok', this)">🎵 TikTok</button>
+                    </div>
+
+                    <div class="video-input-group">
+                        <input type="text" id="media-url-input" placeholder="YouTube Linki veya Twitch/Kick Adı...">
+                        <button style="width:110px;" onclick="loadMediaStream()">Oynat</button>
+                    </div>
+
+                    <div class="video-container">
+                        <iframe id="video-frame" src="https://www.youtube.com/embed/jfKfPfyJRdk" allowfullscreen></iframe>
+                    </div>
+
+                    <h4 style="color:#94a3b8;margin-bottom:8px;font-size:13px;">🔥 Önerilen Yayınlar & Videolar</h4>
+                    <div class="media-grid">
+                        <div class="media-card" onclick="quickPlay('youtube', 'jfKfPfyJRdk')">
+                            <img src="https://img.youtube.com/vi/jfKfPfyJRdk/hqdefault.jpg" alt="Lofi">
+                            <h4>Lofi Hip Hop</h4>
+                            <span>● YouTube</span>
+                        </div>
+                        <div class="media-card" onclick="quickPlay('twitch', 'shroud')">
+                            <img src="https://static-cdn.jtvnw.net/jtv_user_pictures/7ed5e373-0373-4cf7-8d1e-82631e80ba1b-profile_image-300x300.png" alt="Shroud">
+                            <h4>Shroud</h4>
+                            <span>● Twitch</span>
+                        </div>
+                        <div class="media-card" onclick="quickPlay('kick', 'xqc')">
+                            <img src="https://kick.com/favicon.ico" alt="Kick">
+                            <h4>xQc</h4>
+                            <span>● Kick</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ÖZEL IFRAME GÖRÜNÜMÜ -->
+                <div id="view-iframe" class="view-section">
+                    <div class="video-input-group">
+                        <input type="text" id="custom-iframe-url" placeholder="Web Sayfası URL'si (https...)">
+                        <button style="width:110px;" onclick="loadCustomIframe()">Yükle</button>
+                    </div>
+                    <div class="iframe-wrapper">
+                        <iframe id="main-custom-iframe" src="https://wikipedia.org"></iframe>
+                    </div>
+                </div>
+
+                <!-- MAĞAZA GÖRÜNÜMÜ -->
+                <div id="view-shop" class="view-section">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                        <h2 style="color:#f1f5f9;font-size:18px;">Sunucu Mağazası</h2>
+                        <div style="background:#0284c7;padding:4px 10px;border-radius:15px;font-size:12px;font-weight:bold;">Bakiye: ₺150</div>
+                    </div>
+                    
+                    <div class="shop-grid">
+                        <div class="shop-card">
+                            <h3>👑 VIP Rolü</h3>
+                            <div class="price">₺49.99</div>
+                            <button onclick="buyItem('VIP Rolü', 49.99)">Satın Al</button>
+                        </div>
+                        <div class="shop-card">
+                            <h3>🎨 Renkli İsim</h3>
+                            <div class="price">₺24.99</div>
+                            <button onclick="buyItem('Renkli İsim', 24.99)">Satın Al</button>
+                        </div>
+                        <div class="shop-card">
+                            <h3>⚡ Sunucu Boost</h3>
+                            <div class="price">₺79.99</div>
+                            <button onclick="buyItem('Sunucu Takviyesi', 79.99)">Satın Al</button>
+                        </div>
+                        <div class="shop-card">
+                            <h3>🎵 Müzik Botu</h3>
+                            <div class="price">₺19.99</div>
+                            <button onclick="buyItem('Müzik Botu Rolü', 19.99)">Satın Al</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DİSCORD BOTLARI KURULUM GÖRÜNÜMÜ -->
+                <div id="view-bots" class="view-section">
+                    <h2 style="color:#38bdf8;margin-bottom:8px;font-size:18px;">🤖 Discord Bot Yönetimi ve Kurulumu</h2>
+                    <p style="color:#94a3b8;font-size:13px;margin-bottom:15px;">Sunucunuza tek tıkla resmi Discord botları kurun ve yönetin.</p>
+
+                    <div class="bot-grid">
+                        <div class="bot-card">
+                            <h4>🎵 Groovy / Rythm Müzik</h4>
+                            <p>Ses odalarında kesintisiz müzik çalar.</p>
+                            <button onclick="installBot('Müzik Botu')">Botu Ekle</button>
+                        </div>
+                        <div class="bot-card">
+                            <h4>🛡️ Mee6 Moderasyon</h4>
+                            <p>Otomatik küfür engelleme ve seviye sistemi.</p>
+                            <button onclick="installBot('Mee6 Botu')">Botu Ekle</button>
+                        </div>
+                        <div class="bot-card">
+                            <h4>🎮 Ryujin Oyun Botu</h4>
+                            <p>Sunucuda mini oyunlar ve ekonomi botu.</p>
+                            <button onclick="installBot('Oyun Botu')">Botu Ekle</button>
+                        </div>
+                        <div class="bot-card">
+                            <h4>🎟️ Ticket Destek</h4>
+                            <p>Özel destek talebi kanalları oluşturur.</p>
+                            <button onclick="installBot('Destek Botu')">Botu Ekle</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- YENİ OLUŞTURULAN SUNUCU / ODA GÖRÜNÜMLERİ BURAYA DİNAMİK EKLENECEK -->
+                <div id="dynamic-rooms-container"></div>
+
+            </div>
+
+            <!-- ALT SES KONTROL PANELİ -->
+            <div class="voice-control-bar" id="voice-control-bar">
+                <div id="my-name-display" style="font-size:13px;font-weight:600;color:#cbd5e1;">Kullanıcı</div>
+                <div style="display:flex;gap:8px;">
+                    <button class="ctrl-btn" id="mic-btn" onclick="toggleMic()">🎤 Sustur</button>
+                    <button class="ctrl-btn" style="background:#ef4444;" onclick="leaveVoiceChannel()">Bağlantıyı Kes</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- OYUN EKLEME MODALI (HTML5 Game Embedding) -->
+<div class="modal-overlay" id="add-game-modal">
+    <div class="modal-content">
+        <h3>➕ HTML5 Oyun Ekle (Instant Play Webview)</h3>
+        <p style="font-size:12px;color:#94a3b8;margin-bottom:12px;">Oynatmak istediğin oyunun bilgilerini gir:</p>
+        
+        <input type="text" id="new-game-title" placeholder="Oyun Adı (Örn: Pacman HTML5)" style="margin-bottom:10px;width:100%;">
+        <input type="text" id="new-game-url" placeholder="Oyun URL Adresi (https://...)" style="margin-bottom:10px;width:100%;">
+        <input type="text" id="new-game-icon" placeholder="Logo/Favicon URL (İsteğe bağlı)" style="margin-bottom:15px;width:100%;">
+
+        <div style="display:flex;gap:8px;">
+            <button style="flex:1;background:#334155;" onclick="closeAddGameModal()">İptal</button>
+            <button style="flex:1;" onclick="confirmAddGame()">Oyunu Ekle & Oyna</button>
+        </div>
+    </div>
+</div>
+
+<!-- MANUEL SUNUCU & KANAL KURULUM MODALI -->
+<div class="modal-overlay" id="server-modal">
+    <div class="modal-content">
+        <h3>🚀 Yeni Sunucu & Kanal Mimarisi</h3>
+        <p style="font-size:12px;color:#94a3b8;margin-bottom:10px;">Sunucu adını ve kanallarını el ile yazarak oluşturun:</p>
+        
+        <input type="text" id="manual-server-name" placeholder="Sunucu Adı (Örn: Valorant Ekibi)" style="margin-bottom:10px;width:100%;">
+        
+        <div style="font-size:11px;color:#64748b;margin-bottom:4px;text-align:left;">Metin Kanalları (Virgülle Ayırın):</div>
+        <input type="text" id="manual-text-channels" placeholder="genel, duyurular, klipler" style="margin-bottom:10px;width:100%;">
+
+        <div style="font-size:11px;color:#64748b;margin-bottom:4px;text-align:left;">Ses Kanalları (Virgülle Ayırın):</div>
+        <input type="text" id="manual-voice-channels" placeholder="Sohbet Odası, Maç Odası" style="margin-bottom:15px;width:100%;">
+
+        <div style="display:flex;gap:8px;">
+            <button style="flex:1;background:#334155;" onclick="closeCreateServerModal()">İptal</button>
+            <button style="flex:1;" onclick="confirmManualCreateServer()">Sunucuyu Oluştur</button>
+        </div>
+    </div>
+</div>
+
+<!-- Gizli ses öğesi -->
+<audio id="remote-audio" autoplay></audio>
+<script>
+let peer = null;
+let localStream = null;
+let myId = '';
+let myName = 'Kral_' + Math.floor(Math.random() * 900 + 100);
+let isMuted = false;
+let roomCounter = 1;
+let selectedPlatform = 'youtube';
+
+// HTML5 Game Embedding & Instant Play Webview Başlatıcı (Geliştirilmiş)
+function playInstantGame(title, url) {
+    const playerBox = document.getElementById('game-player-box');
+    const playerFrame = document.getElementById('game-player-frame');
+    const loaderBox = document.getElementById('instant-loader-box');
+    const loaderTitle = document.getElementById('instant-game-title');
+
+    if (!playerBox || !playerFrame) {
+        alert('Oyun ekranı (player-box) HTML içinde bulunamadı!');
+        return;
+    }
+
+    let gameUrl;
+    try {
+        gameUrl = new URL(url);
+        if (!['https:', 'http:'].includes(gameUrl.protocol)) {
+            throw new Error('Geçersiz protokol');
+        }
+    } catch (error) {
+        alert('Oyun bağlantısı geçerli değil!');
+        return;
+    }
+
+    // Oyuncu kutusunu göster ve odaklan
+    playerBox.style.display = 'block';
+    playerBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    if (loaderBox) {
+        loaderBox.style.display = 'flex';
+        loaderBox.style.opacity = '1';
+    }
+
+    if (loaderTitle) {
+        loaderTitle.textContent = title + ' yükleniyor...';
+    }
+
+    // iframe yükleme tetikleyicisi
+    playerFrame.onload = function () {
+        if (loaderBox) {
+            loaderBox.style.opacity = '0';
+            setTimeout(() => {
+                loaderBox.style.display = 'none';
+            }, 300);
+        }
+    };
+
+    // Kaynağı ata
+    playerFrame.src = gameUrl.href;
+
+    // 10 saniye sonra oyun hâlâ açılmadıysa iframe engel uyarısı ver
+    const loadTimeout = setTimeout(() => {
+        if (loaderBox && loaderBox.style.display !== 'none') {
+            if (loaderTitle) {
+                loaderTitle.innerHTML = `⚠️ <b>${title}</b> direkt yüklenemedi.<br><span style="font-size:10px; color:#f87171;">Bu oyun dış site entegrasyonuna (iframe) izin vermiyor olabilir.</span>`;
+            }
+        }
+    }, 10000);
+
+    playerFrame.addEventListener('load', function clearLoadTimeout() {
+        clearTimeout(loadTimeout);
+        playerFrame.removeEventListener('load', clearLoadTimeout);
+    }, { once: true });
+}
+
+// Mağazaya dön
+function closeInstantGame() {
+    const playerBox = document.getElementById('game-player-box');
+    const playerFrame = document.getElementById('game-player-frame');
+    const loaderBox = document.getElementById('instant-loader-box');
+
+    if (playerFrame) {
+        playerFrame.src = 'about:blank';
+    }
+
+    if (playerBox) {
+        playerBox.style.display = 'none';
+    }
+
+    if (loaderBox) {
+        loaderBox.style.display = 'none';
+    }
+
+    document.getElementById('view-games')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+    });
+}
+
+// Oyuncu Tarafından Dinamik Oyun Ekleme (HTML5 Game Embedding)
+function openAddGameModal() {
+    document.getElementById('add-game-modal').style.display = 'flex';
+}
+function closeAddGameModal() {
+    document.getElementById('add-game-modal').style.display = 'none';
+}
+
+function confirmAddGame() {
+    const title = document.getElementById('new-game-title').value.trim();
+    let url = document.getElementById('new-game-url').value.trim();
+    let icon = document.getElementById('new-game-icon').value.trim();
+
+    if(!title || !url) {
+        alert('Lütfen oyun adı ve URL adresini girin!');
+        return;
+    }
+
+    if(!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+    }
+
+    if(!icon) {
+        icon = 'https://cdn-icons-png.flaticon.com/512/808/808436.png';
+    }
+
+    const gridContainer = document.getElementById('game-grid-container');
+    const newCard = document.createElement('div');
+    newCard.className = 'game-store-card';
+    newCard.setAttribute('data-category', 'action');
+    newCard.setAttribute('onclick', `playInstantGame('${title}', '${url}')`);
+    
+    newCard.innerHTML = `
+        <div class="game-card-top">
+            <img src="${icon}" alt="${title}">
+            <div class="game-meta">
+                <h4>${title}</h4>
+                <span>Özel HTML5 Oyun</span>
+                <div class="game-rating">★ 5.0 (Yeni)</div>
+            </div>
+        </div>
+        <button class="instant-play-btn">⚡ Şimdi Dene</button>
+    `;
+
+    gridContainer.prepend(newCard);
+    
+    // Formu temizle ve kapat
+    document.getElementById('new-game-title').value = '';
+    document.getElementById('new-game-url').value = '';
+    document.getElementById('new-game-icon').value = '';
+    closeAddGameModal();
+
+    // Oyunu otomatik başlat
+    playInstantGame(title, url);
+    alert(`"${title}" başarıyla eklendi ve başlatılıyor!`);
+}
+
+// Sekme uyku modunu önleyen ses döngüsü (Keep-Alive)
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function keepAlive() {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0.0001;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    setTimeout(() => osc.stop(), 1000);
+}
+setInterval(keepAlive, 15000);
+
+window.addEventListener('DOMContentLoaded', async () => {
+    document.getElementById('my-name-display').textContent = myName;
+    document.getElementById('overlay-username').textContent = myName;
+    
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    } catch (err) {
+        console.log('Mikrofon izni verilmedi.');
+    }
+
+    peer = new Peer();
+    peer.on('open', (id) => { myId = id; });
+
+    peer.on('call', (call) => {
+        call.answer(localStream);
+        call.on('stream', (stream) => playRemoteAudio(stream));
+    });
+});
+
+function toggleOverlayMenu() {
+    toggleMic();
+}
+
+function playRemoteAudio(stream) {
+    const audio = document.getElementById('remote-audio');
+    audio.srcObject = stream;
+    audio.play().catch(e => console.log(e));
+}
+
+function switchView(viewName, btnEl) {
+    document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
+
+    if(btnEl) btnEl.classList.add('active');
+
+    const targetView = document.getElementById(`view-${viewName}`);
+    if(targetView) {
+        targetView.classList.add('active');
+        document.getElementById('current-view-title').textContent = btnEl.textContent.trim();
+    }
+}
+
+function joinVoiceChannel(channelName, btnEl) {
+    switchView('voice-active-view', btnEl);
+    document.getElementById('voice-channel-title').textContent = channelName;
+    document.getElementById('voice-control-bar').style.display = 'flex';
+    document.getElementById('overlay-widget-box').style.display = 'flex';
+    alert(`🔊 "${channelName}" ses kanalına bağlanıldı! Mikrofon aktif.`);
+}
+
+function leaveVoiceChannel() {
+    document.getElementById('voice-control-bar').style.display = 'none';
+    document.getElementById('overlay-widget-box').style.display = 'none';
+    switchHome();
+}
+
+function switchHome() {
+    document.querySelectorAll('.server-icon').forEach(el => el.classList.remove('active'));
+    document.querySelector('.home-btn').classList.add('active');
+    document.getElementById('server-name-title').textContent = 'VoiceRoom Anasayfa';
+
+    document.querySelectorAll('.server-channels-group').forEach(el => el.style.display = 'none');
+    document.getElementById('channels-home').style.display = 'block';
+    
+    switchView('games', document.querySelector('#channels-home .channel-item'));
+}
+
+function filterGames(cat, btn) {
+    document.querySelectorAll('#view-games .platform-btn').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+
+    const cards = document.querySelectorAll('.game-store-card');
+    cards.forEach(card => {
+        if(cat === 'all' || card.getAttribute('data-category') === cat) {
+            card.style.display = 'flex';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+/* MANUEL SUNUCU & KANAL OLUŞTURMA SİSTEMİ */
+function openCreateServerModal() {
+    document.getElementById('server-modal').style.display = 'flex';
+}
+function closeCreateServerModal() {
+    document.getElementById('server-modal').style.display = 'none';
+}
+
+function confirmManualCreateServer() {
+    const serverName = document.getElementById('manual-server-name').value.trim();
+    const textInput = document.getElementById('manual-text-channels').value.trim();
+    const voiceInput = document.getElementById('manual-voice-channels').value.trim();
+
+    if(!serverName) {
+        alert('Lütfen sunucu adı girin!');
+        return;
+    }
+
+    const textChannels = textInput ? textInput.split(',').map(s => s.trim()).filter(s => s) : ['genel'];
+    const voiceChannels = voiceInput ? voiceInput.split(',').map(s => s.trim()).filter(s => s) : ['Ses Odası'];
+
+    roomCounter++;
+    const roomId = `server-${roomCounter}`;
+    const initials = serverName.substring(0, 2).toUpperCase();
+
+    // 1. Sol Sütuna İkon Ekle
+    const railContainer = document.getElementById('server-rail-container');
+    const serverIconDiv = document.createElement('div');
+    serverIconDiv.className = 'server-icon';
+    serverIconDiv.title = serverName;
+    serverIconDiv.textContent = initials;
+    serverIconDiv.setAttribute('onclick', `switchCustomServer('${roomId}', '${serverName}', this)`);
+    railContainer.insertBefore(serverIconDiv, railContainer.querySelector('.add-btn'));
+
+    // 2. Sol Menüye Kanal Grubu Ekle
+    const channelList = document.getElementById('channel-list-container');
+    const serverChannelsDiv = document.createElement('div');
+    serverChannelsDiv.id = `channels-${roomId}`;
+    serverChannelsDiv.className = 'server-channels-group';
+    serverChannelsDiv.style.display = 'none';
+
+    let htmlContent = `<div class="channel-category">Salons textuels (Metin)</div>`;
+
+    textChannels.forEach((chName, index) => {
+        const chId = `${roomId}-text-${index}`;
+        htmlContent += `<div class="channel-item" onclick="switchView('${chId}', this)"># ${chName}</div>`;
+
+        // Orta Alana Metin / İçerik Penceresi Ekle
+        const roomsContainer = document.getElementById('dynamic-rooms-container');
+        const roomViewDiv = document.createElement('div');
+        roomViewDiv.id = `view-${chId}`;
+        roomViewDiv.className = `view-section`;
+        roomViewDiv.innerHTML = `
+            <div style="padding:20px;max-width:650px;">
+                <h2 style="color:#38bdf8;margin-bottom:8px;font-size:20px;">💬 ${serverName} — #${chName}</h2>
+                <p style="color:#94a3b8;font-size:13px;margin-bottom:15px;">Bu metin kanalında üyelerle mesajlaşabilir ve içerik paylaşabilirsiniz.</p>
+                <textarea placeholder="Mesaj gönder (#${chName})..." style="width:100%;height:80px;margin-bottom:10px;"></textarea>
+                <button onclick="alert('Mesaj gönderildi!')">Gönder</button>
+            </div>
+        `;
+        roomsContainer.appendChild(roomViewDiv);
+    });
+
+    htmlContent += `<div class="channel-category" style="margin-top:15px;">Salons vocaux (Ses)</div>`;
+    voiceChannels.forEach((vName, index) => {
+        const vId = `${roomId}-voice-${index}`;
+        htmlContent += `<div class="channel-item" onclick="joinVoiceChannel('${vName}', this)">🔊 ${vName}</div>`;
+
+        // Ses Odası Görünümü
+        const roomsContainer = document.getElementById('dynamic-rooms-container');
+        const roomViewDiv = document.createElement('div');
+        roomViewDiv.id = `view-voice-active-view`;
+        roomViewDiv.className = `view-section`;
+        roomViewDiv.innerHTML = `
+            <div style="padding:20px;max-width:650px;">
+                <h2 style="color:#10b981;margin-bottom:8px;font-size:20px;" id="voice-channel-title">🔊 Ses Odası</h2>
+                <p style="color:#94a3b8;font-size:13px;margin-bottom:15px;">Sesli iletişim kanalındasınız. PeerJS üzerinden şifreli ses aktarımı yapılıyor.</p>
+                <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:25px;text-align:center;">
+                    <div style="font-size:40px;margin-bottom:10px;">🎙️</div>
+                    <h4 style="color:#f1f5f9;margin-bottom:5px;">Bağlantı Aktif</h4>
+                    <p style="font-size:12px;color:#10b981;">Konuştuğunuzda sesiniz odadakilere iletilir.</p>
+                </div>
+            </div>
+        `;
+        roomsContainer.appendChild(roomViewDiv);
+    });
+
+    serverChannelsDiv.innerHTML = htmlContent;
+    channelList.appendChild(serverChannelsDiv);
+
+    // Yeni sunucuya otomatik geçiş yap
+    switchCustomServer(roomId, serverName, serverIconDiv);
+
+    alert(`"${serverName}" sunucusu başarıyla oluşturuldu!`);
+    document.getElementById('manual-server-name').value = '';
+    document.getElementById('manual-text-channels').value = '';
+    document.getElementById('manual-voice-channels').value = '';
+    closeCreateServerModal();
+}
+
+function switchCustomServer(roomId, serverName, iconEl) {
+    document.querySelectorAll('.server-icon').forEach(el => el.classList.remove('active'));
+    if(iconEl) iconEl.classList.add('active');
+    
+    document.getElementById('server-name-title').textContent = serverName;
+
+    document.querySelectorAll('.server-channels-group').forEach(el => el.style.display = 'none');
+    const targetGroup = document.getElementById(`channels-${roomId}`);
+    if(targetGroup) {
+        targetGroup.style.display = 'block';
+        const firstChan = targetGroup.querySelector('.channel-item');
+        if(firstChan) firstChan.click();
+    }
+}
+
+function installBot(botName) {
+    alert(`🤖 ${botName} sunucunuza başarıyla kuruldu ve aktif edildi!`);
+}
+
+function buyItem(item, price) {
+    alert(`"${item}" (₺${price}) sipariş talebiniz alındı!`);
+}
+
+function toggleMic() {
+    if(!localStream) return;
+    isMuted = !isMuted;
+    localStream.getAudioTracks()[0].enabled = !isMuted;
+    const btn = document.getElementById('mic-btn');
+    const overlayStatus = document.querySelector('.overlay-status');
+    
+    if(isMuted) {
+        btn.textContent = '🔇 Aç';
+        btn.classList.add('muted');
+        overlayStatus.textContent = '● Susturuldu';
+        overlayStatus.style.color = '#ef4444';
+    } else {
+        btn.textContent = '🎤 Sustur';
+        btn.classList.remove('muted');
+        overlayStatus.textContent = '● Ses Aktif';
+        overlayStatus.style.color = '#10b981';
+    }
+}
+
+function loadMediaStream() {
+    const val = document.getElementById('media-url-input').value.trim();
+    if(!val) { alert('Lütfen geçerli bir link veya kullanıcı adı girin!'); return; }
+    const iframe = document.getElementById('video-frame');
+    if(selectedPlatform === 'youtube') {
+        let videoId = val;
+        if(val.includes('youtu.be/')) videoId = val.split('youtu.be/')[1]?.split('?')[0];
+        else if(val.includes('watch?v=')) videoId = val.split('watch?v=')[1]?.split('&')[0];
+        iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+    } else {
+        iframe.src = val;
+    }
+}
+
+function setPlatform(platform, btn) {
+    selectedPlatform = platform;
+    document.querySelectorAll('#view-video .platform-btn').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+}
+
+function quickPlay(platform, id) {
+    setPlatform(platform, document.querySelectorAll('#view-video .platform-btn')[0]);
+    document.getElementById('media-url-input').value = id;
+    loadMediaStream();
+}
+
+function loadCustomIframe() {
+    let url = document.getElementById('custom-iframe-url').value.trim();
+    if(!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
+    document.getElementById('main-custom-iframe').src = url;
+}
+
+function leaveRoom() {
+    if(peer) peer.destroy();
+    if(localStream) localStream.getTracks().forEach(t => t.stop());
+    window.location.reload();
+}
+  
+function showGames() {
+    document.querySelectorAll('.view-section').forEach(view => {
+        view.classList.remove('active');
+    });
+
+    const games = document.getElementById('view-games');
+
+    if (games) {
+        games.classList.add('active');
+        games.style.display = 'block';
+        games.style.visibility = 'visible';
+        games.style.opacity = '1';
+    }
+}
+
+function filterGames(category, button) {
+    document.querySelectorAll('.platform-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    if (button) {
+        button.classList.add('active');
+    }
+
+    document.querySelectorAll('#game-grid-container .game-store-card')
+        .forEach(card => {
+            const matches =
+                category === 'all' ||
+                card.dataset.category === category;
+
+            card.style.display = matches ? 'flex' : 'none';
+        });
+}
+
+function playInstantGame(title, url) {
+    const box = document.getElementById('game-player-box');
+    const frame = document.getElementById('game-player-frame');
+    const loader = document.getElementById('instant-loader-box');
+    const gameTitle = document.getElementById('instant-game-title');
+
+    if (!box || !frame) return;
+
+    box.style.display = 'block';
+
+    if (loader) loader.style.display = 'block';
+    if (gameTitle) gameTitle.textContent = title;
+
+    frame.src = url;
+
+    box.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+    });
+}
+
+</script>
+
+</body>
+</html>
