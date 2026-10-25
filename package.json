@@ -1,0 +1,14 @@
+
+{
+  "name": "cadircilar-online",
+  "version": "1.2.0",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "sql.js": "^1.13.0",
+    "ws": "^8.18.0"
+  }
+}
