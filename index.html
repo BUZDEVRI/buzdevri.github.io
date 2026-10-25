@@ -264,7 +264,7 @@ footer { text-align:center; color:#87a58d; font-size:12px; padding:12px; }
 async function api(path, data, method = 'POST') {
   const base = API_BASE.trim().replace(/\/+$/, '');
 
-  if (!base || base.includes('SUNUCU-ADRESINI-BURAYA-YAZ')) {
+  if (!base || base.includes('https://meyvecokluoyunculu.com.tr/')) {
     throw new Error('Önce gerçek Render sunucu adresini yaz.');
   }
 
