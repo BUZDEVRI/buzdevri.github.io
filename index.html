@@ -1,0 +1,769 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#10251c">
+<title>Çadırcılar Online</title>
+<style>
+:root {
+  --bg:#10251c;
+  --panel:#193629;
+  --panel2:#234735;
+  --green:#70c879;
+  --gold:#f4cb72;
+  --text:#f5f5e9;
+  --muted:#b8cdbb;
+  --danger:#ff8d85;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:Arial,sans-serif; min-height:100vh;
+}
+button,input { font:inherit; }
+button {
+  border:0; border-radius:12px; padding:12px 15px;
+  background:var(--green); color:#10251c;
+  font-weight:bold; cursor:pointer;
+  touch-action:manipulation;
+}
+button:disabled { opacity:.55; }
+input {
+  width:100%; padding:13px; border-radius:10px;
+  border:1px solid #42634c; background:#10251c;
+  color:white; outline:none; margin:6px 0 12px;
+}
+label { font-size:13px; color:var(--muted); }
+.hidden { display:none!important; }
+header {
+  position:sticky; top:0; z-index:5;
+  background:#142d21; border-bottom:1px solid #31503a;
+  padding:13px 16px; display:flex;
+  justify-content:space-between; align-items:center; gap:10px;
+}
+.logo { font-size:19px; font-weight:900; }
+.logo span { color:var(--gold); }
+.pill {
+  font-size:12px; color:var(--green);
+  background:#254734; padding:7px 10px;
+  border-radius:20px;
+}
+main { width:min(100%,900px); margin:auto; padding:18px 13px 35px; }
+h1 { font-size:28px; margin:5px 0 8px; }
+h2 { font-size:18px; margin:0 0 12px; }
+p { color:var(--muted); line-height:1.5; }
+.card {
+  background:var(--panel); border:1px solid #31503a;
+  border-radius:17px; padding:17px; margin-bottom:14px;
+}
+.hero {
+  padding:23px 18px; border-radius:20px; margin-bottom:16px;
+  background:linear-gradient(135deg,#315b3c,#17382b 75%);
+  border:1px solid #4b7750;
+}
+.hero p { margin-bottom:0; }
+.auth-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.status { min-height:20px; font-size:13px; color:var(--gold); }
+.error { color:var(--danger)!important; }
+.stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.stat { background:#10291e; padding:12px 6px; border-radius:12px; text-align:center; }
+.stat strong { display:block; color:var(--gold); font-size:20px; }
+.stat small { color:var(--muted); }
+.game-layout { display:grid; grid-template-columns:1fr 250px; gap:12px; }
+#world {
+  display:block; width:100%; height:auto; aspect-ratio:4/3;
+  border-radius:13px; border:2px solid #52724c;
+  background:#8ccf86; touch-action:none;
+}
+.world-wrap { position:relative; }
+#game-notice {
+  position:absolute; top:9px; left:9px; right:9px;
+  background:#10251cdd; border-radius:8px; padding:8px;
+  font-size:12px; pointer-events:none;
+}
+.side-card { background:#193629; padding:13px; border-radius:14px; margin-bottom:12px; }
+#players-list { font-size:13px; line-height:1.8; overflow-wrap:anywhere; }
+.chat-log {
+  height:155px; overflow-y:auto; font-size:13px;
+  background:#10291e; padding:10px; border-radius:10px;
+  overflow-wrap:anywhere;
+}
+.chat-row { margin-bottom:7px; }
+.chat-row b { color:var(--gold); }
+.chat-form { display:flex; gap:6px; margin-top:8px; }
+.chat-form input { margin:0; min-width:0; }
+.chat-form button { padding:10px; }
+.controls {
+  display:grid; grid-template-columns:repeat(3,1fr);
+  gap:8px; max-width:310px; margin:12px auto;
+}
+.controls button { min-height:52px; font-size:20px; background:#31563c; color:white; }
+.controls .action { background:var(--gold); color:#25331f; font-size:14px; }
+.control-help { font-size:12px; text-align:center; color:var(--muted); }
+.actions { display:flex; gap:8px; flex-wrap:wrap; }
+.actions button { flex:1; }
+#logout-btn { background:#49362d; color:white; }
+footer { text-align:center; color:#87a58d; font-size:12px; padding:12px; }
+@media(max-width:650px) {
+  .auth-grid { grid-template-columns:1fr; }
+  .game-layout { grid-template-columns:1fr; }
+  .side-column { display:grid; grid-template-columns:1fr; }
+  h1 { font-size:24px; }
+  header { padding:11px; }
+  main { padding:12px 10px 25px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">🏕️ Çadırcılar <span>Online</span></div>
+  <div id="connection-status" class="pill">● Sunucu bekleniyor</div>
+</header>
+
+<main>
+  <section id="auth-screen">
+    <div class="hero">
+      <h1>Doğaya hoş geldin!</h1>
+      <p>Kendi kampını kur, kaynak topla ve diğer oyuncularla aynı dünyada buluş.</p>
+    </div>
+
+    <div class="auth-grid">
+      <section class="card">
+        <h2>🌲 Yeni hesap oluştur</h2>
+        <form id="register-form">
+          <label for="reg-name">Oyuncu adı</label>
+          <input id="reg-name" autocomplete="username" minlength="3" maxlength="20" required placeholder="Oyuncu adın">
+          <label for="reg-pass">Şifre</label>
+          <input id="reg-pass" type="password" autocomplete="new-password" minlength="6" required placeholder="En az 6 karakter">
+          <button type="submit" style="width:100%">Hesap oluştur</button>
+          <div id="register-status" class="status" aria-live="polite"></div>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>⛺ Hesabına giriş yap</h2>
+        <form id="login-form">
+          <label for="login-name">Oyuncu adı</label>
+          <input id="login-name" autocomplete="username" required placeholder="Oyuncu adın">
+          <label for="login-pass">Şifre</label>
+          <input id="login-pass" type="password" autocomplete="current-password" required placeholder="Şifren">
+          <button type="submit" style="width:100%">Giriş yap</button>
+          <div id="login-status" class="status" aria-live="polite"></div>
+        </form>
+      </section>
+    </div>
+
+    <div class="card">
+      <h2>🌿 Kamp macerası</h2>
+      <p>Hesabını oluşturduktan sonra kamp dünyasına katılabilirsin. Hesapların kalıcı olması, Node.js sunucusunun ve veritabanının doğru kurulmasına bağlıdır.</p>
+    </div>
+  </section>
+
+  <section id="game-screen" class="hidden">
+    <div class="hero">
+      <h1>🏕️ Kamp dünyası</h1>
+      <p id="welcome">Hoş geldin!</p>
+      <div class="stats">
+        <div class="stat"><strong id="wood-stat">0</strong><small>🪵 Odun</small></div>
+        <div class="stat"><strong id="tent-stat">0</strong><small>⛺ Çadır</small></div>
+        <div class="stat"><strong id="player-count">1</strong><small>👥 Oyuncu</small></div>
+      </div>
+    </div>
+
+    <div class="game-layout">
+      <div>
+        <section class="card">
+          <div class="world-wrap">
+            <canvas id="world" width="800" height="600"></canvas>
+            <div id="game-notice">Sunucu bağlantısı bekleniyor…</div>
+          </div>
+
+          <div class="controls">
+            <div></div>
+            <button id="up-btn" aria-label="Yukarı">▲</button>
+            <div></div>
+            <button id="left-btn" aria-label="Sola">◀</button>
+            <button id="down-btn" aria-label="Aşağı">▼</button>
+            <button id="right-btn" aria-label="Sağa">▶</button>
+          </div>
+          <div class="control-help">Karakterini hareket ettirmek için yön tuşlarını basılı tut.</div>
+          <div class="actions" style="margin-top:13px">
+            <button id="gather-btn" class="action">🪵 Odun topla</button>
+            <button id="build-btn" class="action">⛺ Çadır kur</button>
+            <button id="logout-btn">Çıkış</button>
+          </div>
+        </section>
+      </div>
+
+      <aside class="side-column">
+        <section class="side-card">
+          <h2>👥 Oyuncular</h2>
+          <div id="players-list">Sunucu bekleniyor…</div>
+        </section>
+        <section class="side-card">
+          <h2>💬 Kamp sohbeti</h2>
+          <div id="chat-log" class="chat-log" aria-live="polite"></div>
+          <form id="chat-form" class="chat-form">
+            <input id="chat-input" maxlength="300" placeholder="Mesajını yaz…" autocomplete="off" required>
+            <button type="submit">Gönder</button>
+          </form>
+        </section>
+      </aside>
+    </div>
+  </section>
+</main>
+<footer>Çadırcılar Online · Kampını kur, dünyanı keşfet</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+  const tokenKey = 'cadircilar_auth_token';
+
+  // Render dağıtımı tamamlandıktan sonra bu adresi kendi sunucu adresinle değiştir.
+  // Örnek: https://cadircilar-online.onrender.com
+  const API_BASE = 'https://meyvecokluoyunculu.com.tr/';
+
+  let token = localStorage.getItem(tokenKey) || '';
+  let ws = null;
+  let me = null;
+  let players = [];
+  let trees = [];
+  let tents = [];
+  let world = { width: 2400, height: 1800 };
+  let reconnectTimer = null;
+  let reconnectAttempts = 0;
+  let moveTimer = null;
+  let moveVector = { x: 0, y: 0 };
+  let localPosition = { x: 400, y: 300 };
+  let localWood = 0;
+  let localTents = 0;
+  let lastMoveSent = 0;
+  let manuallyLoggedOut = false;
+
+  const canvas = $('world');
+  const ctx = canvas.getContext('2d');
+
+  function setStatus(id, message, bad = false) {
+    $(id).textContent = message;
+    $(id).classList.toggle('error', bad);
+  }
+
+  function serverBase() {
+    const address = API_BASE.trim().replace(/\/+$/, '');
+    if (!address || address.includes('SUNUCU-ADRESINI-BURAYA-YAZ')) {
+      throw new Error('Önce Render sunucu adresini API_BASE satırına yazmalısın.');
+    }
+    return address;
+  }
+
+  async function api(path, data, method = 'POST') {
+    const base = serverBase();
+    let response;
+
+    try {
+      response = await fetch(base + path, {
+        method,
+        headers: {
+          ...(method !== 'GET' ? { 'Content-Type': 'application/json' } : {}),
+          ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+        },
+        ...(method !== 'GET' ? { body: JSON.stringify(data || {}) } : {})
+      });
+    } catch (error) {
+      throw new Error('Sunucuya ulaşılamadı. Render adresini, sunucu durumunu ve CORS ayarlarını kontrol et.');
+    }
+
+    let result;
+    try {
+      result = await response.json();
+    } catch {
+      throw new Error('Sunucudan geçerli JSON yanıtı alınamadı.');
+    }
+
+    if (!response.ok) {
+      throw new Error(result.error || result.message || ('Sunucu hatası: HTTP ' + response.status));
+    }
+
+    return result;
+  }
+
+  function setConnection(message, connected = false) {
+    $('connection-status').textContent = (connected ? '● ' : '● ') + message;
+    $('connection-status').style.color = connected ? '#70c879' : '#f4cb72';
+  }
+
+  function validateAuthResult(result) {
+    if (!result || typeof result.token !== 'string' || !result.token) {
+      throw new Error('Sunucu başarılı yanıt verdi ancak oturum tokenı göndermedi. server.js yanıtını kontrol et.');
+    }
+  }
+
+  $('register-form').addEventListener('submit', async event => {
+    event.preventDefault();
+    setStatus('register-status', 'Hesap oluşturuluyor…');
+
+    try {
+      const username = $('reg-name').value.trim();
+      const password = $('reg-pass').value;
+
+      const result = await api('/api/register', { username, password });
+      validateAuthResult(result);
+
+      token = result.token;
+      localStorage.setItem(tokenKey, token);
+      $('reg-pass').value = '';
+      await enterGame();
+    } catch (error) {
+      setStatus('register-status', error.message, true);
+    }
+  });
+
+  $('login-form').addEventListener('submit', async event => {
+    event.preventDefault();
+    setStatus('login-status', 'Giriş yapılıyor…');
+
+    try {
+      const username = $('login-name').value.trim();
+      const password = $('login-pass').value;
+
+      const result = await api('/api/login', { username, password });
+      validateAuthResult(result);
+
+      token = result.token;
+      localStorage.setItem(tokenKey, token);
+      $('login-pass').value = '';
+      await enterGame();
+    } catch (error) {
+      setStatus('login-status', error.message, true);
+    }
+  });
+
+  async function enterGame() {
+    try {
+      const result = await api('/api/me', null, 'GET');
+      if (!result || !result.player) {
+        throw new Error('Sunucu kullanıcı bilgilerini döndürmedi.');
+      }
+
+      me = result.player;
+      manuallyLoggedOut = false;
+      $('auth-screen').classList.add('hidden');
+      $('game-screen').classList.remove('hidden');
+      $('welcome').textContent = 'Hoş geldin, ' + (me.username || 'Oyuncu') + '!';
+      $('game-notice').textContent = 'Çevrim içi sunucuya bağlanılıyor…';
+      updateHud();
+      draw();
+      connectSocket();
+    } catch (error) {
+      localStorage.removeItem(tokenKey);
+      token = '';
+      $('auth-screen').classList.remove('hidden');
+      $('game-screen').classList.add('hidden');
+      setStatus('login-status', error.message, true);
+    }
+  }
+
+  function connectSocket() {
+    if (!token || manuallyLoggedOut) return;
+
+    if (ws) {
+      ws.onclose = null;
+      try { ws.close(); } catch {}
+    }
+
+    clearTimeout(reconnectTimer);
+
+    let socketUrl;
+    try {
+      socketUrl = serverBase()
+        .replace(/^https:/i, 'wss:')
+        .replace(/^http:/i, 'ws:');
+    } catch (error) {
+      $('game-notice').textContent = error.message;
+      setConnection('Sunucu adresi eksik');
+      return;
+    }
+
+    setConnection('Bağlanıyor…');
+
+    try {
+      ws = new WebSocket(socketUrl);
+    } catch {
+      $('game-notice').textContent = 'WebSocket bağlantısı başlatılamadı.';
+      scheduleReconnect();
+      return;
+    }
+
+    ws.onopen = () => {
+      reconnectAttempts = 0;
+      setConnection('Bağlandı', true);
+      ws.send(JSON.stringify({ type: 'auth', token }));
+    };
+
+    ws.onmessage = event => {
+      let message;
+      try { message = JSON.parse(event.data); } catch { return; }
+
+      if (message.type === 'init') {
+        if (message.me) me = message.me;
+        players = message.players || [];
+        trees = message.trees || [];
+        tents = message.tents || [];
+        world = message.world || world;
+        if (me && Number.isFinite(me.x) && Number.isFinite(me.y)) {
+          localPosition = { x: me.x, y: me.y };
+        }
+        $('game-notice').textContent = 'Kamp dünyasına hoş geldin!';
+        updateHud();
+        draw();
+      }
+
+      if (message.type === 'state') {
+        if (Array.isArray(message.players)) players = message.players;
+        if (Array.isArray(message.trees)) trees = message.trees;
+        if (Array.isArray(message.tents)) tents = message.tents;
+        if (message.me) {
+          me = message.me;
+          if (Number.isFinite(me.x) && Number.isFinite(me.y)) {
+            localPosition = { x: me.x, y: me.y };
+          }
+        }
+        updateHud();
+        draw();
+      }
+
+      if (message.type === 'chat') {
+        addChat(message.username || 'Oyuncu', message.text || '');
+      }
+
+      if (message.type === 'notice') {
+        $('game-notice').textContent = message.text || '';
+      }
+
+      if (message.type === 'error') {
+        $('game-notice').textContent = message.message || 'Bir oyun hatası oluştu.';
+      }
+    };
+
+    ws.onerror = () => {
+      setConnection('Bağlantı hatası');
+    };
+
+    ws.onclose = () => {
+      setConnection('Bağlantı kesildi');
+      if (!manuallyLoggedOut && token && !$('game-screen').classList.contains('hidden')) {
+        $('game-notice').textContent = 'Sunucu bağlantısı kesildi. Yeniden bağlanılıyor…';
+        scheduleReconnect();
+      }
+    };
+  }
+
+  function scheduleReconnect() {
+    clearTimeout(reconnectTimer);
+    if (!token || manuallyLoggedOut) return;
+    const delay = Math.min(2000 * Math.pow(2, reconnectAttempts), 20000);
+    reconnectAttempts++;
+    reconnectTimer = setTimeout(connectSocket, delay);
+  }
+
+  function send(message) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      $('game-notice').textContent = 'Sunucuya bağlı değilsin.';
+      return false;
+    }
+    ws.send(JSON.stringify(message));
+    return true;
+  }
+
+  function updateHud() {
+    $('player-count').textContent = players.length || 1;
+    $('wood-stat').textContent = me && Number.isFinite(me.wood) ? me.wood : localWood;
+    $('tent-stat').textContent = me && Number.isFinite(me.tents) ? me.tents : localTents;
+
+    const list = $('players-list');
+    list.replaceChildren();
+
+    if (!players.length) {
+      list.textContent = me ? '👤 ' + (me.username || 'Sen') : 'Oyuncu bekleniyor…';
+      return;
+    }
+
+    players.forEach(player => {
+      const row = document.createElement('div');
+      row.textContent = '🧍 ' + (player.username || player.name || 'Oyuncu');
+      list.appendChild(row);
+    });
+  }
+
+  function addChat(username, text) {
+    const row = document.createElement('div');
+    row.className = 'chat-row';
+    const name = document.createElement('b');
+    name.textContent = username + ': ';
+    const body = document.createElement('span');
+    body.textContent = text;
+    row.append(name, body);
+    $('chat-log').appendChild(row);
+    $('chat-log').scrollTop = $('chat-log').scrollHeight;
+
+    while ($('chat-log').children.length > 100) {
+      $('chat-log').firstElementChild.remove();
+    }
+  }
+
+  $('chat-form').addEventListener('submit', event => {
+    event.preventDefault();
+    const text = $('chat-input').value.trim();
+    if (!text) return;
+    if (send({ type: 'chat', text })) $('chat-input').value = '';
+  });
+
+  $('gather-btn').addEventListener('click', () => {
+    send({ type: 'gather' });
+  });
+
+  $('build-btn').addEventListener('click', () => {
+    send({ type: 'build' });
+  });
+
+  $('logout-btn').addEventListener('click', async () => {
+    manuallyLoggedOut = true;
+    clearTimeout(reconnectTimer);
+    clearInterval(moveTimer);
+
+    try {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'logout' }));
+        ws.close();
+      }
+      if (token) await api('/api/logout', {});
+    } catch (error) {
+      console.warn('Sunucu çıkışı tamamlanamadı:', error.message);
+    }
+
+    token = '';
+    me = null;
+    localStorage.removeItem(tokenKey);
+    $('game-screen').classList.add('hidden');
+    $('auth-screen').classList.remove('hidden');
+    setConnection('Giriş yapılmadı');
+    setStatus('login-status', 'Çıkış yapıldı.');
+  });
+
+  function setMovement(x, y) {
+    moveVector = { x, y };
+    if (!moveTimer) {
+      moveTimer = setInterval(() => {
+        if (!moveVector.x && !moveVector.y) return;
+        const now = Date.now();
+        if (now - lastMoveSent < 80) return;
+        lastMoveSent = now;
+
+        // Sunucu protokolü dx/dy beklemiyorsa server.js ile aynı alan adlarını kullan.
+        send({ type: 'move', dx: moveVector.x, dy: moveVector.y });
+      }, 80);
+    }
+  }
+
+  function stopMovement() {
+    moveVector = { x: 0, y: 0 };
+  }
+
+  function bindHold(id, x, y) {
+    const button = $(id);
+    button.addEventListener('pointerdown', event => {
+      event.preventDefault();
+      try { button.setPointerCapture(event.pointerId); } catch {}
+      setMovement(x, y);
+    });
+    ['pointerup', 'pointercancel', 'lostpointercapture', 'pointerleave'].forEach(type => {
+      button.addEventListener(type, stopMovement);
+    });
+  }
+
+  bindHold('up-btn', 0, -1);
+  bindHold('down-btn', 0, 1);
+  bindHold('left-btn', -1, 0);
+  bindHold('right-btn', 1, 0);
+
+  window.addEventListener('keydown', event => {
+    if ($('game-screen').classList.contains('hidden')) return;
+    const keys = {
+      ArrowUp: [0, -1], w: [0, -1],
+      ArrowDown: [0, 1], s: [0, 1],
+      ArrowLeft: [-1, 0], a: [-1, 0],
+      ArrowRight: [1, 0], d: [1, 0]
+    };
+    const movement = keys[event.key];
+    if (movement) {
+      event.preventDefault();
+      setMovement(movement[0], movement[1]);
+    }
+  });
+
+  window.addEventListener('keyup', stopMovement);
+  window.addEventListener('blur', stopMovement);
+
+  function drawTree(x, y, scale = 1) {
+    ctx.fillStyle = '#69482c';
+    ctx.fillRect(x - 5 * scale, y, 10 * scale, 22 * scale);
+    ctx.fillStyle = '#276a3d';
+    ctx.beginPath();
+    ctx.arc(x, y - 4 * scale, 20 * scale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#438a4d';
+    ctx.beginPath();
+    ctx.arc(x - 7 * scale, y - 10 * scale, 12 * scale, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawTent(x, y, color = '#d6ad65') {
+    ctx.fillStyle = '#65492d';
+    ctx.beginPath();
+    ctx.moveTo(x - 25, y + 20);
+    ctx.lineTo(x, y - 20);
+    ctx.lineTo(x + 25, y + 20);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x - 21, y + 17);
+    ctx.lineTo(x, y - 16);
+    ctx.lineTo(x + 21, y + 17);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#62462b';
+    ctx.beginPath();
+    ctx.moveTo(x - 7, y + 17);
+    ctx.lineTo(x, y + 2);
+    ctx.lineTo(x + 7, y + 17);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawPlayer(player, x, y, isMe = false) {
+    // Karakterler için geçici çizim. Kendi karakter görselini daha sonra ekleyebilirsin.
+    ctx.fillStyle = '#243e2a';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 15, 13, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = isMe ? '#f3cf83' : '#e7c5a0';
+    ctx.beginPath();
+    ctx.arc(x, y, 12, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#4b3023';
+    ctx.beginPath();
+    ctx.arc(x, y - 4, 12, Math.PI, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#263a29';
+    ctx.beginPath();
+    ctx.arc(x + 4, y, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(player.username || player.name || 'Oyuncu', x, y - 19);
+  }
+
+  function draw() {
+    if (!ctx) return;
+
+    const w = canvas.width;
+    const h = canvas.height;
+
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#8bcf82';
+    ctx.fillRect(0, 0, w, h);
+
+    // Çimen dokusu
+    ctx.strokeStyle = '#7abd70';
+    ctx.lineWidth = 1;
+    for (let x = 15; x < w; x += 35) {
+      for (let y = 15; y < h; y += 32) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 4, y - 3);
+        ctx.stroke();
+      }
+    }
+
+    // Kamp yolu
+    ctx.fillStyle = '#d6c18a';
+    ctx.beginPath();
+    ctx.moveTo(0, 410);
+    ctx.bezierCurveTo(170, 340, 340, 500, 510, 410);
+    ctx.bezierCurveTo(630, 360, 700, 420, 800, 390);
+    ctx.lineTo(800, 460);
+    ctx.bezierCurveTo(650, 485, 610, 430, 500, 470);
+    ctx.bezierCurveTo(320, 550, 160, 405, 0, 480);
+    ctx.closePath();
+    ctx.fill();
+
+    // Ağaçlar: sunucu verisi varsa onu, yoksa örnek çevreyi çiz.
+    const visibleTrees = trees.length ? trees : [
+      { x: 85, y: 95 }, { x: 700, y: 100 },
+      { x: 110, y: 330 }, { x: 690, y: 315 },
+      { x: 370, y: 90 }, { x: 580, y: 180 }
+    ];
+
+    visibleTrees.forEach(tree => {
+      const tx = Number(tree.x);
+      const ty = Number(tree.y);
+      if (Number.isFinite(tx) && Number.isFinite(ty)) {
+        const scale = (tx > 800 || ty > 600) ? 0.7 : 1;
+        drawTree(tx, ty, scale);
+      }
+    });
+
+    const visibleTents = tents.length ? tents : [];
+    visibleTents.forEach(tent => {
+      const tx = Number(tent.x);
+      const ty = Number(tent.y);
+      if (Number.isFinite(tx) && Number.isFinite(ty)) drawTent(tx, ty);
+    });
+
+    // Oyuncuların koordinatları sunucu dünyasına göre ölçeklenir.
+    const worldW = Number(world.width) || 2400;
+    const worldH = Number(world.height) || 1800;
+
+    players.forEach(player => {
+      const px = Number(player.x);
+      const py = Number(player.y);
+      if (!Number.isFinite(px) || !Number.isFinite(py)) return;
+
+      const x = px <= 800 && py <= 600 ? px : (px / worldW) * w;
+      const y = px <= 800 && py <= 600 ? py : (py / worldH) * h;
+      drawPlayer(player, x, y, me && player.id === me.id);
+    });
+
+    // Sunucu henüz karakter göndermediyse yerel görsel göster.
+    if (!players.length && me) {
+      const x = Math.max(20, Math.min(w - 20, localPosition.x / worldW * w));
+      const y = Math.max(35, Math.min(h - 25, localPosition.y / worldH * h));
+      drawPlayer({ username: me.username || 'Sen' }, x, y, true);
+    }
+  }
+
+  // İlk açılışta kayıtlı oturum varsa doğrula.
+  setConnection('Sunucu adresi bekleniyor');
+
+  if (token) {
+    enterGame();
+  } else {
+    draw();
+  }
+
+})();
+</script>
+</body>
+</html>
