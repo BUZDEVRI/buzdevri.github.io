@@ -254,42 +254,65 @@ footer { text-align:center; color:#87a58d; font-size:12px; padding:12px; }
 
   function serverBase() {
     const address = API_BASE.trim().replace(/\/+$/, '');
-    if (!address || address.includes('SUNUCU-ADRESINI-BURAYA-YAZ')) {
+    if (!address || address.includes('https://meyvecokluoyunculu.com.tr/')) {
       throw new Error('Önce Render sunucu adresini API_BASE satırına yazmalısın.');
     }
     return address;
   }
 
-  async function api(path, data, method = 'POST') {
-    const base = serverBase();
-    let response;
+  
+async function api(path, data, method = 'POST') {
+  const base = API_BASE.trim().replace(/\/+$/, '');
 
-    try {
-      response = await fetch(base + path, {
-        method,
-        headers: {
-          ...(method !== 'GET' ? { 'Content-Type': 'application/json' } : {}),
-          ...(token ? { 'Authorization': 'Bearer ' + token } : {})
-        },
-        ...(method !== 'GET' ? { body: JSON.stringify(data || {}) } : {})
-      });
-    } catch (error) {
-      throw new Error('Sunucuya ulaşılamadı. Render adresini, sunucu durumunu ve CORS ayarlarını kontrol et.');
-    }
-
-    let result;
-    try {
-      result = await response.json();
-    } catch {
-      throw new Error('Sunucudan geçerli JSON yanıtı alınamadı.');
-    }
-
-    if (!response.ok) {
-      throw new Error(result.error || result.message || ('Sunucu hatası: HTTP ' + response.status));
-    }
-
-    return result;
+  if (!base || base.includes('SUNUCU-ADRESINI-BURAYA-YAZ')) {
+    throw new Error('Önce gerçek Render sunucu adresini yaz.');
   }
+
+  let response;
+
+  try {
+    response = await fetch(base + path, {
+      method,
+      headers: {
+        ...(method !== 'GET' ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: 'Bearer ' + token } : {})
+      },
+      ...(method !== 'GET' ? { body: JSON.stringify(data || {}) } : {})
+    });
+  } catch (error) {
+    throw new Error(
+      'Sunucuya bağlanılamadı. Render adresini ve CORS ayarlarını kontrol et.'
+    );
+  }
+
+  const responseText = await response.text();
+  let result;
+
+  try {
+    result = JSON.parse(responseText);
+  } catch {
+    console.error(
+      'Sunucu yanıtı:',
+      response.status,
+      responseText.slice(0, 300)
+    );
+
+    throw new Error(
+      'Sunucu JSON yerine farklı yanıt verdi (HTTP ' +
+      response.status +
+      '). Render Logs bölümünü kontrol et.'
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      result.error || result.message || ('HTTP ' + response.status)
+    );
+  }
+
+  return result;
+    }
+  
 
   function setConnection(message, connected = false) {
     $('connection-status').textContent = (connected ? '● ' : '● ') + message;
